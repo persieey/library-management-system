@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"library-management-system/auth"
 	"library-management-system/models"
@@ -74,11 +75,16 @@ func (a *Auth) RequirePermission(perm models.Permission, next http.HandlerFunc) 
 	})
 }
 
-// CORS อนุญาตเฉพาะ origin ที่ระบุ และยอมให้ส่งคุกกี้ข้ามพอร์ตตอนพัฒนา
+// CORS อนุญาต localhost ทุก port เพื่อรองรับ dev server ที่ใช้ port ต่างกัน
+// ใน production ควรเปลี่ยนเป็น origin จริงแทน
 func CORS(allowedOrigin string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Origin") == allowedOrigin {
-			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+		origin := r.Header.Get("Origin")
+		allowed := origin == allowedOrigin ||
+			strings.HasPrefix(origin, "http://localhost:") ||
+			strings.HasPrefix(origin, "http://127.0.0.1:")
+		if allowed {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
