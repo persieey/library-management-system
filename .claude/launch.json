@@ -7,6 +7,13 @@
       "runtimeArgs": ["--prefix", "frontend", "start"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "frontend-vite",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend-vite", "run", "dev"],
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }

@@ -37,7 +37,14 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
+	writeJSON(w, status, map[string]any{
+		"success": false,
+		"error":   map[string]string{"message": message},
+	})
+}
+
+func writeSuccess(w http.ResponseWriter, status int, data any) {
+	writeJSON(w, status, map[string]any{"success": true, "data": data})
 }
 
 // Login ตรวจรหัสผ่านแล้วออก session cookie
@@ -84,6 +91,53 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	writeJSON(w, http.StatusOK, toUserResponse(user))
+}
+
+// LoginV1 รองรับ frontend-vite: ตอบ Bearer token ใน body แทน cookie
+func (a *Auth) LoginV1(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "รองรับเฉพาะ POST")
+		return
+	}
+
+	var req loginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return
+	}
+
+	req.Username = strings.TrimSpace(req.Username)
+	if req.Username == "" || req.Password == "" {
+		writeError(w, http.StatusBadRequest, "กรุณากรอกทั้งชื่อผู้ใช้และรหัสผ่าน")
+		return
+	}
+
+	user, err := a.Users.ByUsername(req.Username)
+	if err != nil || !auth.CheckPassword(user.PasswordHash, req.Password) {
+		writeError(w, http.StatusUnauthorized, "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
+		return
+	}
+
+	token, err := a.Sessions.Create(user.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "สร้าง session ไม่สำเร็จ")
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{
+		"token": token,
+		"user":  toUserResponse(user),
+	})
+}
+
+// ProfileV1 คืนข้อมูลผู้ใช้จาก Bearer token (สำหรับ frontend-vite)
+func (a *Auth) ProfileV1(w http.ResponseWriter, r *http.Request) {
+	user, ok := UserFrom(r)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "ต้องเข้าสู่ระบบก่อน")
+		return
+	}
+	writeSuccess(w, http.StatusOK, toUserResponse(user))
 }
 
 // Logout ลบ session ทิ้งและล้างคุกกี้

@@ -25,13 +25,20 @@ type Auth struct {
 	Sessions *auth.SessionStore
 }
 
-// current อ่านคุกกี้ session แล้วหาเจ้าของ
+// current อ่าน Bearer token หรือ cookie แล้วหาเจ้าของ
 func (a *Auth) current(r *http.Request) (*models.User, bool) {
-	cookie, err := r.Cookie(auth.CookieName)
-	if err != nil {
+	var token string
+
+	if h := r.Header.Get("Authorization"); len(h) > 7 && h[:7] == "Bearer " {
+		token = h[7:]
+	} else if cookie, err := r.Cookie(auth.CookieName); err == nil {
+		token = cookie.Value
+	}
+
+	if token == "" {
 		return nil, false
 	}
-	userID, ok := a.Sessions.UserID(cookie.Value)
+	userID, ok := a.Sessions.UserID(token)
 	if !ok {
 		return nil, false
 	}
@@ -73,7 +80,7 @@ func CORS(allowedOrigin string, next http.Handler) http.Handler {
 		if r.Header.Get("Origin") == allowedOrigin {
 			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
 			w.Header().Set("Vary", "Origin")
 		}

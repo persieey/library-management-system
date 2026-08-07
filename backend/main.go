@@ -52,6 +52,7 @@ func seedAccounts(users store.UserStore) error {
 		{"student", models.RoleUser},
 		{"librarian", models.RoleLibrarian},
 		{"staff", models.RoleStaff},
+		{"manager", models.RoleManager},
 		{"admin", models.RoleAdmin},
 	}
 
@@ -66,7 +67,7 @@ func seedAccounts(users store.UserStore) error {
 	}
 
 	if generated {
-		log.Printf("บัญชีทดสอบ: student / librarian / staff / admin")
+		log.Printf("บัญชีทดสอบ: student / librarian / staff / manager / admin")
 		log.Printf("รหัสผ่านที่สุ่มให้รอบนี้: %s", password)
 		log.Printf("อยากกำหนดเอง ตั้ง LMS_SEED_PASSWORD ก่อนรัน")
 	} else {
@@ -87,6 +88,10 @@ func main() {
 	mux.HandleFunc("/api/login", authAPI.Login)
 	mux.HandleFunc("/api/logout", authAPI.Logout)
 	mux.HandleFunc("/api/me", authAPI.RequireAuth(authAPI.Me))
+
+	// v1 routes สำหรับ frontend-vite (Bearer token, envelope response)
+	mux.HandleFunc("/api/v1/auth/login", authAPI.LoginV1)
+	mux.HandleFunc("/api/v1/users/profile", authAPI.RequireAuth(authAPI.ProfileV1))
 
 	// ตัวอย่างการกั้นด้วยสิทธิ์ — เฉพาะ admin เท่านั้นที่ผ่าน
 	mux.HandleFunc("/api/personnel", authAPI.RequirePermission(

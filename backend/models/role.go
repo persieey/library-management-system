@@ -10,12 +10,14 @@ const (
 	RoleLibrarian Role = "librarian"
 	// RoleStaff เจ้าหน้าที่ — ดูแลห้องอัดเสียง อุปกรณ์ และงานแจ้งซ่อม
 	RoleStaff Role = "staff"
+	// RoleManager หัวหน้าหอสมุด — จัดการบุคลากร ตารางเวร การลา และรายงาน
+	RoleManager Role = "manager"
 	// RoleAdmin ผู้ดูแลระบบ — ทำได้ทุกอย่าง รวมถึงจัดการบุคลากรและกำหนด role
 	RoleAdmin Role = "admin"
 )
 
 // AllRoles ใช้ตรวจค่าที่รับเข้ามาและใช้แสดงตัวเลือกในหน้าจัดการบุคลากร
-var AllRoles = []Role{RoleUser, RoleLibrarian, RoleStaff, RoleAdmin}
+var AllRoles = []Role{RoleUser, RoleLibrarian, RoleStaff, RoleManager, RoleAdmin}
 
 // Permission คือสิ่งที่ทำได้หนึ่งอย่าง โค้ดฝั่ง handler ควรเช็ค permission ไม่ใช่เช็ค role ตรงๆ
 // เวลาเพิ่มความสามารถใหม่จะได้แก้ที่ rolePermissions ที่เดียว
@@ -49,12 +51,16 @@ var extraPermissions = map[Role][]Permission{
 		PermAccessBackOffice,
 		PermManageCatalog,
 		PermApproveLoans,
-		PermManagePR,
 	},
 	RoleStaff: {
 		PermAccessBackOffice,
 		PermManageRooms,
 		PermManageEquipment,
+	},
+	RoleManager: {
+		PermAccessBackOffice,
+		PermManagePersonnel,
+		PermApproveLoans,
 	},
 	RoleAdmin: {
 		PermAccessBackOffice,
