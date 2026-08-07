@@ -61,6 +61,9 @@ export const HEADER_ACTIONS: NavAction[] = [
     permission: PERMISSIONS.ACCESS_BACKOFFICE,
     children: [
       { label: 'จัดการบุคลากร', to: '/manager', permission: PERMISSIONS.MANAGE_PERSONNEL },
+      { label: 'Catalog', to: '/employees/catalog', permission: PERMISSIONS.MANAGE_CATALOG },
+      { label: 'Loans', to: '/employees/loans', permission: PERMISSIONS.APPROVE_LOANS },
+      { label: 'Recording Room', to: '/employees/recording-room', permission: PERMISSIONS.MANAGE_ROOMS },
       { label: 'Manage PR', to: '/employees/pr', permission: PERMISSIONS.MANAGE_PR },
     ],
   },
