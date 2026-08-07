@@ -51,6 +51,7 @@ var extraPermissions = map[Role][]Permission{
 		PermAccessBackOffice,
 		PermManageCatalog,
 		PermApproveLoans,
+		PermManagePR,
 	},
 	RoleStaff: {
 		PermAccessBackOffice,
