@@ -94,7 +94,7 @@ export default function ComplaintModal({ open, onClose }: ComplaintModalProps) {
     setSubmitting(true)
     setError('')
     try {
-      await createComplaint(draft, token, user?.id)
+      await createComplaint(draft, token, user?.user_id)
       setSubmitted(true)
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'ส่งเรื่องไม่สำเร็จ')

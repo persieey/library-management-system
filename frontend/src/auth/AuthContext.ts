@@ -1,14 +1,17 @@
 import { createContext } from 'react'
 import type { LoginRequest } from '../interface/IAuthInterface'
-import type { User } from '../interface/IUserInterface'
+import type { CurrentUser, Position } from '../interface/IUserInterface'
 
 export interface AuthContextValue {
-  user: User | null
+  user: CurrentUser | null
   token: string | null
   isLoading: boolean
   login: (payload: LoginRequest) => Promise<void>
   logout: () => void
-  can: (permission: string) => boolean
+  /** ตำแหน่งของผู้ใช้ตรงกับที่ระบุไหม เช่น allows('librarian', 'manager') */
+  allows: (...positions: Position[]) => boolean
+  /** เป็นพนักงานหรือไม่ ใช้ตัดสินว่าเห็นเมนูหลังบ้านไหม */
+  isEmployee: boolean
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

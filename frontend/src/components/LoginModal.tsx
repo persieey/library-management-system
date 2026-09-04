@@ -18,16 +18,16 @@ interface LoginModalProps {
 // ไม่มีปุ่ม Employees — สิทธิ์มาจาก role ของบัญชีที่ล็อกอิน ไม่ใช่ปุ่มแยก
 function LoginModal({ open, onClose }: LoginModalProps) {
   const { login } = useAuth()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const usernameRef = useRef<HTMLInputElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (open) setTimeout(() => usernameRef.current?.focus(), 50)
+    if (open) setTimeout(() => emailRef.current?.focus(), 50)
     else {
-      setUsername('')
+      setEmail('')
       setPassword('')
       setError('')
     }
@@ -35,7 +35,7 @@ function LoginModal({ open, onClose }: LoginModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!username.trim() || !password) {
+    if (!email.trim() || !password) {
       setError('กรุณากรอกทั้งชื่อผู้ใช้และรหัสผ่าน')
       return
     }
@@ -43,7 +43,7 @@ function LoginModal({ open, onClose }: LoginModalProps) {
     setSubmitting(true)
     setError('')
     try {
-      await login({ username: username.trim(), password })
+      await login({ email: email.trim(), password })
       onClose()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่')
@@ -75,17 +75,18 @@ function LoginModal({ open, onClose }: LoginModalProps) {
           Welcome to library
         </Typography>
         <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 200, fontSize: 12, color: 'rgba(0,0,0,0.8)', mt: 1 }}>
-          Enter your username to log in your account
+          Enter your email to log in your account
         </Typography>
 
         <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 300, fontSize: 12, mt: '27px' }}>
-          Username
+          Email
         </Typography>
         <TextField
-          inputRef={usernameRef}
-          autoComplete="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          inputRef={emailRef}
+          autoComplete="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           fullWidth
           size="small"
           sx={{ mt: '9px', '& .MuiOutlinedInput-root': { height: 35, borderRadius: '5px' } }}

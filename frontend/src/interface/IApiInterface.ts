@@ -1,4 +1,5 @@
-// รูปแบบ response ที่ backend ห่อมาให้ ตามตัวอย่างของวิชา
-export type ApiEnvelope<T> =
-  | { success: true; data: T }
-  | { success: false; error: { message: string; detail?: string } }
+// backend ของทีมตอบข้อมูลกลับมาตรงๆ ไม่ได้ห่อด้วยซอง {success, data}
+// ตอนพลาดจะตอบเป็น {"error": "ข้อความ"} พร้อมรหัสสถานะ HTTP
+export interface ApiError {
+  error: string
+}

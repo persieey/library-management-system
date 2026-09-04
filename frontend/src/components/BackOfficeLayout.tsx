@@ -35,11 +35,11 @@ interface Props {
 }
 
 function BackOfficeLayout({ title, children, trail }: Props) {
-  const { logout, can } = useAuth()
+  const { logout, allows } = useAuth()
   const navigate = useNavigate()
 
   // เมนูถูกกรองตามสิทธิ์จริงของผู้ใช้ก่อนถึงมือ Sidebar
-  const menu = toSidebarItems(backOfficeMenuFor(can))
+  const menu = toSidebarItems(backOfficeMenuFor(allows))
 
   const handleLogout = () => {
     logout()

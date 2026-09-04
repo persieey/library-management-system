@@ -1,4 +1,4 @@
-import type { ApiEnvelope } from '../../interface/IApiInterface'
+import type { ApiError as ApiErrorBody } from '../../interface/IApiInterface'
 
 const DEFAULT_BASE_URL = 'http://localhost:8080'
 
@@ -9,13 +9,11 @@ export function getApiBaseUrl(): string {
 
 export class ApiError extends Error {
   status: number
-  detail?: string
 
-  constructor(message: string, status: number, detail?: string) {
+  constructor(message: string, status: number) {
     super(message)
     this.name = 'ApiError'
     this.status = status
-    this.detail = detail
   }
 }
 
@@ -24,6 +22,12 @@ function buildUrl(path: string): string {
   return `${getApiBaseUrl()}${normalized}`
 }
 
+/**
+ * เรียก API ของ backend ทีม (SA-1-69/T09)
+ *
+ * ตอบกลับเป็นข้อมูลตรงๆ ไม่มีซอง {success, data} ครอบ
+ * ตอนพลาดจะได้ {"error": "ข้อความ"} ซึ่งฟังก์ชันนี้แปลงเป็น ApiError ให้
+ */
 export async function apiFetch<T>(
   path: string,
   options?: { method?: string; token?: string | null; body?: unknown; signal?: AbortSignal },
@@ -51,26 +55,20 @@ export async function apiFetch<T>(
 
   if (res.status === 204) return undefined as T
 
-  let json: ApiEnvelope<T> | undefined
+  let payload: unknown
   try {
-    json = (await res.json()) as ApiEnvelope<T>
+    payload = await res.json()
   } catch {
-    // ตอบกลับไม่ใช่ JSON
+    // ตอบกลับไม่ใช่ JSON เช่นหน้า 404 ของ Gin ที่เป็นข้อความล้วน
   }
 
   if (!res.ok) {
     const message =
-      json && 'success' in json && json.success === false
-        ? json.error.message
+      payload && typeof payload === 'object' && 'error' in payload
+        ? String((payload as ApiErrorBody).error)
         : `คำขอไม่สำเร็จ (${res.status})`
-    const detail =
-      json && 'success' in json && json.success === false ? json.error.detail : undefined
-    throw new ApiError(message, res.status, detail)
+    throw new ApiError(message, res.status)
   }
 
-  if (!json || !('success' in json) || json.success !== true) {
-    throw new ApiError('รูปแบบข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง', res.status)
-  }
-
-  return json.data
+  return payload as T
 }

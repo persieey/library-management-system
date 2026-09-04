@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as authApi from '../services/https/auth'
 import type { LoginRequest } from '../interface/IAuthInterface'
-import type { User } from '../interface/IUserInterface'
+import type { CurrentUser, Position } from '../interface/IUserInterface'
 import { AuthContext, type AuthContextValue } from './AuthContext'
 
 const TOKEN_STORAGE_KEY = 'auth_token'
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY))
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<CurrentUser | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
   const logout = useCallback(() => {
@@ -21,7 +21,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     const res = await authApi.login(payload)
     localStorage.setItem(TOKEN_STORAGE_KEY, res.token)
     setToken(res.token)
-    setUser(res.user)
+    setUser({ ...res.user, role: res.role, position: res.position })
   }, [])
 
   // กู้สถานะล็อกอินคืนหลังรีเฟรช โดยเอา token ที่เก็บไว้ไปถามเซิร์ฟเวอร์
@@ -35,8 +35,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
     authApi
       .getProfile(token)
-      .then((profile) => {
-        if (!cancelled) setUser(profile)
+      .then((res) => {
+        if (!cancelled) setUser({ ...res.user, role: res.role, position: res.position })
       })
       .catch(() => {
         // token หมดอายุหรือ backend ไม่ได้รัน
@@ -55,14 +55,16 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, [token])
 
-  const can = useCallback(
-    (permission: string) => Boolean(user?.permissions?.includes(permission)),
+  // การกันสิทธิ์จริงอยู่ที่เซิร์ฟเวอร์เสมอ ฝั่งนี้ใช้แค่ตัดสินว่าจะแสดงเมนูอะไร
+  const allows = useCallback(
+    (...positions: Position[]) =>
+      user?.role === 'employee' && positions.includes(user.position),
     [user],
   )
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, isLoading, login, logout, can }),
-    [user, token, isLoading, login, logout, can],
+    () => ({ user, token, isLoading, login, logout, allows, isEmployee: user?.role === 'employee' }),
+    [user, token, isLoading, login, logout, allows],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

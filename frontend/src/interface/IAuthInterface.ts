@@ -1,11 +1,23 @@
-import type { User } from './IUserInterface'
+import type { Position, Role, User } from './IUserInterface'
 
+/** backend ของทีมล็อกอินด้วยอีเมล ไม่ใช่ username */
 export interface LoginRequest {
-  username: string
+  email: string
   password: string
 }
 
-export interface AuthResponse {
+/** รูปที่ POST /auth/login ตอบกลับ */
+export interface LoginResponse {
+  message: string
   token: string
+  role: Role
+  position: Position
   user: User
+}
+
+/** รูปที่ GET /users/profile ตอบกลับ */
+export interface ProfileResponse {
+  user: User
+  role: Role
+  position: Position
 }

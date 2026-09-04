@@ -10,8 +10,8 @@ import ManagePR from '../pages/employees/pr'
 import PersonnelPage from '../pages/employees/personnel'
 import ComingSoon from '../pages/employees/ComingSoon'
 import NotFound from '../pages/not-found'
-import RequirePermission from '../components/RequirePermission'
-import { PERMISSIONS } from '../config/roles'
+import RequirePosition from '../components/RequirePosition'
+import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../config/roles'
 import ManagerDashboard from '../pages/manager'
 import ManagerSchedules from '../pages/manager/schedules'
 import ManagerLeave from '../pages/manager/leave'
@@ -22,14 +22,14 @@ import ManagerReports from '../pages/manager/reports'
 
 const COMING_SOON_ROUTES = [
   // หน้าบัญชีผู้ใช้ — เปิดจากเมนูโปรไฟล์มุมขวาบน ยังไม่ได้ทำ แต่ต้องมีหน้ารองรับไม่ให้ 404
-  { path: 'profile', title: 'แก้ไขโปรไฟล์', permission: PERMISSIONS.ACCESS_BACKOFFICE },
-  { path: 'settings', title: 'ตั้งค่าบัญชี', permission: PERMISSIONS.ACCESS_BACKOFFICE },
-  { path: 'recording-room', title: 'Recording Room', permission: PERMISSIONS.MANAGE_ROOMS },
-  { path: 'equipment', title: 'Equipment', permission: PERMISSIONS.MANAGE_EQUIPMENT },
-  { path: 'repair-request', title: 'Repair request', permission: PERMISSIONS.MANAGE_EQUIPMENT },
-  { path: 'repair-track', title: 'Track the repair', permission: PERMISSIONS.MANAGE_EQUIPMENT },
-  { path: 'catalog', title: 'Catalog', permission: PERMISSIONS.MANAGE_CATALOG },
-  { path: 'loans', title: 'Loans', permission: PERMISSIONS.APPROVE_LOANS },
+  { path: 'profile', title: 'แก้ไขโปรไฟล์', positions: CAN_ACCESS_BACKOFFICE },
+  { path: 'settings', title: 'ตั้งค่าบัญชี', positions: CAN_ACCESS_BACKOFFICE },
+  { path: 'recording-room', title: 'Recording Room', positions: CAN_ACCESS_BACKOFFICE },
+  { path: 'equipment', title: 'Equipment', positions: CAN_ACCESS_BACKOFFICE },
+  { path: 'repair-request', title: 'Repair request', positions: CAN_ACCESS_BACKOFFICE },
+  { path: 'repair-track', title: 'Track the repair', positions: CAN_ACCESS_BACKOFFICE },
+  { path: 'catalog', title: 'Catalog', positions: CAN_MANAGE_PR },
+  { path: 'loans', title: 'Loans', positions: CAN_MANAGE_PR },
 ]
 
 function AppRoutes() {
@@ -45,65 +45,65 @@ function AppRoutes() {
       <Route
         path="/manager"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <ManagerDashboard />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
       <Route
         path="/manager/schedules"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <ManagerSchedules />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
       <Route
         path="/manager/leave"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <ManagerLeave />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
       <Route
         path="/manager/personnel"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <PersonnelPage />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
       <Route
         path="/manager/books"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <ManagerBooks />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
       <Route
         path="/manager/activities"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <ManagerActivities />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
       <Route
         path="/manager/complaints"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <ManagerComplaints />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
       <Route
         path="/manager/reports"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <ManagerReports />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
 
@@ -111,9 +111,9 @@ function AppRoutes() {
       <Route
         path="/employees"
         element={
-          <RequirePermission permission={PERMISSIONS.ACCESS_BACKOFFICE}>
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
             <EmployeesHome />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
 
@@ -122,9 +122,9 @@ function AppRoutes() {
           key={route.path}
           path={`/employees/${route.path}`}
           element={
-            <RequirePermission permission={route.permission}>
+            <RequirePosition positions={route.positions}>
               <ComingSoon title={route.title} />
-            </RequirePermission>
+            </RequirePosition>
           }
         />
       ))}
@@ -137,9 +137,9 @@ function AppRoutes() {
       <Route
         path="/employees/pr"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PR}>
+          <RequirePosition positions={CAN_MANAGE_PR}>
             <ManagePR />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
 
@@ -148,18 +148,18 @@ function AppRoutes() {
       <Route
         path="/employees/pr/:tab"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PR}>
+          <RequirePosition positions={CAN_MANAGE_PR}>
             <ManagePR />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
 
       <Route
         path="/personnel"
         element={
-          <RequirePermission permission={PERMISSIONS.MANAGE_PERSONNEL}>
+          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <Personnel />
-          </RequirePermission>
+          </RequirePosition>
         }
       />
 

@@ -8,7 +8,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import seal from '../assets/logo.png'
 import wordmark from '../assets/logo-wordmark.png'
 import { useAuth } from '../auth/useAuth'
-import { actionsFor, roleDisplayName, type NavAction } from '../config/roles'
+import { actionsFor, positionDisplayName, type NavAction } from '../config/roles'
 import LoginModal from './LoginModal'
 import NotificationBell from './NotificationBell'
 import { colors, fonts } from '../theme'
@@ -160,7 +160,7 @@ function HeaderAction({ action }: { action: NavAction }) {
 }
 
 function Header() {
-  const { user, isLoading, logout, can } = useAuth()
+  const { user, isLoading, logout, allows } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
 
@@ -174,8 +174,8 @@ function Header() {
 
   // ปุ่มหลักบน header โชว์ชื่อสิทธิ์ของผู้ใช้ เช่น "Librarian" แทนคำกลางๆ ว่า Employees
   // ผู้ใช้จะได้รู้ทันทีว่ากำลังเข้าด้วยสิทธิ์ระดับไหน
-  const actions = (user ? actionsFor(can) : []).map((action) =>
-    user && action.label === 'Employees' ? { ...action, label: roleDisplayName(user.role) } : action,
+  const actions = (user ? actionsFor(allows) : []).map((action) =>
+    user && action.label === 'Employees' ? { ...action, label: positionDisplayName(user.position) } : action,
   )
 
   return (

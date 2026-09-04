@@ -10,7 +10,7 @@ import PersonOutlineRounded from '@mui/icons-material/PersonOutlineRounded'
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined'
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
 import { useAuth } from '../auth/useAuth'
-import { ROLE_LABELS } from '../config/roles'
+import { POSITION_LABELS } from '../config/roles'
 import { colors, fonts, sidebar as s } from '../theme'
 
 /**
@@ -37,8 +37,8 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
   if (!user) return null
 
   const size = compact ? 36 : 44
-  const initials = user.username.slice(0, 2).toUpperCase()
-  const roleLabel = ROLE_LABELS[user.role] ?? user.role
+  const initials = user.name.slice(0, 2).toUpperCase()
+  const roleLabel = POSITION_LABELS[user.position]
 
   const handleLogout = () => {
     setAnchorEl(null)
@@ -87,7 +87,7 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
 
         <Box sx={{ textAlign: 'left', minWidth: 0 }}>
           <Typography sx={{ fontFamily: fonts.kanit, fontSize: compact ? 13 : 15, lineHeight: 1.4, color: s.itemHoverInk }}>
-            {user.username}
+            {user.name}
           </Typography>
           <Typography sx={{ fontFamily: fonts.thai, fontSize: compact ? 12 : 13, lineHeight: 1.4, color: s.item }}>
             {roleLabel}
@@ -126,7 +126,7 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
         {/* หัวเมนูบอกว่ากำลังใช้บัญชีไหนอยู่ ไม่ใช่ตัวเลือก จึงกดไม่ได้ */}
         <Box sx={{ px: '16px', py: '10px' }}>
           <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 15, color: s.itemHoverInk }}>
-            {user.username}
+            {user.name}
           </Typography>
           <Typography sx={{ fontFamily: fonts.thai, fontSize: 13, color: s.item }}>
             สิทธิ์ระดับ{roleLabel}
