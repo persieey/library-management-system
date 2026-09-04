@@ -7,7 +7,8 @@ import ReportProblemOutlined from '@mui/icons-material/ReportProblemOutlined'
 import PaidOutlined from '@mui/icons-material/PaidOutlined'
 import CampaignOutlined from '@mui/icons-material/CampaignOutlined'
 import StatCard, { StatCardGrid } from '../../../components/StatCard'
-import ManagerLayout, { mgr } from '../../../components/ManagerLayout'
+import BackOfficeLayout from '../../../components/BackOfficeLayout'
+import { mgr } from '../../../theme'
 import { fonts } from '../../../theme'
 
 const STATS = [
@@ -29,7 +30,7 @@ const MAX_BAR_H = 120
 
 export default function ManagerReports() {
   return (
-    <ManagerLayout title="รายงาน">
+    <BackOfficeLayout title="รายงาน">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
@@ -72,6 +73,6 @@ export default function ManagerReports() {
           </Box>
         </Paper>
       </Box>
-    </ManagerLayout>
+    </BackOfficeLayout>
   )
 }

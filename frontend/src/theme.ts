@@ -39,6 +39,20 @@ export const sidebar = {
   activeShadow: '0 4px 6px -1px rgba(18, 55, 47, 0.2)',
 } as const
 
+// Design tokens — manager admin panel (Figma: hQfNBMFGPo3PDYXhDIFTeX)
+export const mgr = {
+  sidebar: '#12372f',
+  sidebarMuted: '#9fb3a4',
+  accentGreen: '#2f5d3a',
+  accentLight: '#e4ece1',
+  ink: '#181d19',
+  inkMuted: '#667066',
+  border: '#e2e7e2',
+  bg: '#f4f6f4',
+  warning: '#b45309',
+  danger: '#b91c1c',
+} as const
+
 export const fonts = {
   kanit: "'Kanit', sans-serif",
   inter: "'Inter', sans-serif",

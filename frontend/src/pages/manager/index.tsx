@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
-import ManagerLayout, { mgr } from '../../components/ManagerLayout'
+import BackOfficeLayout from '../../components/BackOfficeLayout'
+import { mgr } from '../../theme'
 import { fonts } from '../../theme'
 
 const STATS = [
@@ -79,7 +80,7 @@ function ModuleCard({ icon, label, desc, to }: { icon: string; label: string; de
 
 export default function ManagerDashboard() {
   return (
-    <ManagerLayout title="ภาพรวม">
+    <BackOfficeLayout title="ภาพรวม">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
         <Typography sx={{ fontFamily: fonts.thai, fontWeight: 400, fontSize: 14, lineHeight: 1.45, color: mgr.inkMuted }}>
           ยินดีต้อนรับกลับ นี่คือสิ่งที่เกิดขึ้นในห้องสมุดวันนี้
@@ -126,6 +127,6 @@ export default function ManagerDashboard() {
           </Paper>
         </Box>
       </Box>
-    </ManagerLayout>
+    </BackOfficeLayout>
   )
 }

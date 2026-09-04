@@ -3,7 +3,8 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
-import ManagerLayout, { mgr } from '../../../components/ManagerLayout'
+import BackOfficeLayout from '../../../components/BackOfficeLayout'
+import { mgr } from '../../../theme'
 import StatusBadge from '../../../components/StatusBadge'
 import { fonts } from '../../../theme'
 
@@ -54,7 +55,7 @@ export default function ManagerBooks() {
   const filtered = cat === 'All' ? BOOKS : BOOKS.filter((b) => b.category === cat)
 
   return (
-    <ManagerLayout title="จัดการหนังสือ">
+    <BackOfficeLayout title="จัดการหนังสือ">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
@@ -124,6 +125,6 @@ export default function ManagerBooks() {
           })}
         </Paper>
       </Box>
-    </ManagerLayout>
+    </BackOfficeLayout>
   )
 }

@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import ManagerLayout, { mgr } from '../../components/ManagerLayout'
+import BackOfficeLayout from '../../components/BackOfficeLayout'
+import { mgr } from '../../theme'
 import { fonts } from '../../theme'
 
 interface Props {
@@ -10,7 +11,7 @@ interface Props {
 
 export default function ManagerComingSoon({ title, icon = '🚧' }: Props) {
   return (
-    <ManagerLayout title={title}>
+    <BackOfficeLayout title={title}>
       <Box
         sx={{
           display: 'flex',
@@ -29,6 +30,6 @@ export default function ManagerComingSoon({ title, icon = '🚧' }: Props) {
           ส่วนนี้กำลังอยู่ระหว่างการพัฒนา แวะกลับมาดูใหม่เร็วๆ นี้
         </Typography>
       </Box>
-    </ManagerLayout>
+    </BackOfficeLayout>
   )
 }

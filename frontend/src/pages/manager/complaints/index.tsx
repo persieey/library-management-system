@@ -4,7 +4,8 @@ import Button from '@mui/material/Button'
 import Paper from '@mui/material/Paper'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import ManagerLayout, { mgr } from '../../../components/ManagerLayout'
+import BackOfficeLayout from '../../../components/BackOfficeLayout'
+import { mgr } from '../../../theme'
 import StatusBadge from '../../../components/StatusBadge'
 import { fonts } from '../../../theme'
 
@@ -90,7 +91,7 @@ export default function ManagerComplaints() {
   const resolve = (id: number) => setStatuses((prev) => ({ ...prev, [id]: 'resolved' }))
 
   return (
-    <ManagerLayout title="เรื่องร้องเรียนและข้อเสนอแนะ">
+    <BackOfficeLayout title="เรื่องร้องเรียนและข้อเสนอแนะ">
       <Box sx={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
         {/* Left: complaint list */}
         <Paper variant="outlined" sx={{ width: 380, flexShrink: 0, borderRadius: '12px', borderColor: mgr.border, overflow: 'hidden' }}>
@@ -182,6 +183,6 @@ export default function ManagerComplaints() {
           )}
         </Paper>
       </Box>
-    </ManagerLayout>
+    </BackOfficeLayout>
   )
 }

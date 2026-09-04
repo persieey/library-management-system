@@ -13,7 +13,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
-import ManagerLayout from '../../../components/ManagerLayout'
+import BackOfficeLayout from '../../../components/BackOfficeLayout'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import HowToRegOutlined from '@mui/icons-material/HowToRegOutlined'
 import PersonOffOutlined from '@mui/icons-material/PersonOffOutlined'
@@ -219,9 +219,9 @@ function PersonnelTable() {
 export default function PersonnelPage() {
   return (
     <PersonnelProvider>
-      <ManagerLayout title="บุคลากร">
+      <BackOfficeLayout title="บุคลากร">
         <PersonnelTable />
-      </ManagerLayout>
+      </BackOfficeLayout>
     </PersonnelProvider>
   )
 }

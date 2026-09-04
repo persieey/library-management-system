@@ -2,7 +2,8 @@ import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
-import ManagerLayout, { mgr } from '../../../components/ManagerLayout'
+import BackOfficeLayout from '../../../components/BackOfficeLayout'
+import { mgr } from '../../../theme'
 import StatusBadge from '../../../components/StatusBadge'
 import { fonts } from '../../../theme'
 
@@ -51,7 +52,7 @@ export default function ManagerLeave() {
   const reject  = (id: number) => setRows((prev) => prev.map((r) => r.id === id ? { ...r, status: 'rejected' } : r))
 
   return (
-    <ManagerLayout title="คำขอลา">
+    <BackOfficeLayout title="คำขอลา">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {pending > 0 && (
           <Box sx={{ alignSelf: 'flex-end' }}>
@@ -96,6 +97,6 @@ export default function ManagerLeave() {
           ))}
         </Paper>
       </Box>
-    </ManagerLayout>
+    </BackOfficeLayout>
   )
 }

@@ -6,7 +6,8 @@ import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
-import ManagerLayout, { mgr } from '../../../components/ManagerLayout'
+import BackOfficeLayout from '../../../components/BackOfficeLayout'
+import { mgr } from '../../../theme'
 import StatusBadge from '../../../components/StatusBadge'
 import PREditorDialog, { type PRDraft } from '../../employees/pr/PREditorDialog'
 import EventEditorDialog from '../../employees/pr/EventEditorDialog'
@@ -231,11 +232,11 @@ function EventsSection() {
 
 export default function ManagerActivities() {
   return (
-    <ManagerLayout title="กิจกรรมและประชาสัมพันธ์">
+    <BackOfficeLayout title="กิจกรรมและประชาสัมพันธ์">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
         <EventsSection />
         <AnnouncementsSection />
       </Box>
-    </ManagerLayout>
+    </BackOfficeLayout>
   )
 }
