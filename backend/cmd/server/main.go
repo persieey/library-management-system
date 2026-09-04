@@ -36,6 +36,8 @@ func main() {
 	authController := controllers.NewAuthController(db, jwtProvider)
 
 	userController := controllers.NewUserController(db)
+	complaintController := controllers.NewComplaintController(db)
+	statisticsController := controllers.NewStatisticsController(db)
 	prController := controllers.NewPRController(db)
 	eventController := controllers.NewEventController(db)
 	personnelController := controllers.NewPersonnelController(db)
@@ -44,6 +46,7 @@ func main() {
 	go scheduler.StartPRScheduler(db)
 
 	router := routes.SetupRouter(authController, userController,
+		complaintController, statisticsController,
 		prController, eventController, personnelController, jwtProvider)
 
 	// port:= os.Getenv("SERVER_PORT")

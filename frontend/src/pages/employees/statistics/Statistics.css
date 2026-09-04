@@ -1,0 +1,452 @@
+.stats-layout {
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+/* --- Layout Structure --- */
+.stats-content-wrapper {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+/* ปรับให้เข้ากับโปรเจคนี้ — ของเดิมออกแบบมาให้เป็นทั้งหน้า
+   แต่ที่นี่อยู่ใน BackOfficeLayout ที่มี sidebar ของตัวเองอยู่แล้ว
+   จึงเลิกตรึง sidebar กับจอ และเลิกเว้นที่ทางซ้ายให้ sidebar ที่ถูกตรึง */
+.stats-main-container {
+  flex: 1;
+  min-width: 0;
+  padding: 1.25rem 2rem 3rem 2rem;
+  background-color: #f8fafc;
+  box-sizing: border-box;
+}
+
+/* --- Top Header Controls (Period & Action Buttons) --- */
+.stats-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.time-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.filter-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+.custom-dropdown {
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.custom-dropdown:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.custom-date-input {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.45rem 0.8rem;
+  font-family: inherit;
+  color: #1e293b;
+  outline: none;
+}
+
+.custom-date-input:focus {
+  border-color: #16a34a;
+}
+
+/* --- Export Buttons --- */
+.export-action-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-export-excel,
+.btn-download-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: none;
+  padding: 0.55rem 1.4rem;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.btn-export-excel {
+  background-color: #16a34a; /* Vibrant Excel Green */
+}
+
+.btn-export-excel:hover {
+  background-color: #15803d;
+  box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-download-pdf {
+  background-color: #4f6f60; /* Muted Forest Slate */
+}
+
+.btn-download-pdf:hover {
+  background-color: #3f594d;
+  box-shadow: 0 4px 6px -1px rgba(79, 111, 96, 0.25);
+  transform: translateY(-1px);
+}
+
+/* --- Section Titles --- */
+.stats-table-section {
+  margin-top: 1rem;
+}
+
+.stats-table-section h3,
+.stats-section-title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.015em;
+}
+
+/* --- Table Card & Modern Rounded Table --- */
+.stats-table-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #edf2f7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.stats-table th {
+  background-color: #e2e8dc; /* Soft sage green from reference */
+  color: #2d3748;
+  font-weight: 600;
+  padding: 0.8rem 1.2rem;
+  text-align: left;
+  border: none;
+  font-size: 0.92rem;
+}
+
+.stats-table th:first-child {
+  text-align: center;
+  width: 8%;
+}
+
+.stats-table th:last-child {
+  width: 25%;
+}
+
+.stats-table td {
+  padding: 0.8rem 1.2rem;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 0.92rem;
+}
+
+.stats-table td.col-rank,
+.stats-table td:first-child {
+  text-align: center;
+  font-weight: 700;
+  color: #475569;
+}
+
+.stats-table td.col-title {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.stats-table td.col-category {
+  color: #334155;
+}
+
+.stats-table td.col-count {
+  color: #0f172a;
+}
+
+.stats-table td strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stats-table .text-unit {
+  color: #475569;
+  font-weight: 400;
+  margin-left: 0.25rem;
+}
+
+.stats-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.stats-table tbody tr:hover {
+  background-color: #fafbfa;
+}
+
+.stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.stats-table tfoot .stats-total-row {
+  background-color: #f8fafc;
+  border-top: 2px solid #cbd5e1;
+  font-weight: 600;
+}
+
+.stats-table tfoot td {
+  padding: 1.15rem 1.8rem;
+  color: #0f172a;
+  border-bottom: none;
+}
+
+.stats-table-category th,
+.stats-table-category td {
+  padding: 1rem 1.2rem;
+}
+
+.stats-table-category th:last-child {
+  width: auto;
+}
+
+/* --- Summary Cards (Overview & Return Stats) --- */
+.summary-cards-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.summary-card {
+  flex: 1;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.card-value {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.card-value .unit {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.bg-gray { background-color: #f1f5f9; }
+.bg-orange { background-color: #ffedd5; }
+.bg-green { background-color: #dcfce7; }
+
+/* --- CSS Bar Chart --- */
+.chart-section {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #edf2f7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  margin-bottom: 2rem;
+}
+
+.chart-section h3 {
+  margin: 0 0 2rem 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.css-bar-chart {
+  display: flex;
+  gap: 2rem;
+  height: 250px;
+  padding: 1rem 0;
+}
+
+.y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.chart-bars {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  border-bottom: 2px solid #e2e8f0;
+  border-left: 2px solid #e2e8f0;
+  padding-left: 1rem;
+}
+
+.bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  position: relative;
+  width: 50px;
+}
+
+.bar-value {
+  position: absolute;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #166534;
+  white-space: nowrap;
+  transition: bottom 0.5s ease;
+  pointer-events: none;
+}
+
+.bar {
+  width: 44px;
+  background-color: #16a34a;
+  border-radius: 6px 6px 0 0;
+  transition: height 0.5s ease;
+  cursor: pointer;
+}
+
+.bar:hover {
+  background-color: #15803d;
+}
+
+.bar-range-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  position: absolute;
+  bottom: -28px;
+  white-space: nowrap;
+}
+
+/* --- Trend Indicators --- */
+.trend-indicator {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.trend-up {
+  color: #166534;
+  background-color: #dcfce7;
+}
+
+.trend-down {
+  color: #991b1b;
+  background-color: #fee2e2;
+}
+
+.trend-neutral {
+  color: #475569;
+  background-color: #f1f5f9;
+}
+
+/* --- Horizontal Bar Chart --- */
+.horizontal-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 1rem;
+}
+
+.h-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.h-bar-label {
+  width: 220px;
+  font-size: 0.95rem;
+  color: #475569;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.h-bar-track {
+  flex: 1;
+  background-color: #e2e8f0;
+  height: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.h-bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 1s ease-in-out;
+}
+
+/* --- Status Badges for Complaint Statistics --- */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.status-warning { background-color: #fef3c7; color: #b45309; }
+.status-purple { background-color: #f3e8ff; color: #7e22ce; }
+.status-blue { background-color: #dbeafe; color: #1d4ed8; }
+.status-cyan { background-color: #cffafe; color: #0e7490; }
+.status-green { background-color: #dcfce7; color: #15803d; }
+.status-red { background-color: #fee2e2; color: #b91c1c; }

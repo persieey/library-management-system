@@ -10,6 +10,8 @@ import (
 
 func SetupRouter(authControllers *controllers.AuthController,
 	userController *controllers.UserController,
+	complaintController *controllers.ComplaintController,
+	statisticsController *controllers.StatisticsController,
 	prController *controllers.PRController,
 	eventController *controllers.EventController,
 	personnelController *controllers.PersonnelController,
@@ -68,6 +70,28 @@ func SetupRouter(authControllers *controllers.AuthController,
 	personnel.PATCH("/:id", personnelController.Update)
 	personnel.DELETE("/:id", personnelController.Delete)
 	personnel.POST("/:id/status", personnelController.ToggleStatus)
+
+	// ---------- ร้องเรียนและข้อเสนอแนะ (ระบบของ B6707590) ----------
+	// ส่งเรื่องได้โดยไม่ต้องล็อกอิน เพราะผู้ใช้ทั่วไปต้องแจ้งปัญหาได้
+	// ส่วนการอ่านและอัปเดตสถานะเป็นงานของเจ้าหน้าที่
+	apiV1Complaints := api.Group("/complaints")
+	apiV1Complaints.POST("", complaintController.CreateComplaint)
+
+	manageComplaints := api.Group("/complaints")
+	manageComplaints.Use(middleware.JWTAuthMiddleware(jwtProvider), middleware.RequirePosition("staff", "librarian", "manager"))
+	manageComplaints.GET("", complaintController.GetComplaints)
+	manageComplaints.GET("/:id", complaintController.GetComplaintByID)
+	manageComplaints.PUT("/:id", complaintController.UpdateComplaint)
+
+	// ---------- รายงานสถิติ (ระบบของ B6707590) ----------
+	stats := api.Group("/statistics")
+	stats.Use(middleware.JWTAuthMiddleware(jwtProvider), middleware.RequirePosition("staff", "librarian", "manager"))
+	stats.GET("/summary", statisticsController.GetSummaryStats)
+	stats.GET("/books", statisticsController.GetBookStats)
+	stats.GET("/returns", statisticsController.GetReturnStats)
+	stats.GET("/rooms", statisticsController.GetRoomStats)
+	stats.GET("/ebooks", statisticsController.GetEbookStats)
+	stats.GET("/equipment", statisticsController.GetEquipmentStats)
 
 	return router
 }

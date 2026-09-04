@@ -41,6 +41,31 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 	if err = db.AutoMigrate(&models.Event{}); err != nil {
 		return nil, err
 	}
+
+	// ระบบร้องเรียนและสถิติ ยกมาจากสาขา B6707590 (ธนกร) เจ้าของสองระบบนี้
+	// ใช้ loop เพราะมีหลายตาราง และให้เตือนแทนการหยุดทำงาน
+	// เผื่อตารางไหนชนกับของเดิมจะได้ยังสตาร์ทเซิร์ฟเวอร์ได้
+	complaintAndStats := []interface{}{
+		&models.ExternalDepartment{},
+		&models.Complaint{},
+		&models.InspectionRecord{},
+		&models.Room{},
+		&models.RoomBooking{},
+		&models.Book{},
+		&models.BorrowTransaction{},
+		&models.ReturnTransaction{},
+		&models.Fine{},
+		&models.EbookSearchLog{},
+		&models.RecordCenter{},
+		&models.Equipment{},
+		&models.EquipmentRental{},
+	}
+	for _, m := range complaintAndStats {
+		if err := db.AutoMigrate(m); err != nil {
+			log.Printf("AutoMigrate %T ไม่สำเร็จ: %v", m, err)
+		}
+	}
+
 	log.Println("AutoMigrate สำเร็จ")
 	log.Println("เชื่อมต่อ Postgres ได้แล้ววว")
 	return db, nil

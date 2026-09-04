@@ -39,10 +39,6 @@ export const MANAGER_MENU: NavAction[] = [
   { icon: 'schedules', label: 'ตารางเวร', to: '/manager/schedules' },
   { icon: 'leave', label: 'การลา', to: '/manager/leave' },
   { icon: 'personnel', label: 'บุคลากร', to: '/manager/personnel' },
-  { icon: 'books', label: 'หนังสือ', to: '/manager/books' },
-  { icon: 'activities', label: 'กิจกรรม', to: '/manager/activities' },
-  { icon: 'complaints', label: 'เรื่องร้องเรียน', to: '/manager/complaints' },
-  { icon: 'reports', label: 'รายงาน', to: '/manager/reports' },
 ]
 
 // เมนูของหน้าหลังบ้าน — ตอนนี้เหลือเฉพาะระบบที่ทำเสร็จจริง
@@ -66,6 +62,19 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     label: 'งานหัวหน้าหอสมุด',
     positions: CAN_MANAGE_PERSONNEL,
     children: MANAGER_MENU,
+  },
+  {
+    // ระบบร้องเรียนและสถิติ เป็นของ B6707590 (ธนกร) เจ้าหน้าที่ทุกตำแหน่งดูได้
+    icon: 'complaints',
+    label: 'เรื่องร้องเรียน',
+    to: '/employees/complaints',
+    positions: CAN_ACCESS_BACKOFFICE,
+  },
+  {
+    icon: 'reports',
+    label: 'รายงานสถิติ',
+    to: '/employees/statistics',
+    positions: CAN_ACCESS_BACKOFFICE,
   },
 ]
 

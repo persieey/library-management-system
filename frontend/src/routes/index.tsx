@@ -7,6 +7,8 @@ import BookDetailPage from '../pages/books/detail'
 import Personnel from '../pages/personnel'
 import EmployeesHome from '../pages/employees'
 import ManagePR from '../pages/employees/pr'
+import ComplaintsPage from '../pages/employees/complaints/Employee'
+import StatisticsPage from '../pages/employees/statistics/Statistics'
 import PersonnelPage from '../pages/employees/personnel'
 import ComingSoon from '../pages/employees/ComingSoon'
 import NotFound from '../pages/not-found'
@@ -150,6 +152,24 @@ function AppRoutes() {
         element={
           <RequirePosition positions={CAN_MANAGE_PR}>
             <ManagePR />
+          </RequirePosition>
+        }
+      />
+
+      {/* ระบบร้องเรียนและสถิติ ของ B6707590 — เจ้าหน้าที่ทุกตำแหน่งเข้าได้ */}
+      <Route
+        path="/employees/complaints"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <ComplaintsPage />
+          </RequirePosition>
+        }
+      />
+      <Route
+        path="/employees/statistics"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <StatisticsPage />
           </RequirePosition>
         }
       />

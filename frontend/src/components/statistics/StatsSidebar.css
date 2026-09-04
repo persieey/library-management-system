@@ -1,0 +1,50 @@
+.stats-sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  padding: 1.2rem 0.8rem;
+  /* ของเดิมตรึงกับจอ เพราะออกแบบมาให้เป็นแถบเดียวของทั้งหน้า
+     ที่นี่มันอยู่ใน BackOfficeLayout ที่มี sidebar ของตัวเองทางซ้ายอยู่แล้ว
+     ถ้ายัง fixed อยู่จะไปทับกัน */
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.stats-sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.stats-sidebar-menu li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  border-left: none;
+  user-select: none;
+}
+
+.stats-sidebar-menu li:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.stats-sidebar-menu li.active {
+  background-color: #12372F;
+  color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(18, 55, 47, 0.2);
+}
