@@ -27,16 +27,25 @@ const BOOKS: Book[] = [
 
 const CATS: Category[] = ['All', 'Fiction', 'Reference', 'Journals', 'Thesis', 'E-books']
 
-const label = { fontFamily: fonts.inter, fontWeight: 500, fontSize: 12, letterSpacing: '0.48px', lineHeight: 1.2, color: mgr.inkMuted, textTransform: 'uppercase' as const }
-const body  = { fontFamily: fonts.inter, fontWeight: 400, fontSize: 14, lineHeight: 1.45, color: mgr.ink }
+const CAT_LABEL: Record<Category, string> = {
+  All: 'ทั้งหมด',
+  Fiction: 'นวนิยาย',
+  Reference: 'อ้างอิง',
+  Journals: 'วารสาร',
+  Thesis: 'วิทยานิพนธ์',
+  'E-books': 'อีบุ๊ก',
+}
+
+const label = { fontFamily: fonts.thai, fontWeight: 500, fontSize: 12, letterSpacing: '0.48px', lineHeight: 1.2, color: mgr.inkMuted }
+const body  = { fontFamily: fonts.thai, fontWeight: 400, fontSize: 14, lineHeight: 1.45, color: mgr.ink }
 
 const COLS = [
-  { label: 'TITLE',                   w: 320 },
-  { label: 'AUTHOR',                  w: 200 },
-  { label: 'CATEGORY',                w: 150 },
-  { label: 'COPIES (AVAIL/TOTAL)',    w: 160 },
-  { label: 'STATUS',                  w: 130 },
-  { label: 'ACTIONS',                 w: 100 },
+  { label: 'ชื่อเรื่อง',                w: 320 },
+  { label: 'ผู้แต่ง',                  w: 200 },
+  { label: 'หมวดหมู่',                w: 150 },
+  { label: 'จำนวน (ว่าง/ทั้งหมด)',    w: 160 },
+  { label: 'สถานะ',                  w: 130 },
+  { label: 'การจัดการ',               w: 100 },
 ]
 
 export default function ManagerBooks() {
@@ -45,15 +54,15 @@ export default function ManagerBooks() {
   const filtered = cat === 'All' ? BOOKS : BOOKS.filter((b) => b.category === cat)
 
   return (
-    <ManagerLayout title="Book Management">
+    <ManagerLayout title="จัดการหนังสือ">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             variant="contained"
             disableElevation
-            sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 14, bgcolor: mgr.accentGreen, borderRadius: '8px', px: '18px', py: '10px', '&:hover': { bgcolor: '#1e4028' }, textTransform: 'none' }}
+            sx={{ fontFamily: fonts.thai, fontWeight: 600, fontSize: 14, bgcolor: mgr.accentGreen, borderRadius: '8px', px: '18px', py: '10px', '&:hover': { bgcolor: '#1e4028' }, textTransform: 'none' }}
           >
-            + Add Book
+            + เพิ่มหนังสือ
           </Button>
         </Box>
 
@@ -74,16 +83,16 @@ export default function ManagerBooks() {
                   '&:hover': { bgcolor: active ? mgr.accentGreen : '#fafafa' },
                 }}
               >
-                <Typography sx={{ fontFamily: fonts.inter, fontWeight: 500, fontSize: 13, lineHeight: 1.4, color: active ? 'white' : mgr.inkMuted, whiteSpace: 'nowrap' }}>
-                  {c}
+                <Typography sx={{ fontFamily: fonts.thai, fontWeight: 500, fontSize: 13, lineHeight: 1.4, color: active ? 'white' : mgr.inkMuted, whiteSpace: 'nowrap' }}>
+                  {CAT_LABEL[c]}
                 </Typography>
               </Box>
             )
           })}
         </Box>
 
-        <Typography sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 17, lineHeight: 1.3, color: mgr.ink }}>
-          Catalog
+        <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 17, lineHeight: 1.3, color: mgr.ink }}>
+          รายการหนังสือ
         </Typography>
 
         <Paper variant="outlined" sx={{ borderRadius: '12px', borderColor: mgr.border, overflow: 'hidden' }}>
@@ -99,16 +108,16 @@ export default function ManagerBooks() {
               <Box key={i} sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '14px', borderTop: `1px solid ${mgr.border}` }}>
                 <Typography sx={{ ...body, width: 320, flexShrink: 0 }}>{b.title}</Typography>
                 <Typography sx={{ ...body, width: 200, flexShrink: 0 }}>{b.author}</Typography>
-                <Typography sx={{ ...body, width: 150, flexShrink: 0 }}>{b.category}</Typography>
+                <Typography sx={{ ...body, width: 150, flexShrink: 0 }}>{CAT_LABEL[b.category]}</Typography>
                 <Typography sx={{ ...body, width: 160, flexShrink: 0 }}>{b.avail} / {b.total}</Typography>
                 <Box sx={{ width: 130, flexShrink: 0 }}>
                   <StatusBadge
-                    label={allBorrowed ? 'All Borrowed' : 'Available'}
+                    label={allBorrowed ? 'ถูกยืมหมด' : 'พร้อมให้ยืม'}
                     variant={allBorrowed ? 'borrowed' : 'available'}
                   />
                 </Box>
                 <Box sx={{ width: 100, flexShrink: 0 }}>
-                  <Typography sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 14, lineHeight: 1, color: mgr.accentGreen, cursor: 'pointer' }}>Edit</Typography>
+                  <Typography sx={{ fontFamily: fonts.thai, fontWeight: 600, fontSize: 14, lineHeight: 1, color: mgr.accentGreen, cursor: 'pointer' }}>แก้ไข</Typography>
                 </Box>
               </Box>
             )

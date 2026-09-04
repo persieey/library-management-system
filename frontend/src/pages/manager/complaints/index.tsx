@@ -25,56 +25,56 @@ interface Complaint {
 
 const COMPLAINTS: Complaint[] = [
   {
-    id: 1, author: 'Anon Student', status: 'open',
-    preview: 'AC not working in the group study room on 3F...',
-    date: 'Aug 2, 2026',
-    title: 'Air conditioning issue — Group Study Room 3F',
-    submittedBy: 'Anonymous Student', location: 'Group Study Room, 3F',
-    message: 'The air conditioning unit in Group Study Room 3F has not been working for the past three days, making the room too hot to use for group work. Please send someone to check it as soon as possible.',
-    notes: 'Facilities team notified on Aug 2. Awaiting technician visit.',
+    id: 1, author: 'นักศึกษา (ไม่ระบุชื่อ)', status: 'open',
+    preview: 'แอร์ในห้องอ่านหนังสือกลุ่ม ชั้น 3 เสีย...',
+    date: '2 ส.ค. 2569',
+    title: 'เครื่องปรับอากาศเสีย — ห้องอ่านหนังสือกลุ่ม ชั้น 3',
+    submittedBy: 'นักศึกษา (ไม่ระบุชื่อ)', location: 'ห้องอ่านหนังสือกลุ่ม ชั้น 3',
+    message: 'เครื่องปรับอากาศในห้องอ่านหนังสือกลุ่ม ชั้น 3 เสียมาสามวันแล้ว ทำให้ห้องร้อนเกินกว่าจะใช้ทำงานกลุ่มได้ รบกวนส่งช่างมาตรวจสอบโดยเร็วที่สุด',
+    notes: 'แจ้งทีมอาคารสถานที่แล้วเมื่อ 2 ส.ค. รอช่างเข้ามาตรวจ',
   },
   {
-    id: 2, author: 'Preecha S. (Faculty)', status: 'open',
-    preview: 'Requested book delivery delayed by two weeks...',
-    date: 'Jul 30, 2026',
-    title: 'Book delivery delay',
-    submittedBy: 'Preecha S. (Faculty)', location: 'Faculty Office',
-    message: 'Requested book delivery was delayed by two weeks without any notification. This affected my course preparation.',
+    id: 2, author: 'ปรีชา ส. (อาจารย์)', status: 'open',
+    preview: 'หนังสือที่สั่งจองล่าช้ากว่ากำหนดสองสัปดาห์...',
+    date: '30 ก.ค. 2569',
+    title: 'หนังสือที่สั่งจองมาล่าช้า',
+    submittedBy: 'ปรีชา ส. (อาจารย์)', location: 'ห้องพักอาจารย์',
+    message: 'หนังสือที่สั่งจองไว้ล่าช้ากว่ากำหนดสองสัปดาห์โดยไม่มีการแจ้งเตือนใดๆ ส่งผลกระทบต่อการเตรียมการสอน',
     notes: '',
   },
   {
-    id: 3, author: 'Anon Student', status: 'inprogress',
-    preview: 'Suggest extending opening hours during finals week',
-    date: 'Jul 26, 2026',
-    title: 'Extend opening hours during finals',
-    submittedBy: 'Anonymous Student', location: 'N/A',
-    message: 'Suggest extending opening hours during finals week to 22:00 to support students studying for exams.',
-    notes: 'Under review by management.',
+    id: 3, author: 'นักศึกษา (ไม่ระบุชื่อ)', status: 'inprogress',
+    preview: 'เสนอให้ขยายเวลาเปิดทำการช่วงสอบปลายภาค',
+    date: '26 ก.ค. 2569',
+    title: 'ขยายเวลาเปิดทำการช่วงสอบ',
+    submittedBy: 'นักศึกษา (ไม่ระบุชื่อ)', location: 'ไม่ระบุ',
+    message: 'เสนอให้ขยายเวลาเปิดทำการถึง 22:00 น. ในช่วงสอบปลายภาค เพื่อรองรับนักศึกษาที่มาอ่านหนังสือสอบ',
+    notes: 'ฝ่ายบริหารกำลังพิจารณา',
   },
   {
-    id: 4, author: 'Malee T. (Staff)', status: 'resolved',
-    preview: 'Printer on 2F frequently out of paper/toner',
-    date: 'Jul 20, 2026',
-    title: 'Printer issue on 2F',
-    submittedBy: 'Malee T. (Staff)', location: '2nd Floor, Printer Area',
-    message: 'Printer on 2F is frequently out of paper and toner. Needs regular restocking schedule.',
-    notes: 'Resolved: restocking schedule set up. Maintenance team assigned.',
+    id: 4, author: 'มาลี ท. (เจ้าหน้าที่)', status: 'resolved',
+    preview: 'เครื่องพิมพ์ชั้น 2 กระดาษ/หมึกหมดบ่อยครั้ง',
+    date: '20 ก.ค. 2569',
+    title: 'ปัญหาเครื่องพิมพ์ชั้น 2',
+    submittedBy: 'มาลี ท. (เจ้าหน้าที่)', location: 'ชั้น 2 บริเวณเครื่องพิมพ์',
+    message: 'เครื่องพิมพ์ที่ชั้น 2 กระดาษและหมึกหมดบ่อยครั้ง ต้องการตารางเติมวัสดุสิ้นเปลืองอย่างสม่ำเสมอ',
+    notes: 'แก้ไขแล้ว: ตั้งตารางเติมวัสดุสิ้นเปลืองแล้ว มอบหมายทีมดูแลรักษาแล้ว',
   },
   {
-    id: 5, author: 'Anon Student', status: 'resolved',
-    preview: 'Great experience with the citation workshop, thank you!',
-    date: 'Jul 18, 2026',
-    title: 'Positive feedback — Citation Workshop',
-    submittedBy: 'Anonymous Student', location: 'N/A',
-    message: 'Great experience with the citation workshop, thank you!',
-    notes: 'Acknowledged.',
+    id: 5, author: 'นักศึกษา (ไม่ระบุชื่อ)', status: 'resolved',
+    preview: 'ประทับใจกิจกรรมอบรมการอ้างอิงมาก ขอบคุณค่ะ/ครับ',
+    date: '18 ก.ค. 2569',
+    title: 'ข้อเสนอแนะเชิงบวก — อบรมการอ้างอิง',
+    submittedBy: 'นักศึกษา (ไม่ระบุชื่อ)', location: 'ไม่ระบุ',
+    message: 'ประทับใจกิจกรรมอบรมการอ้างอิงมาก ขอบคุณค่ะ/ครับ',
+    notes: 'รับทราบแล้ว',
   },
 ]
 
-const sf = { fontFamily: fonts.inter, fontWeight: 600, fontSize: 14, lineHeight: 1.45, color: mgr.ink }
-const body = { fontFamily: fonts.inter, fontWeight: 400, fontSize: 14, lineHeight: 1.45, color: mgr.ink }
-const lbl  = { fontFamily: fonts.inter, fontWeight: 500, fontSize: 12, letterSpacing: '0.48px', color: mgr.inkMuted, textTransform: 'uppercase' as const }
-const sm   = { fontFamily: fonts.inter, fontWeight: 400, fontSize: 13, lineHeight: 1.4, color: mgr.inkMuted }
+const sf = { fontFamily: fonts.thai, fontWeight: 600, fontSize: 14, lineHeight: 1.45, color: mgr.ink }
+const body = { fontFamily: fonts.thai, fontWeight: 400, fontSize: 14, lineHeight: 1.45, color: mgr.ink }
+const lbl  = { fontFamily: fonts.thai, fontWeight: 500, fontSize: 12, letterSpacing: '0.48px', color: mgr.inkMuted }
+const sm   = { fontFamily: fonts.thai, fontWeight: 400, fontSize: 13, lineHeight: 1.4, color: mgr.inkMuted }
 
 export default function ManagerComplaints() {
   const [selected, setSelected] = useState<Complaint>(COMPLAINTS[0])
@@ -90,13 +90,13 @@ export default function ManagerComplaints() {
   const resolve = (id: number) => setStatuses((prev) => ({ ...prev, [id]: 'resolved' }))
 
   return (
-    <ManagerLayout title="Complaints & Feedback">
+    <ManagerLayout title="เรื่องร้องเรียนและข้อเสนอแนะ">
       <Box sx={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
         {/* Left: complaint list */}
         <Paper variant="outlined" sx={{ width: 380, flexShrink: 0, borderRadius: '12px', borderColor: mgr.border, overflow: 'hidden' }}>
           {/* header badge */}
           <Box sx={{ px: '20px', py: '12px', borderBottom: `1px solid ${mgr.border}`, display: 'flex', justifyContent: 'flex-end' }}>
-            <StatusBadge label={`${openCount} OPEN`} variant="open" />
+            <StatusBadge label={`ค้างอยู่ ${openCount} เรื่อง`} variant="open" />
           </Box>
           {COMPLAINTS.map((c, i) => {
             const status = statuses[c.id]
@@ -117,7 +117,7 @@ export default function ManagerComplaints() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography sx={sf}>{c.author}</Typography>
                   <StatusBadge
-                    label={status === 'open' ? 'Open' : status === 'inprogress' ? 'In Progress' : 'Resolved'}
+                    label={status === 'open' ? 'เปิดอยู่' : status === 'inprogress' ? 'กำลังดำเนินการ' : 'แก้ไขแล้ว'}
                     variant={status}
                   />
                 </Box>
@@ -131,20 +131,20 @@ export default function ManagerComplaints() {
         {/* Right: detail panel */}
         <Paper variant="outlined" sx={{ flex: 1, borderRadius: '12px', borderColor: mgr.border, p: '28px', display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Typography sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 15, lineHeight: 1.35, color: mgr.ink, flex: 1, mr: 2 }}>
+            <Typography sx={{ fontFamily: fonts.thai, fontWeight: 600, fontSize: 15, lineHeight: 1.35, color: mgr.ink, flex: 1, mr: 2 }}>
               {selected.title}
             </Typography>
             <StatusBadge
-              label={statuses[selected.id] === 'open' ? 'Open' : statuses[selected.id] === 'inprogress' ? 'In Progress' : 'Resolved'}
+              label={statuses[selected.id] === 'open' ? 'เปิดอยู่' : statuses[selected.id] === 'inprogress' ? 'กำลังดำเนินการ' : 'แก้ไขแล้ว'}
               variant={statuses[selected.id]}
             />
           </Box>
 
           <Box sx={{ display: 'flex', gap: '24px' }}>
             {[
-              { label: 'SUBMITTED BY', value: selected.submittedBy },
-              { label: 'DATE', value: selected.date },
-              { label: 'LOCATION', value: selected.location },
+              { label: 'ผู้แจ้ง', value: selected.submittedBy },
+              { label: 'วันที่', value: selected.date },
+              { label: 'สถานที่', value: selected.location },
             ].map(({ label: l, value }) => (
               <Box key={l} sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <Typography sx={lbl}>{l}</Typography>
@@ -153,18 +153,18 @@ export default function ManagerComplaints() {
             ))}
           </Box>
 
-          <Typography sx={lbl}>MESSAGE</Typography>
+          <Typography sx={lbl}>ข้อความ</Typography>
           <Typography sx={body}>{selected.message}</Typography>
 
-          <Typography sx={lbl}>RESOLUTION NOTES</Typography>
+          <Typography sx={lbl}>บันทึกการแก้ไข</Typography>
           <TextField
             multiline
             minRows={2}
             size="small"
             value={notes[selected.id] ?? ''}
             onChange={(e) => setNotes((prev) => ({ ...prev, [selected.id]: e.target.value }))}
-            placeholder="Add resolution notes..."
-            sx={{ '& .MuiInputBase-input': { fontFamily: fonts.inter, fontSize: 13, color: mgr.inkMuted }, bgcolor: '#f6f8f6' }}
+            placeholder="เพิ่มบันทึกการแก้ไข..."
+            sx={{ '& .MuiInputBase-input': { fontFamily: fonts.thai, fontSize: 13, color: mgr.inkMuted }, bgcolor: '#f6f8f6' }}
             slotProps={{ input: { style: { borderRadius: 8 } } }}
           />
 
@@ -174,9 +174,9 @@ export default function ManagerComplaints() {
                 variant="contained"
                 disableElevation
                 onClick={() => resolve(selected.id)}
-                sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 14, bgcolor: mgr.accentGreen, borderRadius: '8px', px: '22px', py: '11px', '&:hover': { bgcolor: '#1e4028' }, textTransform: 'none' }}
+                sx={{ fontFamily: fonts.thai, fontWeight: 600, fontSize: 14, bgcolor: mgr.accentGreen, borderRadius: '8px', px: '22px', py: '11px', '&:hover': { bgcolor: '#1e4028' }, textTransform: 'none' }}
               >
-                Mark as Resolved
+                ทำเครื่องหมายว่าแก้ไขแล้ว
               </Button>
             </Box>
           )}

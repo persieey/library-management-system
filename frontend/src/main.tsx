@@ -7,6 +7,7 @@ import App from './App'
 import theme from './theme'
 import { AuthProvider } from './auth/AuthProvider'
 import { PRProvider } from './context/PRContext'
+import { EventProvider } from './context/EventContext'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -15,9 +16,11 @@ createRoot(document.getElementById('root')!).render(
       <CssBaseline />
       <AuthProvider>
         <PRProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
+          <EventProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </EventProvider>
         </PRProvider>
       </AuthProvider>
     </ThemeProvider>

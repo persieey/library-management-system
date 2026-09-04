@@ -1,28 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
+import FeedbackButton from '../../components/FeedbackButton'
 import CategoryCard from '../../components/CategoryCard'
 import Reveal from '../../components/Reveal'
+import EventAnnouncementCard from '../../components/EventAnnouncementCard'
+import BookCard from '../../components/BookCard'
 import { colors, fonts } from '../../theme'
+import { useEvents } from '../../context/EventContext'
+import { BOOKS } from '../../data/books'
 
 import imgBg from '../../assets/hero-bg.jpg'
-import imgThumbnail1 from '../../assets/event-1.png'
-import imgThumbnail2 from '../../assets/event-2.png'
-import imgThumbnail3 from '../../assets/event-3.png'
-import imgCover1 from '../../assets/book-1.png'
-import imgCover2 from '../../assets/book-2.png'
-import imgCover3 from '../../assets/book-3.png'
-import imgCover4 from '../../assets/book-4.png'
-import imgCover5 from '../../assets/book-5.png'
 
 import iconSearch from '../../assets/icons/search.svg'
 import iconBook from '../../assets/icons/quick-book.svg'
 import iconBookFill from '../../assets/icons/quick-book-fill.svg'
-import starFull from '../../assets/icons/star-full.svg'
-import starHalf from '../../assets/icons/star-half.svg'
 
 import iconFiction from '../../assets/icons/cat-fiction.svg'
 import iconNonFiction from '../../assets/icons/cat-nonfiction.svg'
@@ -52,51 +50,6 @@ const categories = [
   { icon: iconBiography, name: 'Biography', titles: '760 titles', to: '/category/biography' },
 ]
 
-const events = [
-  {
-    img: imgThumbnail1,
-    date: '12 Aug 2026 · 1:00 PM',
-    title: 'Academic Database Searching Training',
-    location: '📍 Training Room, 2nd Floor, Central Library',
-  },
-  {
-    img: imgThumbnail2,
-    date: '18 Aug 2026 · All Day',
-    title: 'Monthly New Books Exhibition',
-    location: '📍 Exhibition Zone, 1st Floor',
-  },
-  {
-    img: imgThumbnail3,
-    date: '25 Aug 2026 · 9:30 AM',
-    title: 'Citation and EndNote Workshop',
-    location: '📍 Computer Lab, 3rd Floor',
-  },
-]
-
-const books = [
-  { img: imgCover1, title: 'Beneath Copper Skies', author: 'by Eme Savage', rating: '4.5 (198)' },
-  { img: imgCover2, title: 'The Lighthouse Keeper', author: 'by James Michael Pratt', rating: '4.8 (455)' },
-  { img: imgCover3, title: 'Whispers in Autumn', author: 'by Trisha Leigh', rating: '4.2 (267)' },
-  {
-    img: imgCover4,
-    title: "The Cartographer's Daughter",
-    author: 'by Kiran Millwood Hargrave',
-    rating: '3.9 (140)',
-  },
-  { img: imgCover5, title: 'The Silent Orchard', author: 'by Elena Marsh', rating: '4.0 (312)' },
-]
-
-function Stars() {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: '2px' }}>
-      {[0, 1, 2, 3].map((i) => (
-        <Box key={i} component="img" src={starFull} alt="" sx={{ height: 14, width: 14 }} />
-      ))}
-      <Box component="img" src={starHalf} alt="" sx={{ height: 14, width: 14 }} />
-    </Box>
-  )
-}
-
 function HeroSection() {
   const [ready, setReady] = useState(false)
   useEffect(() => {
@@ -125,11 +78,11 @@ function HeroSection() {
           sx={{
             position: 'absolute',
             left: '50%',
-            top: 195,
+            top: 270,
             transform: 'translateX(-50%)',
             whiteSpace: 'nowrap',
             fontFamily: fonts.inter,
-            fontSize: 60,
+            fontSize: 40,
             color: 'white',
             ...fadeSx(0),
           }}
@@ -259,7 +212,17 @@ function CategorySection() {
   )
 }
 
+const EVENT_CARD_WIDTH = 384
+const EVENT_CARD_GAP = 24
+
 function EventSection() {
+  const { items: events } = useEvents()
+  const scrollerRef = useRef<HTMLDivElement>(null)
+
+  const scrollByCard = (direction: 1 | -1) => {
+    scrollerRef.current?.scrollBy({ left: direction * (EVENT_CARD_WIDTH + EVENT_CARD_GAP), behavior: 'smooth' })
+  }
+
   return (
     <Box component="section" sx={{ width: '100%', bgcolor: 'white' }}>
       <Box sx={{ mx: 'auto', maxWidth: 1440, display: 'flex', flexDirection: 'column', gap: '40px', px: '64px', py: '88px' }}>
@@ -277,66 +240,54 @@ function EventSection() {
                 Upcoming events and training workshops from the library
               </Typography>
             </Box>
-            <Typography
-              component="a"
-              href="/events"
-              sx={{ fontFamily: fonts.thai, fontSize: 15, fontWeight: 600, color: colors.accentGreen }}
-            >
-              View All →
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              {events.length > 3 && (
+                <Box sx={{ display: 'flex', gap: '8px' }}>
+                  <IconButton
+                    aria-label="เลื่อนไปทางซ้าย"
+                    onClick={() => scrollByCard(-1)}
+                    sx={{ border: `1px solid ${colors.border}`, '&:hover': { bgcolor: colors.accentGreenLight } }}
+                  >
+                    <ArrowBackIosNewIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                  <IconButton
+                    aria-label="เลื่อนไปทางขวา"
+                    onClick={() => scrollByCard(1)}
+                    sx={{ border: `1px solid ${colors.border}`, '&:hover': { bgcolor: colors.accentGreenLight } }}
+                  >
+                    <ArrowForwardIosIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Box>
+              )}
+              <Typography
+                component={Link}
+                to="/events"
+                sx={{ fontFamily: fonts.thai, fontSize: 15, fontWeight: 600, color: colors.accentGreen, whiteSpace: 'nowrap' }}
+              >
+                View All →
+              </Typography>
+            </Box>
           </Box>
         </Reveal>
 
-        <Box sx={{ display: 'flex', gap: '24px' }}>
+        <Box
+          ref={scrollerRef}
+          sx={{
+            display: 'flex',
+            gap: `${EVENT_CARD_GAP}px`,
+            overflowX: 'auto',
+            scrollSnapType: 'x mandatory',
+            pb: 1,
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+          }}
+        >
           {events.map((event, i) => (
-            <Reveal key={event.title} delay={i * 90}>
-              <Box
-                component="article"
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                  height: '100%',
-                  width: 384,
-                  borderRadius: '16px',
-                  border: `1px solid ${colors.border}`,
-                  bgcolor: 'white',
-                  px: '24px',
-                  py: '28px',
-                  transition: 'box-shadow 300ms',
-                  '&:hover': { boxShadow: '0 6px 18px rgba(26,26,23,0.12)' },
-                }}
-              >
-                <Box
-                  component="img"
-                  src={event.img}
-                  alt=""
-                  sx={{ height: 140, width: '100%', borderRadius: '10px', objectFit: 'cover' }}
-                />
-                <Box sx={{ width: 'fit-content', borderRadius: '20px', bgcolor: colors.accentGreenLight, px: '12px', py: '5px' }}>
-                  <Typography
-                    sx={{ fontFamily: fonts.thai, fontSize: 13, fontWeight: 500, letterSpacing: '2px', color: colors.accentGreen }}
-                  >
-                    {event.date}
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontFamily: fonts.thai, fontSize: 18, fontWeight: 600, lineHeight: 1.35, color: colors.ink }}>
-                  {event.title}
-                </Typography>
-                <Typography
-                  sx={{ fontFamily: fonts.thai, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: colors.inkMuted }}
-                >
-                  {event.location}
-                </Typography>
-                <Typography
-                  component="a"
-                  href="/events"
-                  sx={{ fontFamily: fonts.thai, fontSize: 15, fontWeight: 600, color: colors.accentGreen }}
-                >
-                  View Details →
-                </Typography>
-              </Box>
-            </Reveal>
+            <Box key={event.id} sx={{ flex: `0 0 ${EVENT_CARD_WIDTH}px`, scrollSnapAlign: 'start' }}>
+              <Reveal delay={i * 90}>
+                <EventAnnouncementCard event={event} />
+              </Reveal>
+            </Box>
           ))}
         </Box>
       </Box>
@@ -359,8 +310,8 @@ function RecommendedBooks() {
               </Typography>
             </Box>
             <Typography
-              component="a"
-              href="/books"
+              component={Link}
+              to="/books"
               sx={{ fontFamily: fonts.inter, fontSize: 14, fontWeight: 600, color: colors.terracotta600 }}
             >
               View All
@@ -369,65 +320,10 @@ function RecommendedBooks() {
         </Reveal>
 
         <Box sx={{ display: 'flex', gap: '24px' }}>
-          {books.map((book, i) => (
-            <Box key={book.title} sx={{ flex: 1 }}>
+          {BOOKS.map((book, i) => (
+            <Box key={book.id} sx={{ flex: 1 }}>
               <Reveal delay={i * 70}>
-                <Box
-                  component="article"
-                  sx={{
-                    display: 'flex',
-                    height: '100%',
-                    width: '100%',
-                    flexDirection: 'column',
-                    gap: '14px',
-                    borderRadius: '16px',
-                    border: `1px solid ${colors.borderSubtle}`,
-                    bgcolor: 'white',
-                    px: '16px',
-                    pb: '20px',
-                    pt: '16px',
-                    transition: 'box-shadow 300ms',
-                    '&:hover': { boxShadow: '0 6px 18px rgba(59,42,30,0.12)' },
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={book.img}
-                    alt=""
-                    sx={{ height: 300, width: '100%', borderRadius: '10px', objectFit: 'cover' }}
-                  />
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    <Stars />
-                    <Typography sx={{ fontFamily: fonts.inter, fontSize: 12, color: colors.brown700 }}>
-                      {book.rating}
-                    </Typography>
-                  </Box>
-                  <Typography
-                    sx={{ fontFamily: fonts.display, fontSize: 17, fontWeight: 600, lineHeight: '22px', color: colors.brown900 }}
-                  >
-                    {book.title}
-                  </Typography>
-                  <Typography sx={{ fontFamily: fonts.inter, fontSize: 13, color: colors.brown500 }}>
-                    {book.author}
-                  </Typography>
-                  <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
-                      sx={{
-                        borderRadius: '8px',
-                        bgcolor: colors.cream50,
-                        color: colors.brown900,
-                        px: '14px',
-                        py: '8px',
-                        fontFamily: fonts.inter,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        '&:hover': { bgcolor: colors.cream50 },
-                      }}
-                    >
-                      View
-                    </Button>
-                  </Box>
-                </Box>
+                <BookCard book={book} />
               </Reveal>
             </Box>
           ))}
@@ -446,6 +342,8 @@ function PRPage() {
       <EventSection />
       <RecommendedBooks />
       <Footer />
+      {/* ปุ่มลอยมุมล่างซ้าย — แจ้งปัญหา/ข้อเสนอแนะ ลอยตามตอนเลื่อนหน้า */}
+      <FeedbackButton />
     </Box>
   )
 }

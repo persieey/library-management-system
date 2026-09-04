@@ -28,44 +28,59 @@ export interface NavAction {
   label: string
   to?: string
   permission?: string
+  /** คีย์ไอคอน แปลงเป็นไอคอนจริงด้วย navIcon() ตอนแสดงใน <Sidebar> */
+  icon?: string
   children?: NavAction[]
 }
 
+// เมนูของหน้าหลังบ้าน — ตอนนี้เหลือเฉพาะระบบที่ทำเสร็จจริง
+// ระบบของเพื่อนในทีมค่อยเติมกลับเข้ามาที่นี่ทีละอันตอนที่โค้ดพร้อม
 export const BACK_OFFICE_MENU: NavAction[] = [
-  { label: 'Homepage', to: '/employees' },
-  { label: 'Recording Room', to: '/employees/recording-room', permission: PERMISSIONS.MANAGE_ROOMS },
+  { icon: 'recordingRoom', label: 'Recording Room', to: '/employees/recording-room', permission: PERMISSIONS.MANAGE_ROOMS },
   {
+    icon: 'equipment',
     label: 'Equipment',
     permission: PERMISSIONS.MANAGE_EQUIPMENT,
     children: [
-      { label: 'Equipment', to: '/employees/equipment' },
-      { label: 'Repair request', to: '/employees/repair-request' },
-      { label: 'Track the repair', to: '/employees/repair-track' },
+      { icon: 'equipment', label: 'Equipment', to: '/employees/equipment' },
+      { icon: 'repair', label: 'Repair request', to: '/employees/repair-request' },
+      { icon: 'repairTrack', label: 'Track the repair', to: '/employees/repair-track' },
     ],
   },
-  { label: 'Catalog', to: '/employees/catalog', permission: PERMISSIONS.MANAGE_CATALOG },
-  { label: 'Loans', to: '/employees/loans', permission: PERMISSIONS.APPROVE_LOANS },
-  { label: 'Announcements', to: '/employees/pr', permission: PERMISSIONS.MANAGE_PR },
-  { label: 'Personnel', to: '/employees/personnel', permission: PERMISSIONS.MANAGE_PERSONNEL },
+  {
+    // ระบบเดียวที่มีหัวข้อย่อยจริง จึงกางเป็นกลุ่มได้ ระบบอื่นยังเป็นเมนูเดี่ยว
+    // กลุ่มไม่ต้องมี to เพราะเมนูย่อยตัวแรกเป็นหน้าหลักของระบบอยู่แล้ว
+    icon: 'activities',
+    label: 'ประชาสัมพันธ์',
+    permission: PERMISSIONS.MANAGE_PR,
+    children: [
+      { icon: 'overview', label: 'ภาพรวม', to: '/employees/pr' },
+      { icon: 'activities', label: 'กิจกรรม', to: '/employees/pr/events' },
+      { icon: 'leave', label: 'ประกาศ', to: '/employees/pr/announcements' },
+    ],
+  },
+  { icon: 'personnel', label: 'Personnel', to: '/employees/personnel', permission: PERMISSIONS.MANAGE_PERSONNEL },
 ]
 
 export function backOfficeMenuFor(can: (permission: string) => boolean): NavAction[] {
   return BACK_OFFICE_MENU.filter((item) => !item.permission || can(item.permission))
 }
 
-// ปุ่มพิเศษบน header ของหน้าเว็บฝั่งผู้ใช้ — "Employees" เป็น dropdown
+// ชื่อที่โชว์บนปุ่ม dropdown ของ header — ใช้ชื่อสิทธิ์ของผู้ใช้แทนคำว่า Employees
+// เช่น librarian -> "Librarian" อยากได้ภาษาไทยให้เปลี่ยนไปคืน ROLE_LABELS[role] แทน
+export function roleDisplayName(role: Role): string {
+  return role.charAt(0).toUpperCase() + role.slice(1)
+}
+
+// ปุ่มพิเศษบน header ของหน้าเว็บฝั่งผู้ใช้ — label จะถูกแทนด้วยชื่อสิทธิ์ตอนแสดงผล
 // เพิ่มเมนูจัดการระบบใหม่ทีหลังแค่เติมใน children ที่นี่ที่เดียว
 export const HEADER_ACTIONS: NavAction[] = [
   {
+    // ปุ่มเดียวพาเข้าหน้ารวมระบบเลย ไม่ต้องกางเมนูให้เลือกอีกชั้น
+    // เพราะ sidebar ในหน้านั้นแสดงทุกระบบที่สิทธิ์ของผู้ใช้เข้าถึงได้อยู่แล้ว
     label: 'Employees',
+    to: '/employees',
     permission: PERMISSIONS.ACCESS_BACKOFFICE,
-    children: [
-      { label: 'จัดการบุคลากร', to: '/manager', permission: PERMISSIONS.MANAGE_PERSONNEL },
-      { label: 'Catalog', to: '/employees/catalog', permission: PERMISSIONS.MANAGE_CATALOG },
-      { label: 'Loans', to: '/employees/loans', permission: PERMISSIONS.APPROVE_LOANS },
-      { label: 'Recording Room', to: '/employees/recording-room', permission: PERMISSIONS.MANAGE_ROOMS },
-      { label: 'Manage PR', to: '/employees/pr', permission: PERMISSIONS.MANAGE_PR },
-    ],
   },
 ]
 

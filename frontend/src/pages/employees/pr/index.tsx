@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import dayjs from 'dayjs'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import InputBase from '@mui/material/InputBase'
@@ -10,54 +11,22 @@ import PRCard from './PRCard'
 import PREditorDialog, { type PRDraft } from './PREditorDialog'
 import PRPreviewDialog from './PRPreviewDialog'
 import { printPRItem } from './printPRItem'
+import EventCard from './EventCard'
+import EventEditorDialog from './EventEditorDialog'
+import { formatEventDate } from './eventDateFormat'
 import type { PRStatus } from '../../../interface/IPRInterface'
+import type { EventDraft } from '../../../interface/IEventInterface'
 import { usePR } from '../../../context/PRContext'
+import { useEvents } from '../../../context/EventContext'
 import searchIcon from '../../../assets/icons/pr-search.svg'
 import plusIcon from '../../../assets/icons/pr-plus.svg'
-import wordmark from '../../../assets/logo-wordmark.png'
-import { useAuth } from '../../../auth/useAuth'
+import BackOfficeLayout from '../../../components/BackOfficeLayout'
 import { colors, fonts } from '../../../theme'
 
 type SidebarTab = 'overview' | 'events' | 'announcements'
 
-const SIDEBAR_ITEMS: { key: SidebarTab; label: string }[] = [
-  { key: 'overview', label: 'ภาพรวม' },
-  { key: 'events', label: 'กิจกรรม' },
-  { key: 'announcements', label: 'ประกาศ' },
-]
-
 type FilterTab = 'ทั้งหมด' | PRStatus
 const FILTER_TABS: FilterTab[] = ['ทั้งหมด', 'เผยแพร่', 'ตั้งเวลา', 'ร่าง', 'หมดอายุ']
-
-function SidebarNav({ active, onSelect }: { active: SidebarTab; onSelect: (tab: SidebarTab) => void }) {
-  return (
-    <Box sx={{ width: 250, flexShrink: 0, bgcolor: colors.brandGreen, minHeight: '100%' }}>
-      {SIDEBAR_ITEMS.map((item) => (
-        <Box
-          key={item.key}
-          component="button"
-          onClick={() => onSelect(item.key)}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            width: '100%',
-            height: 64,
-            px: '24px',
-            border: 'none',
-            cursor: 'pointer',
-            bgcolor: active === item.key ? '#f8f5ee' : 'transparent',
-            color: active === item.key ? colors.brandGreen : 'white',
-            fontFamily: fonts.kanit,
-            fontSize: 20,
-            textAlign: 'left',
-          }}
-        >
-          {item.label}
-        </Box>
-      ))}
-    </Box>
-  )
-}
 
 function AnnouncementsPanel() {
   const { items: allItems, create, update, remove, togglePause, copyItem, incrementView, toast, clearToast } = usePR()
@@ -233,62 +202,241 @@ function AnnouncementsPanel() {
   )
 }
 
-function ComingSoonPanel({ title }: { title: string }) {
+interface StatCardProps {
+  label: string
+  value: string
+}
+
+function StatCard({ label, value }: StatCardProps) {
   return (
-    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Typography sx={{ fontFamily: fonts.kanit, fontSize: 20, color: colors.inkMuted }}>
-        {title} — ยังไม่ได้ทำ
+    <Box sx={{ flex: 1, borderRadius: '16px', bgcolor: 'white', border: `1px solid ${colors.border}`, px: '24px', py: '20px' }}>
+      <Typography sx={{ fontFamily: fonts.thai, fontSize: 14, color: colors.inkMuted, mb: '6px' }}>
+        {label}
       </Typography>
+      <Typography sx={{ fontFamily: fonts.kanit, fontSize: 32, color: colors.brandGreen }}>{value}</Typography>
     </Box>
   )
 }
 
-function TopBar() {
-  const { user, logout } = useAuth()
+// ภาพรวม — สรุปสถิติจากทั้งข่าวประชาสัมพันธ์และกิจกรรม พร้อมทางลัดไปแท็บที่เกี่ยวข้อง
+function OverviewPanel({ onNavigate }: { onNavigate: (tab: SidebarTab) => void }) {
+  const { items: prItems } = usePR()
+  const { items: eventItems } = useEvents()
+
+  const publishedCount = useMemo(() => prItems.filter((item) => item.status === 'เผยแพร่').length, [prItems])
+  const totalViews = useMemo(() => prItems.reduce((sum, item) => sum + item.views, 0), [prItems])
+  const upcomingEvents = useMemo(
+    () =>
+      eventItems
+        .filter((item) => dayjs(item.date).isAfter(dayjs()))
+        .sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf()),
+    [eventItems],
+  )
+
+  const recentAnnouncements = useMemo(
+    () =>
+      [...prItems]
+        .sort((a, b) => (b.publishedTimestamp ?? 0) - (a.publishedTimestamp ?? 0))
+        .slice(0, 3),
+    [prItems],
+  )
 
   return (
-    <Box
-      component="header"
-      sx={{
-        height: 100,
-        width: '100%',
-        bgcolor: colors.brandGreen,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        px: '32px',
-      }}
-    >
-      <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box component="img" src={wordmark} alt="Udompanya University" sx={{ height: 50, width: 165, objectFit: 'contain' }} />
+    <Box sx={{ flex: 1, px: '32px', py: '32px' }}>
+      <Typography sx={{ fontFamily: fonts.kanit, fontSize: 32, color: colors.brandGreen, mb: '24px' }}>
+        ภาพรวม
+      </Typography>
+
+      <Box sx={{ display: 'flex', gap: '16px', mb: '32px' }}>
+        <StatCard label="ประกาศทั้งหมด" value={prItems.length.toLocaleString('th-TH')} />
+        <StatCard label="เผยแพร่อยู่ตอนนี้" value={publishedCount.toLocaleString('th-TH')} />
+        <StatCard label="ยอดเข้าชมรวม" value={totalViews.toLocaleString('th-TH')} />
+        <StatCard label="กิจกรรมที่กำลังจะถึง" value={upcomingEvents.length.toLocaleString('th-TH')} />
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <Typography sx={{ fontFamily: fonts.kanit, fontSize: 16, color: 'white' }}>{user?.username}</Typography>
+
+      <Box sx={{ display: 'flex', gap: '24px' }}>
+        <Box sx={{ flex: 1, borderRadius: '16px', bgcolor: 'white', border: `1px solid ${colors.border}`, p: '24px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '16px' }}>
+            <Typography sx={{ fontFamily: fonts.kanit, fontSize: 20, color: colors.ink }}>
+              ประกาศล่าสุด
+            </Typography>
+            <Box
+              component="button"
+              onClick={() => onNavigate('announcements')}
+              sx={{ border: 'none', bgcolor: 'transparent', cursor: 'pointer', fontFamily: fonts.thai, fontSize: 14, color: colors.accentGreen }}
+            >
+              ดูทั้งหมด →
+            </Box>
+          </Box>
+
+          {recentAnnouncements.length === 0 ? (
+            <Typography sx={{ fontFamily: fonts.thai, fontSize: 14, color: colors.inkMuted }}>
+              ยังไม่มีข่าวประชาสัมพันธ์
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {recentAnnouncements.map((item) => (
+                <Box key={item.id} sx={{ borderBottom: `1px solid ${colors.border}`, pb: '10px' }}>
+                  <Typography sx={{ fontFamily: fonts.thai, fontSize: 15, color: colors.ink }}>
+                    {item.title}
+                  </Typography>
+                  <Typography sx={{ fontFamily: fonts.thai, fontSize: 13, color: colors.inkMuted }}>
+                    {item.status} · {item.publishedAt}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+
+        <Box sx={{ flex: 1, borderRadius: '16px', bgcolor: 'white', border: `1px solid ${colors.border}`, p: '24px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '16px' }}>
+            <Typography sx={{ fontFamily: fonts.kanit, fontSize: 20, color: colors.ink }}>
+              กิจกรรมที่ใกล้ที่สุด
+            </Typography>
+            <Box
+              component="button"
+              onClick={() => onNavigate('events')}
+              sx={{ border: 'none', bgcolor: 'transparent', cursor: 'pointer', fontFamily: fonts.thai, fontSize: 14, color: colors.accentGreen }}
+            >
+              ดูทั้งหมด →
+            </Box>
+          </Box>
+
+          {upcomingEvents.length === 0 ? (
+            <Typography sx={{ fontFamily: fonts.thai, fontSize: 14, color: colors.inkMuted }}>
+              ยังไม่มีกิจกรรมที่กำลังจะถึง
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {upcomingEvents.slice(0, 3).map((item) => (
+                <Box key={item.id} sx={{ borderBottom: `1px solid ${colors.border}`, pb: '10px' }}>
+                  <Typography sx={{ fontFamily: fonts.thai, fontSize: 15, color: colors.ink }}>
+                    {item.title}
+                  </Typography>
+                  <Typography sx={{ fontFamily: fonts.thai, fontSize: 13, color: colors.inkMuted }}>
+                    {formatEventDate(item.date, item.allDay)} · {item.location}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+// จัดการกิจกรรม — รายการนี้จะไปโผล่ในส่วน "Event Announcements" ของหน้าแรกทันทีที่บันทึก
+// ต่างจากข่าวประชาสัมพันธ์ที่ไปแจ้งเตือนที่กระดิ่งแทน
+function EventsPanel() {
+  const { items, create, update, remove, toast, clearToast } = useEvents()
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+
+  const editingItem = useMemo(() => items.find((i) => i.id === editingId) ?? null, [items, editingId])
+
+  const openCreate = () => {
+    setEditingId(null)
+    setEditorOpen(true)
+  }
+
+  const openEdit = (id: number) => {
+    setEditingId(id)
+    setEditorOpen(true)
+  }
+
+  const handleSubmit = (draft: EventDraft) => {
+    if (editingId === null) create(draft)
+    else update(editingId, draft)
+    setEditorOpen(false)
+  }
+
+  const handleDelete = (id: number) => {
+    const item = items.find((i) => i.id === id)
+    if (!item) return
+    if (!window.confirm(`ต้องการลบกิจกรรม "${item.title}" ใช่หรือไม่?`)) return
+    remove(id)
+    if (editingId === id) setEditorOpen(false)
+  }
+
+  return (
+    <Box sx={{ flex: 1, px: '32px', py: '32px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '24px' }}>
+        <Typography sx={{ fontFamily: fonts.kanit, fontSize: 32, color: colors.brandGreen }}>
+          จัดการกิจกรรม
+        </Typography>
         <Button
-          onClick={logout}
-          sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', borderRadius: '8px', fontFamily: fonts.kanit }}
+          onClick={openCreate}
+          startIcon={<Box component="img" src={plusIcon} alt="" sx={{ height: 22, width: 22 }} />}
+          sx={{
+            bgcolor: 'rgba(0,0,0,0.67)',
+            color: 'white',
+            borderRadius: '30px',
+            px: '20px',
+            py: '10px',
+            fontFamily: fonts.kanit,
+            fontSize: 16,
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+          }}
         >
-          Log out
+          เพิ่มกิจกรรม
         </Button>
       </Box>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {items.length === 0 ? (
+          <Typography sx={{ fontFamily: fonts.thai, fontSize: 16, color: colors.inkMuted }}>
+            ยังไม่มีกิจกรรม
+          </Typography>
+        ) : (
+          items.map((item) => (
+            <EventCard key={item.id} item={item} onEdit={openEdit} onDelete={handleDelete} />
+          ))
+        )}
+      </Box>
+
+      <EventEditorDialog
+        open={editorOpen}
+        editingItem={editingItem}
+        onClose={() => setEditorOpen(false)}
+        onSubmit={handleSubmit}
+      />
+
+      <Snackbar open={Boolean(toast)} autoHideDuration={2500} onClose={clearToast}>
+        <Alert severity="success" onClose={clearToast} sx={{ fontFamily: fonts.thai }}>
+          {toast}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }
 
-// Figma: สำหรับพนักงาน_Homepage (1:246) — โมดูลจัดการประชาสัมพันธ์
+// โมดูลจัดการประชาสัมพันธ์ — อยู่ใต้ BackOfficeLayout ร่วมกับระบบอื่น
+// แท็บมาจาก URL ไม่ใช่ state เพื่อให้ลิงก์ตรงเข้าหัวข้อย่อยและกดย้อนกลับได้
+const TAB_TITLES: Record<SidebarTab, string> = {
+  overview: 'ประชาสัมพันธ์ — ภาพรวม',
+  events: 'ประชาสัมพันธ์ — กิจกรรม',
+  announcements: 'ประชาสัมพันธ์ — ประกาศ',
+}
+
 function ManagePR() {
-  const [tab, setTab] = useState<SidebarTab>('announcements')
+  const { tab: tabParam } = useParams()
+  const navigate = useNavigate()
+
+  // ไม่มี :tab ใน URL แปลว่าเข้ามาที่ /employees/pr ตรงๆ ให้แสดงภาพรวม
+  const tab: SidebarTab =
+    tabParam === 'events' || tabParam === 'announcements' ? tabParam : 'overview'
+
+  const goToTab = (next: SidebarTab) =>
+    navigate(next === 'overview' ? '/employees/pr' : `/employees/pr/${next}`)
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
-      <TopBar />
-      <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 100px)' }}>
-        <SidebarNav active={tab} onSelect={setTab} />
-        {tab === 'announcements' && <AnnouncementsPanel />}
-        {tab === 'overview' && <ComingSoonPanel title="ภาพรวม" />}
-        {tab === 'events' && <ComingSoonPanel title="กิจกรรม" />}
-      </Box>
-    </Box>
+    <BackOfficeLayout title={TAB_TITLES[tab]}>
+      {tab === 'overview' && <OverviewPanel onNavigate={goToTab} />}
+      {tab === 'events' && <EventsPanel />}
+      {tab === 'announcements' && <AnnouncementsPanel />}
+    </BackOfficeLayout>
   )
 }
 

@@ -2,58 +2,56 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
+import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined'
+import ReportProblemOutlined from '@mui/icons-material/ReportProblemOutlined'
+import PaidOutlined from '@mui/icons-material/PaidOutlined'
+import CampaignOutlined from '@mui/icons-material/CampaignOutlined'
+import StatCard, { StatCardGrid } from '../../../components/StatCard'
 import ManagerLayout, { mgr } from '../../../components/ManagerLayout'
 import { fonts } from '../../../theme'
 
 const STATS = [
-  { label: 'BOOKS BORROWED (THIS MONTH)', value: '1,248' },
-  { label: 'OVERDUE ITEMS',               value: '37' },
-  { label: 'FINES COLLECTED',             value: '฿4,260' },
-  { label: 'ACTIVITIES HELD (YTD)',        value: '18' },
+  { icon: <MenuBookOutlined />, label: 'หนังสือที่ยืม (เดือนนี้)', value: '1,248' },
+  { icon: <ReportProblemOutlined />, label: 'รายการเกินกำหนด', value: '37' },
+  { icon: <PaidOutlined />, label: 'ค่าปรับที่เก็บได้', value: '฿4,260' },
+  { icon: <CampaignOutlined />, label: 'กิจกรรมที่จัดแล้ว (ปีนี้)', value: '18' },
 ]
 
 // bar height as a fraction of max (Students = 1.0)
 const BARS = [
-  { label: 'Students', fraction: 1.0 },
-  { label: 'Faculty',  fraction: 0.583 },
-  { label: 'Staff',    fraction: 0.333 },
-  { label: 'Grad',     fraction: 0.75 },
+  { label: 'นักศึกษา', fraction: 1.0 },
+  { label: 'อาจารย์',  fraction: 0.583 },
+  { label: 'เจ้าหน้าที่', fraction: 0.333 },
+  { label: 'บัณฑิตศึกษา', fraction: 0.75 },
 ]
 
 const MAX_BAR_H = 120
 
 export default function ManagerReports() {
   return (
-    <ManagerLayout title="Reports">
+    <ManagerLayout title="รายงาน">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             variant="outlined"
             disableElevation
-            sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 14, borderColor: mgr.border, color: mgr.inkMuted, borderRadius: '8px', px: '18px', py: '10px', '&:hover': { borderColor: mgr.border, bgcolor: '#fafafa' }, textTransform: 'none' }}
+            sx={{ fontFamily: fonts.thai, fontWeight: 600, fontSize: 14, borderColor: mgr.border, color: mgr.inkMuted, borderRadius: '8px', px: '18px', py: '10px', '&:hover': { borderColor: mgr.border, bgcolor: '#fafafa' }, textTransform: 'none' }}
           >
-            Export CSV
+            ส่งออก CSV
           </Button>
         </Box>
 
         {/* Stat cards */}
-        <Box sx={{ display: 'flex', gap: '20px' }}>
+        <StatCardGrid>
           {STATS.map((s) => (
-            <Paper key={s.label} variant="outlined" sx={{ flex: 1, p: '22px', borderRadius: '12px', borderColor: mgr.border, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <Typography sx={{ fontFamily: fonts.inter, fontWeight: 500, fontSize: 12, letterSpacing: '0.48px', lineHeight: 1.2, color: mgr.inkMuted, textTransform: 'uppercase' }}>
-                {s.label}
-              </Typography>
-              <Typography sx={{ fontFamily: fonts.inter, fontWeight: 700, fontSize: 30, lineHeight: 1.1, color: mgr.ink }}>
-                {s.value}
-              </Typography>
-            </Paper>
+            <StatCard key={s.label} icon={s.icon} label={s.label} value={s.value} />
           ))}
-        </Box>
+        </StatCardGrid>
 
         {/* Bar chart */}
         <Paper variant="outlined" sx={{ borderRadius: '12px', borderColor: mgr.border, p: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <Typography sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 15, lineHeight: 1.35, color: mgr.ink }}>
-            Usage by Member Type
+          <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 15, lineHeight: 1.35, color: mgr.ink }}>
+            การใช้งานตามประเภทสมาชิก
           </Typography>
           <Box sx={{ display: 'flex', gap: '24px', alignItems: 'flex-end' }}>
             {BARS.map((b) => {
@@ -65,7 +63,7 @@ export default function ManagerReports() {
                     {empty > 0 && <Box sx={{ height: empty, bgcolor: mgr.accentLight }} />}
                     <Box sx={{ flex: 1, bgcolor: mgr.accentGreen, borderRadius: '6px' }} />
                   </Box>
-                  <Typography sx={{ fontFamily: fonts.inter, fontWeight: 400, fontSize: 13, lineHeight: 1.4, color: mgr.inkMuted, whiteSpace: 'nowrap' }}>
+                  <Typography sx={{ fontFamily: fonts.thai, fontWeight: 400, fontSize: 13, lineHeight: 1.4, color: mgr.inkMuted, whiteSpace: 'nowrap' }}>
                     {b.label}
                   </Typography>
                 </Box>

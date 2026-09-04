@@ -1,11 +1,11 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"log"
-	"net/http"
 	"os"
+	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"library-management-system/auth"
 	"library-management-system/handlers"
@@ -16,6 +16,9 @@ import (
 const (
 	defaultAddr   = ":8080"
 	defaultOrigin = "http://localhost:3000"
+
+	// รอบตรวจข่าวที่ตั้งเวลาไว้ ถี่พอให้เห็นผลทันทีตอนสาธิต แต่ไม่ถี่จนกวนฐานข้อมูล
+	schedulerInterval = 30 * time.Second
 )
 
 func env(key, fallback string) string {
@@ -25,88 +28,98 @@ func env(key, fallback string) string {
 	return fallback
 }
 
-// seedAccounts สร้างบัญชีตัวอย่างครบทั้ง 4 role ไว้ทดสอบ
-// รหัสผ่านมาจาก LMS_SEED_PASSWORD ถ้าไม่ตั้งไว้จะสุ่มให้แล้วพิมพ์ออก log
-// ตั้งใจไม่ฝังรหัสผ่านไว้ในซอร์ส เพื่อไม่ให้เผลอหลุดขึ้น production
-func seedAccounts(users store.UserStore) error {
-	password := os.Getenv("LMS_SEED_PASSWORD")
-	generated := false
-	if password == "" {
-		raw := make([]byte, 12)
-		if _, err := rand.Read(raw); err != nil {
-			return err
+// runScheduler คอยเลื่อนสถานะข่าวที่ถึงกำหนดเผยแพร่และข่าวที่หมดอายุ
+// อยู่ฝั่งเซิร์ฟเวอร์เพื่อให้ทำงานต่อแม้ไม่มีใครเปิดหน้าเว็บค้างไว้
+func runScheduler(items *store.PRStore) {
+	ticker := time.NewTicker(schedulerInterval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		published, err := items.RunDueTransitions(time.Now())
+		if err != nil {
+			log.Printf("ตรวจข่าวตามกำหนดเวลาไม่สำเร็จ: %v", err)
+			continue
 		}
-		password = base64.RawURLEncoding.EncodeToString(raw)
-		generated = true
-	}
-
-	hash, err := auth.HashPassword(password)
-	if err != nil {
-		return err
-	}
-
-	seeds := []struct {
-		username string
-		role     models.Role
-	}{
-		{"student", models.RoleUser},
-		{"librarian", models.RoleLibrarian},
-		{"staff", models.RoleStaff},
-		{"manager", models.RoleManager},
-		{"admin", models.RoleAdmin},
-	}
-
-	for _, seed := range seeds {
-		if _, err := users.Create(&models.User{
-			Username:     seed.username,
-			PasswordHash: hash,
-			Role:         seed.role,
-		}); err != nil {
-			return err
+		for _, title := range published {
+			log.Printf("เผยแพร่ข่าวอัตโนมัติแล้ว: %s", title)
 		}
 	}
-
-	if generated {
-		log.Printf("บัญชีทดสอบ: student / librarian / staff / manager / admin")
-		log.Printf("รหัสผ่านที่สุ่มให้รอบนี้: %s", password)
-		log.Printf("อยากกำหนดเอง ตั้ง LMS_SEED_PASSWORD ก่อนรัน")
-	} else {
-		log.Printf("บัญชีทดสอบ: student / librarian / staff / admin (ใช้รหัสจาก LMS_SEED_PASSWORD)")
-	}
-	return nil
 }
 
 func main() {
-	users := store.NewInMemoryUserStore()
+	dbConfig := store.ConfigFromEnv()
+	db, err := store.Open(dbConfig)
+	if err != nil {
+		log.Fatalf("เปิดฐานข้อมูลไม่สำเร็จ: %v", err)
+	}
+	log.Printf("ฐานข้อมูล: %s", dbConfig.Describe())
+
+	users := store.NewUserStore(db)
+	prItems := store.NewPRStore(db)
+	events := store.NewEventStore(db)
+	people := store.NewPersonnelStore(db)
+
 	if err := seedAccounts(users); err != nil {
 		log.Fatalf("สร้างบัญชีตัวอย่างไม่สำเร็จ: %v", err)
 	}
+	if err := seedPersonnel(people); err != nil {
+		log.Fatalf("สร้างข้อมูลบุคลากรตัวอย่างไม่สำเร็จ: %v", err)
+	}
+	if err := seedPR(prItems); err != nil {
+		log.Fatalf("สร้างข่าวตัวอย่างไม่สำเร็จ: %v", err)
+	}
+	if err := seedEvents(events); err != nil {
+		log.Fatalf("สร้างกิจกรรมตัวอย่างไม่สำเร็จ: %v", err)
+	}
 
 	authAPI := &handlers.Auth{Users: users, Sessions: auth.NewSessionStore()}
+	prAPI := &handlers.PR{Items: prItems}
+	eventAPI := &handlers.Events{Items: events}
+	personnelAPI := &handlers.Personnel{People: people}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/login", authAPI.Login)
-	mux.HandleFunc("/api/logout", authAPI.Logout)
-	mux.HandleFunc("/api/me", authAPI.RequireAuth(authAPI.Me))
+	go runScheduler(prItems)
 
-	// v1 routes สำหรับ frontend-vite (Bearer token, envelope response)
-	mux.HandleFunc("/api/v1/auth/login", authAPI.LoginV1)
-	mux.HandleFunc("/api/v1/users/profile", authAPI.RequireAuth(authAPI.ProfileV1))
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery(), handlers.CORS(env("LMS_CORS_ORIGIN", defaultOrigin)))
 
-	// ตัวอย่างการกั้นด้วยสิทธิ์ — เฉพาะ admin เท่านั้นที่ผ่าน
-	mux.HandleFunc("/api/personnel", authAPI.RequirePermission(
-		models.PermManagePersonnel,
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			_, _ = w.Write([]byte(`{"personnel":[]}`))
-		},
-	))
+	api := router.Group("/api/v1")
+
+	// บัญชีผู้ใช้
+	api.POST("/auth/login", authAPI.Login)
+	api.POST("/auth/logout", authAPI.Logout)
+	api.GET("/users/profile", authAPI.RequireAuth(), authAPI.Profile)
+
+	// ข่าวประชาสัมพันธ์ — คนทั่วไปเห็นเฉพาะข่าวที่เผยแพร่แล้ว เจ้าหน้าที่เห็นทั้งหมด
+	api.GET("/pr", authAPI.OptionalAuth(), prAPI.List)
+	api.POST("/pr/:id/view", prAPI.View)
+
+	managePR := api.Group("/pr", authAPI.RequirePermission(models.PermManagePR))
+	managePR.POST("", prAPI.Create)
+	managePR.PATCH("/:id", prAPI.Update)
+	managePR.DELETE("/:id", prAPI.Delete)
+	managePR.POST("/:id/toggle", prAPI.Toggle)
+	managePR.POST("/:id/copy", prAPI.Copy)
+
+	// กิจกรรม — หน้ากิจกรรมเป็นหน้าสาธารณะ แต่การแก้ไขต้องมีสิทธิ์จัดการข่าว
+	api.GET("/events", eventAPI.List)
+
+	manageEvents := api.Group("/events", authAPI.RequirePermission(models.PermManagePR))
+	manageEvents.POST("", eventAPI.Create)
+	manageEvents.PATCH("/:id", eventAPI.Update)
+	manageEvents.DELETE("/:id", eventAPI.Delete)
+
+	// บุคลากร — ต้องมีสิทธิ์จัดการบุคลากรทุก endpoint
+	personnel := api.Group("/personnel", authAPI.RequirePermission(models.PermManagePersonnel))
+	personnel.GET("", personnelAPI.List)
+	personnel.POST("", personnelAPI.Create)
+	personnel.PATCH("/:id", personnelAPI.Update)
+	personnel.DELETE("/:id", personnelAPI.Delete)
+	personnel.POST("/:id/status", personnelAPI.ToggleStatus)
 
 	addr := env("LMS_ADDR", defaultAddr)
-	origin := env("LMS_CORS_ORIGIN", defaultOrigin)
-
-	log.Printf("Library Management System - Backend ฟังอยู่ที่ %s (อนุญาต origin %s)", addr, origin)
-	if err := http.ListenAndServe(addr, handlers.CORS(origin, mux)); err != nil {
+	log.Printf("Library Management System - Backend ฟังอยู่ที่ %s", addr)
+	if err := router.Run(addr); err != nil {
 		log.Fatalf("เซิร์ฟเวอร์หยุดทำงาน: %v", err)
 	}
 }

@@ -5,12 +5,53 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import seal from '../assets/logo.png'
 import wordmark from '../assets/logo-wordmark.png'
 import { useAuth } from '../auth/useAuth'
-import { actionsFor, type NavAction } from '../config/roles'
+import { actionsFor, roleDisplayName, type NavAction } from '../config/roles'
 import LoginModal from './LoginModal'
 import NotificationBell from './NotificationBell'
 import { colors, fonts } from '../theme'
+
+// ขนาดของแถบ header — ตัวเลขชุดนี้อ้างจาก HomeUI.css ของสาขา B6715588
+// เพื่อให้หน้าแรกของทุกคนในทีมหน้าตาเหมือนกัน
+const HEADER_HEIGHT = 70
+const NAV_GAP = '32px'
+const NAV_FONT_SIZE = 14
+
+// ขนาดโลโก้ — ปรับสามค่านี้ได้อิสระ ตราประทับกับตัวอักษรเป็นคนละไฟล์กัน
+// อย่าให้ SEAL_HEIGHT เกิน HEADER_HEIGHT ลบระยะหายใจบนล่างสักข้างละ 8px
+const SEAL_HEIGHT = 65
+const WORDMARK_HEIGHT = 40
+const LOGO_GAP = '8px'
+
+// สไตล์ร่วมของลิงก์ข้อความบน nav — ขาวล้วน จางลงตอนชี้
+const navTextSx = {
+  minWidth: 'auto',
+  p: 0,
+  fontFamily: fonts.kanit,
+  fontSize: NAV_FONT_SIZE,
+  fontWeight: 400,
+  color: 'white',
+  textTransform: 'none',
+  '&:hover': { bgcolor: 'transparent', opacity: 0.8 },
+} as const
+
+// สไตล์ปุ่มแคปซูลสีอ่อน ใช้กับปุ่มสิทธิ์พิเศษอย่าง Employees
+const pillSx = {
+  bgcolor: colors.headerPill,
+  color: colors.brandGreen,
+  borderRadius: '999px',
+  px: '18px',
+  py: '8px',
+  minWidth: 'auto',
+  fontFamily: fonts.kanit,
+  fontSize: 13,
+  fontWeight: 600,
+  lineHeight: 1.2,
+  textTransform: 'none',
+  '&:hover': { bgcolor: colors.headerPillHover },
+} as const
 
 const RESOURCE_LINKS = [
   { label: 'Books', to: '/books' },
@@ -21,7 +62,39 @@ const RESOURCE_LINKS = [
   { label: 'Online Resource', to: '/online-resource' },
 ]
 
-function ResourcesMenu({ compact }: { compact: boolean }) {
+// เมนูแบบดรอปดาวน์ที่ใช้ซ้ำทั้ง Resources และปุ่มสิทธิ์พิเศษที่มีเมนูย่อย
+function DropdownMenu({
+  anchorEl,
+  onClose,
+  items,
+}: {
+  anchorEl: HTMLElement | null
+  onClose: () => void
+  items: { label: string; to?: string }[]
+}) {
+  return (
+    <Menu
+      anchorEl={anchorEl}
+      open={Boolean(anchorEl)}
+      onClose={onClose}
+      slotProps={{ paper: { sx: { bgcolor: `${colors.brandGreen}f2`, minWidth: 200, mt: 1 } } }}
+    >
+      {items.map((item) => (
+        <MenuItem
+          key={item.to ?? item.label}
+          component={Link}
+          to={item.to ?? '/'}
+          onClick={onClose}
+          sx={{ fontFamily: fonts.kanit, fontSize: NAV_FONT_SIZE, color: 'white' }}
+        >
+          {item.label}
+        </MenuItem>
+      ))}
+    </Menu>
+  )
+}
+
+function ResourcesMenu() {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)
 
@@ -29,61 +102,35 @@ function ResourcesMenu({ compact }: { compact: boolean }) {
     <>
       <Button
         onClick={(e) => setAnchorEl(e.currentTarget)}
-        endIcon={<KeyboardArrowDownIcon sx={{ color: 'white !important', transition: 'transform 300ms', transform: open ? 'rotate(180deg)' : 'none' }} />}
-        sx={{
-          fontFamily: fonts.kanit,
-          fontSize: compact ? 18 : 22,
-          color: 'white',
-          transition: 'font-size 300ms',
-        }}
+        endIcon={
+          <KeyboardArrowDownIcon
+            sx={{
+              fontSize: '18px !important',
+              color: 'white',
+              transition: 'transform 200ms',
+              transform: open ? 'rotate(180deg)' : 'none',
+            }}
+          />
+        }
+        sx={{ ...navTextSx, gap: '2px' }}
       >
         Resources
       </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={() => setAnchorEl(null)}
-        slotProps={{ paper: { sx: { bgcolor: `${colors.brandGreen}cc`, minWidth: 209 } } }}
-      >
-        {RESOURCE_LINKS.map((item) => (
-          <MenuItem
-            key={item.to}
-            component={Link}
-            to={item.to}
-            onClick={() => setAnchorEl(null)}
-            sx={{ fontFamily: fonts.kanit, fontSize: 16, color: 'white' }}
-          >
-            {item.label}
-          </MenuItem>
-        ))}
-      </Menu>
+      <DropdownMenu anchorEl={anchorEl} onClose={() => setAnchorEl(null)} items={RESOURCE_LINKS} />
     </>
   )
 }
 
-// ปุ่มสิทธิ์พิเศษบน header — ถ้ามี children (เช่น "Employees") จะเป็น dropdown
-// ตาม Figma: hearder_when employee use (1:699) ปุ่ม Employees มี chevron ของตัวเอง
-function HeaderAction({ action, fontSize }: { action: NavAction; fontSize: number }) {
+// ปุ่มสิทธิ์พิเศษบน header — ถ้ามีเมนูย่อยจะกลายเป็นดรอปดาวน์
+// รายการมาจาก permission จริงของผู้ใช้ ไม่ได้เช็ค role ตรงๆ
+function HeaderAction({ action }: { action: NavAction }) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)
   const children = action.children ?? []
 
   if (children.length === 0) {
     return (
-      <Button
-        component={Link}
-        to={action.to ?? '/'}
-        sx={{
-          mr: '72px',
-          height: 35,
-          bgcolor: colors.surfaceMuted,
-          color: colors.brandGreen,
-          fontFamily: fonts.kanit,
-          fontSize,
-          borderRadius: '10px',
-          '&:hover': { bgcolor: colors.surfaceMuted },
-        }}
-      >
+      <Button component={Link} to={action.to ?? '/'} sx={pillSx}>
         {action.label}
       </Button>
     )
@@ -95,63 +142,46 @@ function HeaderAction({ action, fontSize }: { action: NavAction; fontSize: numbe
         onClick={(e) => setAnchorEl(e.currentTarget)}
         endIcon={
           <KeyboardArrowDownIcon
-            sx={{ color: `${colors.brandGreen} !important`, transition: 'transform 300ms', transform: open ? 'rotate(180deg)' : 'none' }}
+            sx={{
+              fontSize: '18px !important',
+              color: `${colors.brandGreen} !important`,
+              transition: 'transform 200ms',
+              transform: open ? 'rotate(180deg)' : 'none',
+            }}
           />
         }
-        sx={{
-          mr: '72px',
-          height: 35,
-          bgcolor: colors.surfaceMuted,
-          color: colors.brandGreen,
-          fontFamily: fonts.kanit,
-          fontSize,
-          borderRadius: '10px',
-          '&:hover': { bgcolor: colors.surfaceMuted },
-        }}
+        sx={{ ...pillSx, gap: '2px' }}
       >
         {action.label}
       </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={() => setAnchorEl(null)}
-        slotProps={{ paper: { sx: { bgcolor: `${colors.brandGreen}cc`, minWidth: 209 } } }}
-      >
-        {children.map((child) => (
-          <MenuItem
-            key={child.to}
-            component={Link}
-            to={child.to ?? '/'}
-            onClick={() => setAnchorEl(null)}
-            sx={{ fontFamily: fonts.kanit, fontSize: 16, color: 'white' }}
-          >
-            {child.label}
-          </MenuItem>
-        ))}
-      </Menu>
+      <DropdownMenu anchorEl={anchorEl} onClose={() => setAnchorEl(null)} items={children} />
     </>
   )
 }
 
 function Header() {
   const { user, isLoading, logout, can } = useAuth()
-  const [compact, setCompact] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
 
+  // ไม่ย่อขนาดตอนเลื่อนแล้ว เพราะแถบเตี้ยอยู่แล้ว เหลือแค่เงาบอกว่าหน้าถูกเลื่อนลงมา
   useEffect(() => {
-    const onScroll = () => setCompact(window.scrollY > 60)
+    const onScroll = () => setScrolled(window.scrollY > 60)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const actions = user ? actionsFor(can) : []
-  const navFontSize = compact ? 18 : 22
+  // ปุ่มหลักบน header โชว์ชื่อสิทธิ์ของผู้ใช้ เช่น "Librarian" แทนคำกลางๆ ว่า Employees
+  // ผู้ใช้จะได้รู้ทันทีว่ากำลังเข้าด้วยสิทธิ์ระดับไหน
+  const actions = (user ? actionsFor(can) : []).map((action) =>
+    user && action.label === 'Employees' ? { ...action, label: roleDisplayName(user.role) } : action,
+  )
 
   return (
     <>
-      {/* กันที่ให้ header ที่ลอยอยู่ ความสูงคงที่ เนื้อหาข้างล่างจะได้ไม่กระตุกตอนหด */}
-      <Box sx={{ height: 110 }} aria-hidden />
+      {/* กันที่ให้ header ที่ลอยอยู่ เนื้อหาข้างล่างจะได้ไม่ถูกทับ */}
+      <Box sx={{ height: HEADER_HEIGHT }} aria-hidden />
       <Box
         component="header"
         sx={{
@@ -159,69 +189,66 @@ function Header() {
           insetInline: 0,
           top: 0,
           zIndex: (t) => t.zIndex.appBar,
+          height: HEADER_HEIGHT,
           bgcolor: colors.brandGreen,
-          height: compact ? 72 : 110,
-          transition: 'height 300ms ease-out, box-shadow 300ms ease-out',
-          boxShadow: compact ? '0 4px 20px rgba(0,0,0,0.25)' : 'none',
+          px: { xs: '20px', md: '40px' },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.25)' : 'none',
+          transition: 'box-shadow 300ms ease-out',
         }}
       >
+        {/* ประกอบตราประทับกับตัวอักษรเองแทนการใช้ logo-full.png
+            เพราะสองไฟล์นี้ความละเอียดสูงกว่ามาก (229px และ 221px เทียบกับ 100px)
+            และปรับขนาดแต่ละชิ้นแยกกันได้ ไม่ติดสัดส่วนที่ถูกรวมมาแล้วในไฟล์เดียว */}
         <Box
-          sx={{
-            mx: 'auto',
-            maxWidth: 1440,
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: '83px',
-          }}
+          component={Link}
+          to="/"
+          sx={{ display: 'flex', alignItems: 'center', gap: LOGO_GAP, flex: 'none' }}
         >
-          <Link to="/">
-            <Box
-              component="img"
-              src={wordmark}
-              alt="Udompanya University"
-              sx={{
-                height: compact ? 42 : 65,
-                width: compact ? 139 : 215,
-                objectFit: 'contain',
-                transition: 'height 300ms, width 300ms',
-              }}
-            />
-          </Link>
+          <Box
+            component="img"
+            src={seal}
+            alt=""
+            sx={{ height: SEAL_HEIGHT, width: 'auto', display: 'block' }}
+          />
+          <Box
+            component="img"
+            src={wordmark}
+            alt="Udompanya University"
+            sx={{ height: WORDMARK_HEIGHT, width: 'auto', display: 'block' }}
+          />
+        </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {actions.map((action) => (
-              <HeaderAction key={action.label} action={action} fontSize={navFontSize} />
-            ))}
+        <Box
+          component="nav"
+          sx={{ display: 'flex', alignItems: 'center', gap: NAV_GAP }}
+        >
+          {actions.map((action) => (
+            <HeaderAction key={action.label} action={action} />
+          ))}
 
-            <Button component={Link} to="/" sx={{ fontFamily: fonts.kanit, fontSize: navFontSize, color: 'white' }}>
-              Home
-            </Button>
+          <Button component={Link} to="/" sx={navTextSx}>
+            Home
+          </Button>
 
-            <Box sx={{ ml: '75px' }}>
-              <ResourcesMenu compact={compact} />
-            </Box>
+          <ResourcesMenu />
 
-            <Box sx={{ ml: '20px' }}>
-              <NotificationBell />
-            </Box>
+          <NotificationBell />
 
-            <Box sx={{ ml: '27px', minWidth: 80 }}>
-              {!isLoading &&
-                (user ? (
-                  <Button onClick={logout} sx={{ fontFamily: fonts.kanit, fontSize: navFontSize, color: 'white' }}>
-                    Log out
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => setLoginOpen(true)}
-                    sx={{ fontFamily: fonts.kanit, fontSize: navFontSize, color: 'white' }}
-                  >
-                    Sign in
-                  </Button>
-                ))}
-            </Box>
+          {/* กันตำแหน่งไว้ตอนยังไม่รู้ว่าล็อกอินอยู่ไหม เมนูจะได้ไม่กระตุก */}
+          <Box sx={{ minWidth: 56, display: 'flex', justifyContent: 'flex-end' }}>
+            {!isLoading &&
+              (user ? (
+                <Button onClick={logout} sx={navTextSx}>
+                  Log out
+                </Button>
+              ) : (
+                <Button onClick={() => setLoginOpen(true)} sx={navTextSx}>
+                  Sign in
+                </Button>
+              ))}
           </Box>
         </Box>
       </Box>

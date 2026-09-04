@@ -5,7 +5,6 @@ import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import MenuItem from '@mui/material/MenuItem'
-import Paper from '@mui/material/Paper'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -14,13 +13,17 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
 import ManagerLayout from '../../../components/ManagerLayout'
+import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
+import HowToRegOutlined from '@mui/icons-material/HowToRegOutlined'
+import PersonOffOutlined from '@mui/icons-material/PersonOffOutlined'
+import StatCard, { StatCardGrid } from '../../../components/StatCard'
+import Card from '../../../components/Card'
 import { PersonnelProvider, usePersonnel, DEPARTMENTS } from '../../../context/PersonnelContext'
 import PersonnelFormDialog from './PersonnelFormDialog'
 import PersonnelDeleteDialog from './PersonnelDeleteDialog'
 import type { Personnel, PersonnelFormData } from '../../../interface/IPersonnelInterface'
-import { fonts, colors } from '../../../theme'
+import { fonts, colors, sidebar as sidebarStyle } from '../../../theme'
 
 const HEAD = { fontFamily: fonts.kanit, fontWeight: 600, color: colors.brandGreen, whiteSpace: 'nowrap' as const }
 const CELL = { fontFamily: fonts.kanit }
@@ -75,23 +78,41 @@ function PersonnelTable() {
 
   return (
     <>
-      {/* Summary bar */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        {[
-          { label: 'บุคลากรทั้งหมด', value: personnel.length, color: colors.brandGreen },
-          { label: 'Active', value: activeCount, color: '#2E7D32' },
-          { label: 'Inactive', value: personnel.length - activeCount, color: '#757575' },
-        ].map((s) => (
-          <Paper key={s.label} variant="outlined" sx={{ px: 3, py: 1.5, minWidth: 130, borderRadius: 2 }}>
-            <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: 'text.secondary' }}>{s.label}</Typography>
-            <Typography sx={{ fontFamily: fonts.kanit, fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>
-              {s.value}
-            </Typography>
-          </Paper>
-        ))}
+      {/* การ์ดสรุปจำนวนบุคลากร */}
+      <Box sx={{ mb: 3 }}>
+        <StatCardGrid>
+          <StatCard
+            icon={<PeopleAltOutlined />}
+            label="บุคลากรทั้งหมด"
+            value={personnel.length}
+            valueColor={colors.brandGreen}
+          />
+          <StatCard
+            icon={<HowToRegOutlined />}
+            label="Active"
+            value={activeCount}
+            valueColor="#2E7D32"
+          />
+          <StatCard
+            icon={<PersonOffOutlined />}
+            label="Inactive"
+            value={personnel.length - activeCount}
+            valueColor="#757575"
+          />
+        </StatCardGrid>
       </Box>
 
-      {/* Toolbar */}
+      {/* ตารางบุคลากร — หัวการ์ดมีชื่อ คำอธิบาย และปุ่มเพิ่ม */}
+      <Card
+        title="รายชื่อบุคลากร"
+        subtitle={`แสดง ${filtered.length} จาก ${personnel.length} รายการ`}
+        actions={
+          <Button variant="contained" disableElevation onClick={openAdd}
+            sx={{ fontFamily: fonts.kanit, textTransform: 'none', borderRadius: '8px', bgcolor: colors.brandGreen, '&:hover': { bgcolor: '#2E7D32' } }}>
+            + เพิ่มบุคลากร
+          </Button>
+        }
+      >
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
         <TextField
           size="small"
@@ -123,16 +144,9 @@ function PersonnelTable() {
             <MenuItem key={s} value={s} sx={{ fontFamily: fonts.kanit }}>{s}</MenuItem>
           ))}
         </TextField>
-        <Box sx={{ ml: 'auto' }}>
-          <Button variant="contained" onClick={openAdd}
-            sx={{ fontFamily: fonts.kanit, bgcolor: colors.brandGreen, '&:hover': { bgcolor: '#2E7D32' } }}>
-            + เพิ่มบุคลากร
-          </Button>
-        </Box>
       </Box>
 
-      {/* Table */}
-      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+      <TableContainer sx={{ border: `1px solid ${sidebarStyle.border}`, borderRadius: '10px' }}>
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: '#f1f8e9' }}>
@@ -194,10 +208,7 @@ function PersonnelTable() {
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: 'text.secondary', mt: 1 }}>
-        แสดง {filtered.length} จาก {personnel.length} รายการ
-      </Typography>
+      </Card>
 
       <PersonnelFormDialog open={formOpen} editing={editing} onClose={() => setFormOpen(false)} onSave={handleSave} />
       <PersonnelDeleteDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
@@ -208,7 +219,7 @@ function PersonnelTable() {
 export default function PersonnelPage() {
   return (
     <PersonnelProvider>
-      <ManagerLayout title="Personnel">
+      <ManagerLayout title="บุคลากร">
         <PersonnelTable />
       </ManagerLayout>
     </PersonnelProvider>

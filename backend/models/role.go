@@ -24,17 +24,17 @@ var AllRoles = []Role{RoleUser, RoleLibrarian, RoleStaff, RoleManager, RoleAdmin
 type Permission string
 
 const (
-	PermBorrowResources  Permission = "borrow:resources"   // ยืม-คืนของตัวเอง
-	PermBookRoom         Permission = "room:book"          // จองห้องศึกษา
-	PermSubmitFeedback   Permission = "feedback:submit"    // ส่งข้อเสนอแนะ/ร้องเรียน
-	PermAccessBackOffice Permission = "backoffice:access"  // เข้าหน้าหลังบ้านพนักงาน
-	PermManageCatalog    Permission = "catalog:manage"     // จัดการหนังสือและทรัพยากร
-	PermApproveLoans     Permission = "loans:approve"      // อนุมัติการยืม-คืน
-	PermManagePR         Permission = "pr:manage"          // จัดการข่าวประชาสัมพันธ์
-	PermManageRooms      Permission = "rooms:manage"       // จัดการห้องอัดเสียง
-	PermManageEquipment  Permission = "equipment:manage"   // จัดการอุปกรณ์และงานแจ้งซ่อม
-	PermManagePersonnel  Permission = "personnel:manage"   // จัดการบุคลากร
-	PermAssignRoles      Permission = "roles:assign"       // กำหนด role ให้บัญชีอื่น
+	PermBorrowResources  Permission = "borrow:resources"  // ยืม-คืนของตัวเอง
+	PermBookRoom         Permission = "room:book"         // จองห้องศึกษา
+	PermSubmitFeedback   Permission = "feedback:submit"   // ส่งข้อเสนอแนะ/ร้องเรียน
+	PermAccessBackOffice Permission = "backoffice:access" // เข้าหน้าหลังบ้านพนักงาน
+	PermManageCatalog    Permission = "catalog:manage"    // จัดการหนังสือและทรัพยากร
+	PermApproveLoans     Permission = "loans:approve"     // อนุมัติการยืม-คืน
+	PermManagePR         Permission = "pr:manage"         // จัดการข่าวประชาสัมพันธ์
+	PermManageRooms      Permission = "rooms:manage"      // จัดการห้องอัดเสียง
+	PermManageEquipment  Permission = "equipment:manage"  // จัดการอุปกรณ์และงานแจ้งซ่อม
+	PermManagePersonnel  Permission = "personnel:manage"  // จัดการบุคลากร
+	PermAssignRoles      Permission = "roles:assign"      // กำหนด role ให้บัญชีอื่น
 )
 
 // สิทธิ์พื้นฐานที่ทุกบัญชีที่ล็อกอินได้รับ ไม่ว่าจะ role ไหน

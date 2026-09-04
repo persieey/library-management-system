@@ -1,44 +1,45 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 
 	"library-management-system/auth"
 	"library-management-system/models"
 	"library-management-system/store"
 )
 
-type contextKey string
-
-const userContextKey contextKey = "user"
+const userContextKey = "currentUser"
 
 // UserFrom ดึงผู้ใช้ที่ผ่านการยืนยันตัวตนแล้วออกจาก request
-func UserFrom(r *http.Request) (*models.User, bool) {
-	user, ok := r.Context().Value(userContextKey).(*models.User)
+func UserFrom(c *gin.Context) (*models.User, bool) {
+	value, exists := c.Get(userContextKey)
+	if !exists {
+		return nil, false
+	}
+	user, ok := value.(*models.User)
 	return user, ok
 }
 
-// Auth รวมของที่ middleware และ handler ต้องใช้ร่วมกัน
+// Auth รวมของที่ middleware และ handler ฝั่งบัญชีผู้ใช้ต้องใช้ร่วมกัน
 type Auth struct {
 	Users    store.UserStore
 	Sessions *auth.SessionStore
 }
 
-// current อ่าน Bearer token หรือ cookie แล้วหาเจ้าของ
-func (a *Auth) current(r *http.Request) (*models.User, bool) {
-	var token string
-
-	if h := r.Header.Get("Authorization"); len(h) > 7 && h[:7] == "Bearer " {
-		token = h[7:]
-	} else if cookie, err := r.Cookie(auth.CookieName); err == nil {
-		token = cookie.Value
+// current อ่าน Bearer token จาก header แล้วหาเจ้าของ
+func (a *Auth) current(c *gin.Context) (*models.User, bool) {
+	header := c.GetHeader("Authorization")
+	if !strings.HasPrefix(header, "Bearer ") {
+		return nil, false
 	}
-
+	token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
 	if token == "" {
 		return nil, false
 	}
+
 	userID, ok := a.Sessions.UserID(token)
 	if !ok {
 		return nil, false
@@ -51,49 +52,68 @@ func (a *Auth) current(r *http.Request) (*models.User, bool) {
 }
 
 // RequireAuth ปล่อยผ่านเฉพาะคำขอที่ล็อกอินแล้ว
-func (a *Auth) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		user, ok := a.current(r)
+func (a *Auth) RequireAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, ok := a.current(c)
 		if !ok {
-			writeError(w, http.StatusUnauthorized, "ต้องเข้าสู่ระบบก่อน")
+			AbortFail(c, http.StatusUnauthorized, "ต้องเข้าสู่ระบบก่อน")
 			return
 		}
-		next(w, r.WithContext(context.WithValue(r.Context(), userContextKey, user)))
+		c.Set(userContextKey, user)
+		c.Next()
 	}
 }
 
 // RequirePermission ปล่อยผ่านเฉพาะคนที่มีสิทธิ์นั้นจริง
 // นี่คือจุดบังคับสิทธิ์จริง ฝั่งหน้าเว็บแค่ซ่อนปุ่มเท่านั้น เชื่อไม่ได้
-func (a *Auth) RequirePermission(perm models.Permission, next http.HandlerFunc) http.HandlerFunc {
-	return a.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
-		user, _ := UserFrom(r)
-		if !user.Can(perm) {
-			writeError(w, http.StatusForbidden, "ไม่มีสิทธิ์เข้าถึงส่วนนี้")
+func (a *Auth) RequirePermission(perm models.Permission) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, ok := a.current(c)
+		if !ok {
+			AbortFail(c, http.StatusUnauthorized, "ต้องเข้าสู่ระบบก่อน")
 			return
 		}
-		next(w, r)
-	})
+		if !user.Can(perm) {
+			AbortFail(c, http.StatusForbidden, "ไม่มีสิทธิ์เข้าถึงส่วนนี้")
+			return
+		}
+		c.Set(userContextKey, user)
+		c.Next()
+	}
+}
+
+// OptionalAuth ไม่กันใครออก แค่บอกต่อว่าคนเรียกเป็นใครถ้าล็อกอินมา
+// ใช้กับ endpoint ที่คนทั่วไปก็ดูได้ แต่เจ้าหน้าที่ควรเห็นมากกว่า
+func (a *Auth) OptionalAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if user, ok := a.current(c); ok {
+			c.Set(userContextKey, user)
+		}
+		c.Next()
+	}
 }
 
 // CORS อนุญาต localhost ทุก port เพื่อรองรับ dev server ที่ใช้ port ต่างกัน
 // ใน production ควรเปลี่ยนเป็น origin จริงแทน
-func CORS(allowedOrigin string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		allowed := origin == allowedOrigin ||
+func CORS(allowedOrigin string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		allowed := origin != "" && (origin == allowedOrigin ||
 			strings.HasPrefix(origin, "http://localhost:") ||
-			strings.HasPrefix(origin, "http://127.0.0.1:")
+			strings.HasPrefix(origin, "http://127.0.0.1:"))
+
 		if allowed {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
-			w.Header().Set("Vary", "Origin")
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Credentials", "true")
+			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+			c.Header("Vary", "Origin")
 		}
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
-		next.ServeHTTP(w, r)
-	})
+		c.Next()
+	}
 }

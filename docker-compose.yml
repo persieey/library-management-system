@@ -1,0 +1,60 @@
+# ฐานข้อมูลสำหรับตอนพัฒนา — Postgres + pgAdmin
+#
+# วิธีใช้
+#   docker compose up -d          เปิดฐานข้อมูลกับ pgAdmin
+#   docker compose down           ปิด (ข้อมูลยังอยู่ใน volume)
+#   docker compose down -v        ปิดและล้างข้อมูลทิ้งทั้งหมด
+#
+# เปิดแล้วสั่ง backend ให้มาต่อด้วยสองบรรทัดนี้ (ดู .env.example)
+#   LMS_DB_DRIVER=postgres
+#   LMS_DB_DSN=postgres://lms:lmsdev@localhost:5432/library?sslmode=disable
+#
+# ถ้าไม่เปิด compose แอปจะกลับไปใช้ SQLite ไฟล์เดียวเหมือนเดิมโดยอัตโนมัติ
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lmsdev}
+      POSTGRES_DB: ${POSTGRES_DB:-library}
+      # บังคับ UTF-8 เพื่อให้เก็บภาษาไทยได้ถูกต้อง
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      # เปิดพอร์ตออกมาให้ backend ที่รันบนเครื่อง (ไม่ได้อยู่ใน container) ต่อได้
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # pgAdmin ต้องรอจนกว่าฐานข้อมูลจะพร้อมจริง ไม่ใช่แค่ container เริ่มทำงาน
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lms} -d ${POSTGRES_DB:-library}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    container_name: lms_pgadmin
+    restart: unless-stopped
+    environment:
+      # ต้องเป็นอีเมลที่รูปแบบถูกต้องจริง pgAdmin ไม่รับโดเมนอย่าง .local จะวนรีสตาร์ท
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin1234}
+      # โหมดเครื่องเดียว ไม่ต้องล็อกอิน pgAdmin ซ้ำอีกชั้นตอนพัฒนา
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+      # ลงทะเบียนเซิร์ฟเวอร์ไว้ให้แล้ว เปิด pgAdmin มาก็เห็นฐานข้อมูลเลย ไม่ต้องกรอก host เอง
+      - ./docker/pgadmin-servers.json:/pgadmin4/servers.json:ro
+
+volumes:
+  pgdata:
+  pgadmin:

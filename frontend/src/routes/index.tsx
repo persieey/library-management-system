@@ -1,5 +1,9 @@
 import { Navigate, Routes, Route } from 'react-router-dom'
 import PRPage from '../pages/pr'
+import EventsPage from '../pages/events'
+import EventDetailPage from '../pages/events/detail'
+import BooksPage from '../pages/books'
+import BookDetailPage from '../pages/books/detail'
 import Personnel from '../pages/personnel'
 import EmployeesHome from '../pages/employees'
 import ManagePR from '../pages/employees/pr'
@@ -17,6 +21,9 @@ import ManagerComplaints from '../pages/manager/complaints'
 import ManagerReports from '../pages/manager/reports'
 
 const COMING_SOON_ROUTES = [
+  // หน้าบัญชีผู้ใช้ — เปิดจากเมนูโปรไฟล์มุมขวาบน ยังไม่ได้ทำ แต่ต้องมีหน้ารองรับไม่ให้ 404
+  { path: 'profile', title: 'แก้ไขโปรไฟล์', permission: PERMISSIONS.ACCESS_BACKOFFICE },
+  { path: 'settings', title: 'ตั้งค่าบัญชี', permission: PERMISSIONS.ACCESS_BACKOFFICE },
   { path: 'recording-room', title: 'Recording Room', permission: PERMISSIONS.MANAGE_ROOMS },
   { path: 'equipment', title: 'Equipment', permission: PERMISSIONS.MANAGE_EQUIPMENT },
   { path: 'repair-request', title: 'Repair request', permission: PERMISSIONS.MANAGE_EQUIPMENT },
@@ -29,6 +36,10 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<PRPage />} />
+      <Route path="/events" element={<EventsPage />} />
+      <Route path="/events/:id" element={<EventDetailPage />} />
+      <Route path="/books" element={<BooksPage />} />
+      <Route path="/books/:id" element={<BookDetailPage />} />
 
       {/* Manager portal — all pages behind MANAGE_PERSONNEL permission */}
       <Route
@@ -125,6 +136,17 @@ function AppRoutes() {
 
       <Route
         path="/employees/pr"
+        element={
+          <RequirePermission permission={PERMISSIONS.MANAGE_PR}>
+            <ManagePR />
+          </RequirePermission>
+        }
+      />
+
+      {/* หัวข้อย่อยของระบบประชาสัมพันธ์ — ใช้คอมโพเนนต์เดียวกัน แยกด้วย path
+          เพื่อให้กดจาก sidebar แล้วลิงก์ตรงไปหน้านั้นได้ และกดปุ่มย้อนกลับได้ */}
+      <Route
+        path="/employees/pr/:tab"
         element={
           <RequirePermission permission={PERMISSIONS.MANAGE_PR}>
             <ManagePR />

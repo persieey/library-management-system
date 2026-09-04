@@ -22,11 +22,11 @@ export default function ManagerComingSoon({ title, icon = '🚧' }: Props) {
         }}
       >
         <Typography sx={{ fontSize: 48 }}>{icon}</Typography>
-        <Typography sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 20, color: mgr.ink }}>
-          Coming Soon
+        <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 20, color: mgr.ink }}>
+          เร็วๆ นี้
         </Typography>
-        <Typography sx={{ fontFamily: fonts.inter, fontWeight: 400, fontSize: 14, color: mgr.inkMuted, textAlign: 'center', maxWidth: 380 }}>
-          This section is under development. Check back soon.
+        <Typography sx={{ fontFamily: fonts.thai, fontWeight: 400, fontSize: 14, color: mgr.inkMuted, textAlign: 'center', maxWidth: 380 }}>
+          ส่วนนี้กำลังอยู่ระหว่างการพัฒนา แวะกลับมาดูใหม่เร็วๆ นี้
         </Typography>
       </Box>
     </ManagerLayout>

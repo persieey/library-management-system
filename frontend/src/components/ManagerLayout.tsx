@@ -1,11 +1,12 @@
-import { useMemo } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import seal from '../assets/logo.png'
-import wordmark from '../assets/logo-wordmark.png'
 import { useAuth } from '../auth/useAuth'
-import { fonts } from '../theme'
+import Sidebar, { type SidebarItem } from './Sidebar'
+import BrandLogo from './BrandLogo'
+import UserMenu from './UserMenu'
+import PageHeader, { type Crumb } from './PageHeader'
+import { navIcon } from './navIcons'
+import { sidebar as sidebarStyle } from '../theme'
 
 // Design tokens — manager admin panel (Figma: hQfNBMFGPo3PDYXhDIFTeX)
 export const mgr = {
@@ -21,71 +22,34 @@ export const mgr = {
   danger: '#b91c1c',
 } as const
 
-const SIDEBAR_NAV = [
-  { icon: '🏠', label: 'Dashboard', to: '/manager' },
-  { icon: '🗓️', label: 'Schedules', to: '/manager/schedules' },
-  { icon: '📝', label: 'Leave', to: '/manager/leave' },
-  { icon: '👥', label: 'Personnel', to: '/manager/personnel' },
-  { icon: '📚', label: 'Books', to: '/manager/books' },
-  { icon: '📣', label: 'Activities', to: '/manager/activities' },
-  { icon: '💬', label: 'Complaints', to: '/manager/complaints' },
-  { icon: '📊', label: 'Reports', to: '/manager/reports' },
-]
+// บล็อกโลโก้บน header กว้างเท่าแถบเมนู เส้นแบ่งจะได้ตรงกันพอดี
+const SIDEBAR_WIDTH = sidebarStyle.width
 
-function NavItem({ icon, label, to, active }: { icon: string; label: string; to: string; active: boolean }) {
-  return (
-    <Box
-      component={Link}
-      to={to}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        height: 32,
-        px: '12px',
-        borderRadius: '8px',
-        bgcolor: active ? 'white' : 'transparent',
-        textDecoration: 'none',
-        transition: 'background-color 150ms',
-        '&:hover': { bgcolor: active ? 'white' : 'rgba(255,255,255,0.1)' },
-      }}
-    >
-      <span style={{ fontSize: 15, lineHeight: 1 }}>{icon}</span>
-      <Typography
-        sx={{
-          fontFamily: fonts.inter,
-          fontWeight: 500,
-          fontSize: 14,
-          lineHeight: 1,
-          color: active ? mgr.accentGreen : mgr.sidebarMuted,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {label}
-      </Typography>
-    </Box>
-  )
-}
+// ความสูงแถบบน — ให้เท่ากับ BackOfficeLayout จะได้ต่อกันสนิทเวลาสลับหน้า
+const HEADER_HEIGHT = 72
+
+// รายการเมนูของระบบหัวหน้าหอสมุด — เพิ่มหรือลบเมนูแก้ที่นี่ที่เดียว
+const SIDEBAR_NAV: SidebarItem[] = [
+  { id: 'overview', icon: navIcon('overview'), label: 'ภาพรวม', to: '/manager' },
+  { id: 'schedules', icon: navIcon('schedules'), label: 'ตารางเวร', to: '/manager/schedules' },
+  { id: 'leave', icon: navIcon('leave'), label: 'การลา', to: '/manager/leave' },
+  { id: 'personnel', icon: navIcon('personnel'), label: 'บุคลากร', to: '/manager/personnel' },
+  { id: 'books', icon: navIcon('books'), label: 'หนังสือ', to: '/manager/books' },
+  { id: 'activities', icon: navIcon('activities'), label: 'กิจกรรม', to: '/manager/activities' },
+  { id: 'complaints', icon: navIcon('complaints'), label: 'เรื่องร้องเรียน', to: '/manager/complaints' },
+  { id: 'reports', icon: navIcon('reports'), label: 'รายงาน', to: '/manager/reports' },
+]
 
 interface Props {
   title: string
   children: React.ReactNode
+  /** ขั้นกลางของ breadcrumb เช่น [{ label: 'บุคลากร', to: '/manager/personnel' }] */
+  trail?: Crumb[]
 }
 
-export default function ManagerLayout({ title, children }: Props) {
-  const { pathname } = useLocation()
+export default function ManagerLayout({ title, children, trail }: Props) {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
-
-  const initials = useMemo(() => {
-    const name = user?.username ?? 'HL'
-    return name
-      .split(/\s+/)
-      .map((p: string) => p[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2) || 'HL'
-  }, [user])
+  const { logout } = useAuth()
 
   const handleLogout = () => {
     logout()
@@ -97,132 +61,48 @@ export default function ManagerLayout({ title, children }: Props) {
       {/* BackOffice-style header */}
       <Box
         component="header"
-        sx={{ display: 'flex', height: 100, borderBottom: '1px solid #e5e5e5', flexShrink: 0 }}
+        sx={{ display: 'flex', height: HEADER_HEIGHT, bgcolor: 'white', flexShrink: 0 }}
       >
         <Box
           component={Link}
           to="/"
           sx={{
-            display: 'flex', width: 250, flexShrink: 0,
-            alignItems: 'center', gap: '10px',
-            bgcolor: '#12372f', px: '10px', textDecoration: 'none',
+            display: 'flex', width: SIDEBAR_WIDTH, flexShrink: 0,
+            alignItems: 'center', px: '16px', textDecoration: 'none',
+            // เส้นแบ่งตั้ง ต่อกับขอบขวาของ sidebar ให้เป็นเส้นเดียวยาวตลอดจอ
+            borderRight: `1px solid ${mgr.border}`,
           }}
         >
-          <Box component="img" src={seal} alt="" sx={{ height: 80, width: 80, objectFit: 'contain', flexShrink: 0 }} />
-          <Box component="img" src={wordmark} alt="Udompanya University" sx={{ height: 40, width: 132, objectFit: 'contain', flexShrink: 0 }} />
+          <BrandLogo sealHeight={56} wordmarkHeight={32} />
         </Box>
-        <Box sx={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'flex-end', px: '35px' }}>
-          <Box
-            component="button"
-            onClick={handleLogout}
-            sx={{
-              height: 40, width: 120, borderRadius: '5px',
-              bgcolor: '#12372f', border: 'none', cursor: 'pointer',
-              fontFamily: fonts.kanit, fontSize: 22, color: 'white',
-              '&:hover': { bgcolor: '#0d2720' },
-            }}
-          >
-            Log out
-          </Box>
+        {/* เส้นล่างอยู่เฉพาะฝั่งเนื้อหา คอลัมน์ sidebar จะได้เป็นแถบขาวยาวต่อเนื่อง
+            ปุ่มออกจากระบบอยู่ท้าย sidebar ที่เดียว ไม่ต้องมีซ้ำบน header */}
+        <Box
+          sx={{
+            display: 'flex',
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            px: '32px',
+            borderBottom: `1px solid ${mgr.border}`,
+          }}
+        >
+          <UserMenu compact />
         </Box>
       </Box>
 
       <Box sx={{ display: 'flex', flex: 1 }}>
-        {/* Sidebar */}
-        <Box
-          component="nav"
-          sx={{
-            width: 250,
-            flexShrink: 0,
-            bgcolor: mgr.sidebar,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '3px',
-            pt: '20px',
-            px: '8px',
-            pb: '20px',
-          }}
-        >
-          {SIDEBAR_NAV.map((item) => {
-            const active =
-              item.to === '/manager'
-                ? pathname === '/manager'
-                : pathname.startsWith(item.to)
-            return <NavItem key={item.to} {...item} active={active} />
-          })}
-
-          <Box sx={{ flex: 1 }} />
-
-          <Box
-            onClick={handleLogout}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              height: 32,
-              px: '12px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'background-color 150ms',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            }}
-          >
-            <span style={{ fontSize: 15, lineHeight: 1 }}>🚪</span>
-            <Typography sx={{ fontFamily: fonts.inter, fontWeight: 500, fontSize: 14, color: mgr.sidebarMuted }}>
-              Logout
-            </Typography>
-          </Box>
-        </Box>
+        <Sidebar
+          items={SIDEBAR_NAV}
+          bottomItems={[{ id: 'logout', icon: navIcon('logout'), label: 'ออกจากระบบ', onClick: handleLogout }]}
+        />
 
         {/* Content area */}
         <Box sx={{ flex: 1, bgcolor: mgr.bg, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          {/* Page topbar */}
-          <Box
-            sx={{
-              bgcolor: 'white',
-              borderBottom: `1px solid ${mgr.border}`,
-              px: '32px',
-              py: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Typography
-              sx={{ fontFamily: fonts.inter, fontWeight: 700, fontSize: 26, lineHeight: 1.25, color: mgr.ink }}
-            >
-              {title}
-            </Typography>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  bgcolor: mgr.accentLight,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <Typography sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 13, color: mgr.accentGreen }}>
-                  {initials}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography sx={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 13, lineHeight: 1.4, color: mgr.ink }}>
-                  Head Librarian
-                </Typography>
-                <Typography sx={{ fontFamily: fonts.inter, fontWeight: 400, fontSize: 13, lineHeight: 1.4, color: mgr.inkMuted }}>
-                  Central Library
-                </Typography>
-              </Box>
-            </Box>
+          <Box component="main" sx={{ flex: 1, minWidth: 0, px: '32px', py: '28px' }}>
+            <PageHeader title={title} trail={trail} />
+            {children}
           </Box>
-
-          <Box sx={{ p: '32px', flex: 1 }}>{children}</Box>
         </Box>
       </Box>
 
