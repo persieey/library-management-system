@@ -27,7 +27,7 @@ func LoadConfig() (*Config, error) {
 		DBPassword:        os.Getenv("DB_PASSWORD"),
 		DBName:            os.Getenv("DB_NAME"),
 		JWTSecret:         os.Getenv("JWT_SECRET"),
-		ServerPort:        os.Getenv("Server_Port"),
+		ServerPort:        os.Getenv("SERVER_PORT"),
 		JWTExpiresIn:      os.Getenv("JWT_EXPIRES_IN"),
 		SeedAdminEmail:    os.Getenv("SEED_ADMIN_EMAIL"),
 		SeedAdminPassword: os.Getenv("SEED_ADMIN_PASSWORD"),
