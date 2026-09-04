@@ -7,7 +7,6 @@ import MenuItem from '@mui/material/MenuItem'
 import Divider from '@mui/material/Divider'
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded'
 import PersonOutlineRounded from '@mui/icons-material/PersonOutlineRounded'
-import SettingsOutlined from '@mui/icons-material/SettingsOutlined'
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
 import { useAuth } from '../auth/useAuth'
 import { POSITION_LABELS } from '../config/roles'
@@ -24,8 +23,8 @@ import { colors, fonts, sidebar as s } from '../theme'
  */
 
 const MENU_LINKS = [
+  // หน้าเดียวพอ ข้อมูลส่วนตัวกับรหัสผ่านอยู่ในหน้านั้นด้วยกันแล้ว
   { label: 'แก้ไขโปรไฟล์', to: '/employees/profile', icon: <PersonOutlineRounded /> },
-  { label: 'ตั้งค่าบัญชี', to: '/employees/settings', icon: <SettingsOutlined /> },
 ]
 
 export default function UserMenu({ compact = false }: { compact?: boolean }) {

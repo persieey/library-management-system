@@ -140,3 +140,88 @@ func (uc *UserController) CreateEmployee(c *gin.Context) {
 		"employee": employee,
 	})
 }
+
+// UpdateProfile แก้ชื่อ อีเมล เบอร์โทรของตัวเอง
+// ยึด user_id จาก token เสมอ ไม่รับจาก body ไม่งั้นแก้ข้อมูลคนอื่นได้
+func (uc *UserController) UpdateProfile(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ไม่พบข้อมูลผู้ใช้"})
+		return
+	}
+
+	var req dto.UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := uc.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบผู้ใช้"})
+		return
+	}
+
+	// อีเมลใช้ล็อกอิน จึงซ้ำกันไม่ได้ เช็คก่อนเพื่อตอบข้อความที่คนอ่านรู้เรื่อง
+	// ไม่งั้นจะได้ error ดิบจาก unique index ของฐานข้อมูล
+	if req.Email != user.Email {
+		var taken int64
+		uc.db.Model(&models.User{}).Where("email = ? AND user_id <> ?", req.Email, user.UserID).Count(&taken)
+		if taken > 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "อีเมลนี้มีคนใช้แล้ว"})
+			return
+		}
+	}
+
+	user.Name = req.Name
+	user.Email = req.Email
+	user.Phone = req.Phone
+	if err := uc.db.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "บันทึกไม่สำเร็จ"})
+		return
+	}
+
+	role, _ := c.Get("role")
+	position, _ := c.Get("position")
+	c.JSON(http.StatusOK, gin.H{"user": user, "role": role, "position": position})
+}
+
+// ChangePassword เปลี่ยนรหัสผ่านของตัวเอง ต้องกรอกรหัสเดิมถูกก่อน
+func (uc *UserController) ChangePassword(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ไม่พบข้อมูลผู้ใช้"})
+		return
+	}
+
+	var req dto.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := uc.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบผู้ใช้"})
+		return
+	}
+
+	if err := utils.CheckPassword(user.Password, req.CurrentPassword); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "รหัสผ่านเดิมไม่ถูกต้อง"})
+		return
+	}
+
+	hashed, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "เข้ารหัสรหัสผ่านไม่สำเร็จ"})
+		return
+	}
+
+	// อัปเดตเฉพาะคอลัมน์รหัสผ่าน จะได้ไม่เผลอเขียนทับฟิลด์อื่นที่อ่านมาก่อนหน้า
+	if err := uc.db.Model(&user).Update("password", hashed).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "บันทึกไม่สำเร็จ"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "เปลี่ยนรหัสผ่านเรียบร้อย"})
+}

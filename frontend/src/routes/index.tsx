@@ -17,11 +17,10 @@ import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../c
 import ManagerDashboard from '../pages/manager'
 import ManagerSchedules from '../pages/manager/schedules'
 import ManagerLeave from '../pages/manager/leave'
+import ProfilePage from '../pages/employees/profile'
 
 const COMING_SOON_ROUTES = [
-  // หน้าบัญชีผู้ใช้ — เปิดจากเมนูโปรไฟล์มุมขวาบน ยังไม่ได้ทำ แต่ต้องมีหน้ารองรับไม่ให้ 404
-  { path: 'profile', title: 'แก้ไขโปรไฟล์', positions: CAN_ACCESS_BACKOFFICE },
-  { path: 'settings', title: 'ตั้งค่าบัญชี', positions: CAN_ACCESS_BACKOFFICE },
+  // หน้าที่ยังไม่ได้ทำ ต้องมีตัวรองรับไม่ให้ 404 เพราะมีเมนูชี้มา
   { path: 'recording-room', title: 'Recording Room', positions: CAN_ACCESS_BACKOFFICE },
   { path: 'equipment', title: 'Equipment', positions: CAN_ACCESS_BACKOFFICE },
   { path: 'repair-request', title: 'Repair request', positions: CAN_ACCESS_BACKOFFICE },
@@ -134,6 +133,15 @@ function AppRoutes() {
         element={
           <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
             <StatisticsPage />
+          </RequirePosition>
+        }
+      />
+
+      <Route
+        path="/employees/profile"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <ProfilePage />
           </RequirePosition>
         }
       />

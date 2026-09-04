@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as authApi from '../services/https/auth'
-import type { LoginRequest } from '../interface/IAuthInterface'
+import type { LoginRequest, ProfileResponse } from '../interface/IAuthInterface'
 import type { CurrentUser, Position } from '../interface/IUserInterface'
 import { AuthContext, type AuthContextValue } from './AuthContext'
 
@@ -21,6 +21,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     const res = await authApi.login(payload)
     localStorage.setItem(TOKEN_STORAGE_KEY, res.token)
     setToken(res.token)
+    setUser({ ...res.user, role: res.role, position: res.position })
+  }, [])
+
+  const applyProfile = useCallback((res: ProfileResponse) => {
     setUser({ ...res.user, role: res.role, position: res.position })
   }, [])
 
@@ -63,8 +67,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   )
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, isLoading, login, logout, allows, isEmployee: user?.role === 'employee' }),
-    [user, token, isLoading, login, logout, allows],
+    () => ({ user, token, isLoading, login, logout, applyProfile, allows, isEmployee: user?.role === 'employee' }),
+    [user, token, isLoading, login, logout, applyProfile, allows],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

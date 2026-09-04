@@ -32,6 +32,9 @@ func SetupRouter(authControllers *controllers.AuthController,
 	users := api.Group("/users")
 	users.Use(middleware.JWTAuthMiddleware(jwtProvider))
 	users.GET("/profile", userController.GetProfile)
+	// แก้ข้อมูลตัวเอง ทุกตำแหน่งทำได้ เพราะยึด user_id จาก token ไม่ใช่จาก body
+	users.PUT("/profile", userController.UpdateProfile)
+	users.PUT("/password", userController.ChangePassword)
 	users.POST("/members", middleware.RequirePosition("manager", "librarian"), userController.CreateMember)
 	//เพิ่มนักศึกษา จาก mamage และ librarian
 	users.POST("/employees", middleware.RequirePosition("manager"), userController.CreateEmployee)
