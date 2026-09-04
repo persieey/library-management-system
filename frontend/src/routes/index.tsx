@@ -17,10 +17,6 @@ import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../c
 import ManagerDashboard from '../pages/manager'
 import ManagerSchedules from '../pages/manager/schedules'
 import ManagerLeave from '../pages/manager/leave'
-import ManagerBooks from '../pages/manager/books'
-import ManagerActivities from '../pages/manager/activities'
-import ManagerComplaints from '../pages/manager/complaints'
-import ManagerReports from '../pages/manager/reports'
 
 const COMING_SOON_ROUTES = [
   // หน้าบัญชีผู้ใช้ — เปิดจากเมนูโปรไฟล์มุมขวาบน ยังไม่ได้ทำ แต่ต้องมีหน้ารองรับไม่ให้ 404
@@ -73,38 +69,6 @@ function AppRoutes() {
         element={
           <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <PersonnelPage />
-          </RequirePosition>
-        }
-      />
-      <Route
-        path="/manager/books"
-        element={
-          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
-            <ManagerBooks />
-          </RequirePosition>
-        }
-      />
-      <Route
-        path="/manager/activities"
-        element={
-          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
-            <ManagerActivities />
-          </RequirePosition>
-        }
-      />
-      <Route
-        path="/manager/complaints"
-        element={
-          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
-            <ManagerComplaints />
-          </RequirePosition>
-        }
-      />
-      <Route
-        path="/manager/reports"
-        element={
-          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
-            <ManagerReports />
           </RequirePosition>
         }
       />

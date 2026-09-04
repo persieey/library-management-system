@@ -15,7 +15,7 @@ import { fonts, sidebar as s } from '../theme'
  *
  *   const NAV: SidebarItem[] = [
  *     { id: 'overview', icon: '🏠', label: 'ภาพรวม', to: '/manager' },
- *     { id: 'books',    icon: '📚', label: 'หนังสือ', to: '/manager/books' },
+ *     { id: 'leave',    icon: '📝', label: 'การลา', to: '/manager/leave' },
  *   ]
  *
  *   <Sidebar items={NAV} />
@@ -56,7 +56,7 @@ interface SidebarProps {
 }
 
 // หาเมนูที่ตรงกับ URL มากที่สุด รวมเมนูย่อยด้วย
-// เทียบความยาวเพื่อให้ /manager กับ /manager/books อยู่ด้วยกันได้โดยไม่สว่างพร้อมกัน
+// เทียบความยาวเพื่อให้ /manager กับ /manager/leave อยู่ด้วยกันได้โดยไม่สว่างพร้อมกัน
 function activeFromPath(items: SidebarItem[], pathname: string): string | undefined {
   let bestId: string | undefined
   let bestLength = -1
