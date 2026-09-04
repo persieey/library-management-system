@@ -31,6 +31,20 @@ export interface NavAction {
   children?: NavAction[]
 }
 
+// เมนูของพอร์ทัลหัวหน้าหอสมุด — ประกาศไว้ที่นี่ที่เดียว
+// ใช้ทั้งใน ManagerLayout (เป็น sidebar ของ /manager) และใน BACK_OFFICE_MENU (เป็นกลุ่มย่อย)
+// จะได้ไม่ต้องแก้สองที่เวลาปรับเมนู
+export const MANAGER_MENU: NavAction[] = [
+  { icon: 'overview', label: 'ภาพรวม', to: '/manager' },
+  { icon: 'schedules', label: 'ตารางเวร', to: '/manager/schedules' },
+  { icon: 'leave', label: 'การลา', to: '/manager/leave' },
+  { icon: 'personnel', label: 'บุคลากร', to: '/manager/personnel' },
+  { icon: 'books', label: 'หนังสือ', to: '/manager/books' },
+  { icon: 'activities', label: 'กิจกรรม', to: '/manager/activities' },
+  { icon: 'complaints', label: 'เรื่องร้องเรียน', to: '/manager/complaints' },
+  { icon: 'reports', label: 'รายงาน', to: '/manager/reports' },
+]
+
 // เมนูของหน้าหลังบ้าน — ตอนนี้เหลือเฉพาะระบบที่ทำเสร็จจริง
 // ระบบของเพื่อนในทีมค่อยเติมกลับเข้ามาที่นี่ทีละอันตอนที่โค้ดพร้อม
 export const BACK_OFFICE_MENU: NavAction[] = [
@@ -45,6 +59,13 @@ export const BACK_OFFICE_MENU: NavAction[] = [
       { icon: 'activities', label: 'กิจกรรม', to: '/employees/pr/events' },
       { icon: 'leave', label: 'ประกาศ', to: '/employees/pr/announcements' },
     ],
+  },
+  {
+    // งานหัวหน้าหอสมุด — เห็นเฉพาะ manager
+    icon: 'personnel',
+    label: 'งานหัวหน้าหอสมุด',
+    positions: CAN_MANAGE_PERSONNEL,
+    children: MANAGER_MENU,
   },
 ]
 

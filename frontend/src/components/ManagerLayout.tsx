@@ -6,6 +6,7 @@ import BrandLogo from './BrandLogo'
 import UserMenu from './UserMenu'
 import PageHeader, { type Crumb } from './PageHeader'
 import { navIcon } from './navIcons'
+import { MANAGER_MENU } from '../config/roles'
 import { sidebar as sidebarStyle } from '../theme'
 
 // Design tokens — manager admin panel (Figma: hQfNBMFGPo3PDYXhDIFTeX)
@@ -28,17 +29,13 @@ const SIDEBAR_WIDTH = sidebarStyle.width
 // ความสูงแถบบน — ให้เท่ากับ BackOfficeLayout จะได้ต่อกันสนิทเวลาสลับหน้า
 const HEADER_HEIGHT = 72
 
-// รายการเมนูของระบบหัวหน้าหอสมุด — เพิ่มหรือลบเมนูแก้ที่นี่ที่เดียว
-const SIDEBAR_NAV: SidebarItem[] = [
-  { id: 'overview', icon: navIcon('overview'), label: 'ภาพรวม', to: '/manager' },
-  { id: 'schedules', icon: navIcon('schedules'), label: 'ตารางเวร', to: '/manager/schedules' },
-  { id: 'leave', icon: navIcon('leave'), label: 'การลา', to: '/manager/leave' },
-  { id: 'personnel', icon: navIcon('personnel'), label: 'บุคลากร', to: '/manager/personnel' },
-  { id: 'books', icon: navIcon('books'), label: 'หนังสือ', to: '/manager/books' },
-  { id: 'activities', icon: navIcon('activities'), label: 'กิจกรรม', to: '/manager/activities' },
-  { id: 'complaints', icon: navIcon('complaints'), label: 'เรื่องร้องเรียน', to: '/manager/complaints' },
-  { id: 'reports', icon: navIcon('reports'), label: 'รายงาน', to: '/manager/reports' },
-]
+// รายการเมนูมาจาก config/roles.ts ที่เดียว แค่แปลงคีย์ไอคอนเป็นไอคอนจริง
+const SIDEBAR_NAV: SidebarItem[] = MANAGER_MENU.map((item) => ({
+  id: item.to ?? item.label,
+  label: item.label,
+  icon: navIcon(item.icon),
+  to: item.to,
+}))
 
 interface Props {
   title: string
