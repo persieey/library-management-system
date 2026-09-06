@@ -1,5 +1,9 @@
 # ฐานข้อมูลสำหรับตอนพัฒนา — Postgres + pgAdmin
 #
+# ค่า user รหัสผ่าน ชื่อฐานข้อมูล และพอร์ต ตรงกับ compose.yml ของทีมทุกตัว
+# ที่เพิ่มมาจากของทีมคือ healthcheck บังคับ UTF-8 และลงทะเบียนเซิร์ฟเวอร์ให้ pgAdmin ไว้ล่วงหน้า
+# สามอย่างนี้ไม่กระทบการเชื่อมต่อ ใครจะใช้ไฟล์ของทีมแทนก็ได้
+#
 # วิธีใช้
 #   docker compose up -d          เปิดฐานข้อมูลกับ pgAdmin
 #   docker compose down           ปิด (ข้อมูลยังอยู่ใน volume)
@@ -10,12 +14,12 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17
     container_name: lms_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-lms}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lmsdev}
+      POSTGRES_USER: ${POSTGRES_USER:-t09}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456789}
       POSTGRES_DB: ${POSTGRES_DB:-t09db}
       # บังคับ UTF-8 เพื่อให้เก็บภาษาไทยได้ถูกต้อง
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
@@ -26,7 +30,7 @@ services:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       # pgAdmin ต้องรอจนกว่าฐานข้อมูลจะพร้อมจริง ไม่ใช่แค่ container เริ่มทำงาน
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lms} -d ${POSTGRES_DB:-t09db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-t09} -d ${POSTGRES_DB:-t09db}"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -37,13 +41,13 @@ services:
     restart: unless-stopped
     environment:
       # ต้องเป็นอีเมลที่รูปแบบถูกต้องจริง pgAdmin ไม่รับโดเมนอย่าง .local จะวนรีสตาร์ท
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin1234}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-user@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-mypassword}
       # โหมดเครื่องเดียว ไม่ต้องล็อกอิน pgAdmin ซ้ำอีกชั้นตอนพัฒนา
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "${PGADMIN_PORT:-8081}:80"
     depends_on:
       postgres:
         condition: service_healthy

@@ -6,7 +6,7 @@
       "Host": "postgres",
       "Port": 5432,
       "MaintenanceDB": "t09db",
-      "Username": "lms",
+      "Username": "t09",
       "SSLMode": "prefer",
       "Comment": "ฐานข้อมูลของระบบหอสมุด — Host ใช้ชื่อ service ไม่ใช่ localhost เพราะ pgAdmin อยู่ใน container เดียวกัน"
     }
