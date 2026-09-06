@@ -6,11 +6,34 @@ import Snackbar from '@mui/material/Snackbar'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import BackOfficeLayout from '../../../components/BackOfficeLayout'
+import Header from '../../../components/Header'
+import Footer from '../../../components/Footer'
+import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
 import { useAuth } from '../../../auth/useAuth'
 import { POSITION_LABELS } from '../../../config/roles'
 import * as authApi from '../../../services/https/auth'
 import { fonts, mgr } from '../../../theme'
+
+/**
+ * หน้าเดียวใช้ได้สองทาง พนักงานเข้าจากหลังบ้านจึงห่อด้วย BackOfficeLayout
+ * ส่วนสมาชิกไม่มีเมนูหลังบ้านให้แสดง จึงห่อด้วย header กับ footer ของหน้าสาธารณะแทน
+ */
+function Frame({ isEmployee, children }: { isEmployee: boolean; children: React.ReactNode }) {
+  if (isEmployee) return <BackOfficeLayout title="แก้ไขโปรไฟล์">{children}</BackOfficeLayout>
+  return (
+    <>
+      <Header />
+      <Box sx={{ bgcolor: '#f7f9f7', minHeight: '70vh', px: { xs: 2, md: 6 }, py: 4 }}>
+        <Box sx={{ maxWidth: 1160, mx: 'auto' }}>
+          <PageHeader title="แก้ไขโปรไฟล์" />
+          <Box sx={{ mt: 3 }}>{children}</Box>
+        </Box>
+      </Box>
+      <Footer />
+    </>
+  )
+}
 
 // ข้อความ error จาก backend เป็นภาษาไทยอยู่แล้ว ยกมาแสดงตรงๆ ได้เลย
 // ที่ต้องดักคือกรณี fetch ล้มเพราะเซิร์ฟเวอร์ไม่ได้รัน ซึ่งไม่มีข้อความให้
@@ -75,7 +98,7 @@ function Field({
 const EMPTY_PASSWORDS = { current: '', next: '', confirm: '' }
 
 export default function ProfilePage() {
-  const { user, token, applyProfile } = useAuth()
+  const { user, token, applyProfile, isEmployee } = useAuth()
 
   const [form, setForm] = useState({ name: '', email: '', phone: '' })
   const [passwords, setPasswords] = useState(EMPTY_PASSWORDS)
@@ -146,7 +169,7 @@ export default function ProfilePage() {
     passwords.current.length > 0 && passwords.next.length >= 6 && passwords.confirm.length > 0
 
   return (
-    <BackOfficeLayout title="แก้ไขโปรไฟล์">
+    <Frame isEmployee={isEmployee}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: 620 }}>
         <Card title="ข้อมูลส่วนตัว" subtitle={`ตำแหน่ง ${POSITION_LABELS[user?.position ?? '']}`}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -240,6 +263,6 @@ export default function ProfilePage() {
           {toast}
         </Alert>
       </Snackbar>
-    </BackOfficeLayout>
+    </Frame>
   )
 }

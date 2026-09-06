@@ -18,17 +18,14 @@ import { colors, fonts, sidebar as s } from '../theme'
  * ใช้ร่วมกันทั้ง BackOfficeLayout และ ManagerLayout จะได้ไม่ต้องเขียนซ้ำสองที่
  * และไม่ว่าใครล็อกอินเข้ามา ชื่อกับสิทธิ์จะขึ้นตามจริงเสมอ
  *
- *   <UserMenu />                 ขนาดปกติ
+ *   <UserMenu />                 ขนาดปกติ บนพื้นขาว
  *   <UserMenu compact />         ย่อลง ใช้กับแถบที่เตี้ยกว่า
+ *   <UserMenu onDark />          สลับเป็นตัวหนังสือขาว ใช้บน header เขียวเข้มของหน้าสาธารณะ
  */
 
-const MENU_LINKS = [
-  // หน้าเดียวพอ ข้อมูลส่วนตัวกับรหัสผ่านอยู่ในหน้านั้นด้วยกันแล้ว
-  { label: 'แก้ไขโปรไฟล์', to: '/employees/profile', icon: <PersonOutlineRounded /> },
-]
 
-export default function UserMenu({ compact = false }: { compact?: boolean }) {
-  const { user, logout } = useAuth()
+export default function UserMenu({ compact = false, onDark = false }: { compact?: boolean; onDark?: boolean }) {
+  const { user, logout, isEmployee } = useAuth()
   const navigate = useNavigate()
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)
@@ -37,7 +34,13 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
 
   const size = compact ? 36 : 44
   const initials = user.name.slice(0, 2).toUpperCase()
+  // สมาชิกไม่มีตำแหน่ง POSITION_LABELS[''] จึงคืนคำว่าผู้ใช้ทั่วไปให้อยู่แล้ว
   const roleLabel = POSITION_LABELS[user.position]
+
+  // สีตัวหนังสือบนปุ่ม เปลี่ยนตามพื้นหลังที่เอาไปวาง
+  const nameInk = onDark ? '#ffffff' : s.itemHoverInk
+  const subInk = onDark ? colors.footerText : s.item
+  const hoverBg = onDark ? 'rgba(255, 255, 255, 0.12)' : s.itemHoverBg
 
   const handleLogout = () => {
     setAnchorEl(null)
@@ -63,7 +66,7 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
           p: '4px 10px 4px 4px',
           cursor: 'pointer',
           transition: 'background-color 180ms',
-          '&:hover': { bgcolor: s.itemHoverBg },
+          '&:hover': { bgcolor: hoverBg },
         }}
       >
         <Box
@@ -71,7 +74,7 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
             width: size,
             height: size,
             borderRadius: '50%',
-            bgcolor: colors.brandGreen,
+            bgcolor: onDark ? 'rgba(255, 255, 255, 0.16)' : colors.brandGreen,
             color: 'white',
             display: 'flex',
             alignItems: 'center',
@@ -85,10 +88,10 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
         </Box>
 
         <Box sx={{ textAlign: 'left', minWidth: 0 }}>
-          <Typography sx={{ fontFamily: fonts.kanit, fontSize: compact ? 13 : 15, lineHeight: 1.4, color: s.itemHoverInk }}>
+          <Typography sx={{ fontFamily: fonts.kanit, fontSize: compact ? 13 : 15, lineHeight: 1.4, color: nameInk }}>
             {user.name}
           </Typography>
-          <Typography sx={{ fontFamily: fonts.thai, fontSize: compact ? 12 : 13, lineHeight: 1.4, color: s.item }}>
+          <Typography sx={{ fontFamily: fonts.thai, fontSize: compact ? 12 : 13, lineHeight: 1.4, color: subInk }}>
             {roleLabel}
           </Typography>
         </Box>
@@ -96,7 +99,7 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
         <KeyboardArrowDownRounded
           sx={{
             fontSize: 20,
-            color: s.item,
+            color: subInk,
             flexShrink: 0,
             transition: 'transform 200ms',
             transform: open ? 'rotate(180deg)' : 'none',
@@ -134,7 +137,9 @@ export default function UserMenu({ compact = false }: { compact?: boolean }) {
 
         <Divider sx={{ my: '4px' }} />
 
-        {MENU_LINKS.map((link) => (
+        {/* หน้าเดียวพอ ข้อมูลส่วนตัวกับรหัสผ่านอยู่ในนั้นด้วยกันแล้ว
+            พนักงานเข้าทางหลังบ้าน สมาชิกเข้าทางหน้าสาธารณะ ใช้คนละ path */}
+        {[{ label: 'แก้ไขโปรไฟล์', to: isEmployee ? '/employees/profile' : '/profile', icon: <PersonOutlineRounded /> }].map((link) => (
           <MenuItem
             key={link.to}
             component={Link}

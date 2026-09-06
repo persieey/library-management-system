@@ -43,20 +43,34 @@ function Notice({ title, detail }: { title: string; detail: string }) {
   )
 }
 
+/**
+ * กั้นหน้าที่แค่ต้องล็อกอิน ไม่สนตำแหน่ง เช่นหน้าโปรไฟล์ของตัวเอง
+ * สมาชิกหอสมุดก็ต้องเข้าได้ ไม่ใช่เฉพาะพนักงาน
+ */
+export function RequireLogin({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) return <Checking />
+  if (!user) return <Notice title="ต้องเข้าสู่ระบบก่อน" detail="กลับไปหน้าแรกแล้วกด Sign in เพื่อเข้าสู่ระบบ" />
+  return <>{children}</>
+}
+
+function Checking() {
+  return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography sx={{ fontFamily: fonts.kanit, fontSize: 18, color: colors.inkMuted }}>
+        กำลังตรวจสอบสิทธิ์...
+      </Typography>
+    </Box>
+  )
+}
+
 // กั้นหน้าฝั่ง client เพื่อไม่ให้เห็นหน้าที่ไม่มีสิทธิ์ — ความสะดวก ไม่ใช่ความปลอดภัย
 // ข้อมูลจริงถูกกั้นที่ backend อีกชั้นเสมอ
 function RequirePosition({ positions, children }: RequirePositionProps) {
   const { user, isLoading, allows } = useAuth()
 
-  if (isLoading) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography sx={{ fontFamily: fonts.kanit, fontSize: 18, color: colors.inkMuted }}>
-          กำลังตรวจสอบสิทธิ์...
-        </Typography>
-      </Box>
-    )
-  }
+  if (isLoading) return <Checking />
 
   if (!user) {
     return <Notice title="ต้องเข้าสู่ระบบก่อน" detail="กลับไปหน้าแรกแล้วกด Sign in เพื่อเข้าสู่ระบบ" />

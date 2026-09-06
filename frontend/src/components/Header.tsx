@@ -10,6 +10,7 @@ import wordmark from '../assets/logo-wordmark.png'
 import { useAuth } from '../auth/useAuth'
 import { actionsFor, positionDisplayName, type NavAction } from '../config/roles'
 import LoginModal from './LoginModal'
+import UserMenu from './UserMenu'
 import NotificationBell from './NotificationBell'
 import { colors, fonts } from '../theme'
 
@@ -160,7 +161,7 @@ function HeaderAction({ action }: { action: NavAction }) {
 }
 
 function Header() {
-  const { user, isLoading, logout, allows } = useAuth()
+  const { user, isLoading, allows } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
 
@@ -241,9 +242,7 @@ function Header() {
           <Box sx={{ minWidth: 56, display: 'flex', justifyContent: 'flex-end' }}>
             {!isLoading &&
               (user ? (
-                <Button onClick={logout} sx={navTextSx}>
-                  Log out
-                </Button>
+                <UserMenu compact onDark />
               ) : (
                 <Button onClick={() => setLoginOpen(true)} sx={navTextSx}>
                   Sign in

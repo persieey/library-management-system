@@ -12,7 +12,7 @@ import StatisticsPage from '../pages/employees/statistics/Statistics'
 import PersonnelPage from '../pages/employees/personnel'
 import ComingSoon from '../pages/employees/ComingSoon'
 import NotFound from '../pages/not-found'
-import RequirePosition from '../components/RequirePosition'
+import RequirePosition, { RequireLogin } from '../components/RequirePosition'
 import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../config/roles'
 import ManagerDashboard from '../pages/manager'
 import ManagerSchedules from '../pages/manager/schedules'
@@ -143,6 +143,16 @@ function AppRoutes() {
           <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
             <ProfilePage />
           </RequirePosition>
+        }
+      />
+
+      {/* ทางเข้าโปรไฟล์ของสมาชิก หน้าเดียวกันแต่ห่อด้วย header ของหน้าสาธารณะ */}
+      <Route
+        path="/profile"
+        element={
+          <RequireLogin>
+            <ProfilePage />
+          </RequireLogin>
         }
       />
 
