@@ -67,10 +67,14 @@ export default function Employee(): React.JSX.Element {
     fetchComplaints();
   }, [fetchComplaints]);
 
-  // If role is changed and user is not manager, ensure pending tab is redirected
+  // พาผู้ใช้ไปแท็บที่ตัวเองมีสิทธิ์เสมอ ทั้งตอนเปิดหน้าและตอนสิทธิ์เปลี่ยน
   useEffect(() => {
     if (!isManager && activeTab === 'pending') {
       setActiveTab('box');
+    }
+    // หัวหน้าไม่มีแท็บ Inbox แล้ว เปิดมาให้อยู่กล่องที่รอเขาพิจารณาเลย
+    if (isManager && activeTab === 'box') {
+      setActiveTab('pending');
     }
   }, [isManager, activeTab]);
 
