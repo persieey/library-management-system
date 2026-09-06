@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,159 +19,187 @@ func NewDutyController(db *gorm.DB) *DutyController {
 	return &DutyController{db: db}
 }
 
-// fillNames เติมชื่อหัวหน้าเวรและผู้ช่วยด้วยคำสั่งเดียวไม่ว่าจะกี่แถว
-// ทำเองแทน Preload เพราะความสัมพันธ์ของทีมทำให้ AutoMigrate ล้ม ดูหมายเหตุใน models/leave.go
-func (dc *DutyController) fillNames(shifts []models.DutyShift) []models.DutyShift {
-	ids := map[uint]bool{}
-	for _, s := range shifts {
-		ids[s.LeadID] = true
-		if s.AssistantID != nil {
-			ids[*s.AssistantID] = true
-		}
+// ListServicePoints จุดบริการทั้งหมดที่ยังเปิดใช้ พนักงานทุกตำแหน่งดูได้
+func (dc *DutyController) ListServicePoints(c *gin.Context) {
+	var points []models.ServicePoint
+	if err := dc.db.Where("active = ?", true).
+		Order("sort_order ASC, service_point_id ASC").Find(&points).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "อ่านจุดบริการไม่สำเร็จ"})
+		return
 	}
-	if len(ids) == 0 {
+	c.JSON(http.StatusOK, points)
+}
+
+// enrich เติมชื่อคน แผนก ชื่อจุดบริการ และสถานะลา ด้วยคำสั่งชุดเดียวไม่ว่าจะกี่แถว
+//
+// ทำเองแทน Preload เพราะความสัมพันธ์ของทีมทำให้ AutoMigrate ล้ม ดูหมายเหตุใน models/leave.go
+func (dc *DutyController) enrich(shifts []models.DutyShift) []models.DutyShift {
+	if len(shifts) == 0 {
 		return shifts
 	}
 
-	list := make([]uint, 0, len(ids))
-	for id := range ids {
-		list = append(list, id)
+	personIDs := map[uint]bool{}
+	pointIDs := map[uint]bool{}
+	dates := map[string]bool{}
+	for _, s := range shifts {
+		personIDs[s.PersonnelID] = true
+		pointIDs[s.ServicePointID] = true
+		dates[s.Date] = true
+	}
+
+	keys := func(m map[uint]bool) []uint {
+		out := make([]uint, 0, len(m))
+		for k := range m {
+			out = append(out, k)
+		}
+		return out
 	}
 
 	var people []models.Personnel
-	dc.db.Select("personnel_id", "first_name", "last_name").Where("personnel_id IN ?", list).Find(&people)
+	dc.db.Select("personnel_id", "first_name", "last_name", "department", "employee_id").
+		Where("personnel_id IN ?", keys(personIDs)).Find(&people)
 	name := map[uint]string{}
+	dept := map[uint]string{}
+	// map จาก personnel ไปหา user เพื่อเช็คว่าลาอยู่ไหม คนที่ไม่มีบัญชีก็เช็คไม่ได้ ถือว่าไม่ลา
+	empOf := map[uint]uint{}
 	for _, p := range people {
 		name[p.PersonnelID] = p.FirstName + " " + p.LastName
+		dept[p.PersonnelID] = p.Department
+		if p.EmployeeID != nil {
+			empOf[p.PersonnelID] = *p.EmployeeID
+		}
+	}
+
+	var points []models.ServicePoint
+	dc.db.Select("service_point_id", "name").Where("service_point_id IN ?", keys(pointIDs)).Find(&points)
+	pointName := map[uint]string{}
+	for _, p := range points {
+		pointName[p.ServicePointID] = p.Name
+	}
+
+	// หาว่าใครลาอนุมัติแล้วคร่อมวันไหนบ้าง แปลง employee_id กลับเป็น user_id ก่อน
+	onLeave := map[string]bool{} // คีย์คือ "userID|date"
+	if len(empOf) > 0 {
+		empIDs := make([]uint, 0, len(empOf))
+		for _, e := range empOf {
+			empIDs = append(empIDs, e)
+		}
+		var emps []models.Employee
+		dc.db.Select("employee_id", "user_id").Where("employee_id IN ?", empIDs).Find(&emps)
+		userOfEmp := map[uint]uint{}
+		userIDs := make([]uint, 0, len(emps))
+		for _, e := range emps {
+			userOfEmp[e.EmployeeID] = e.UserID
+			userIDs = append(userIDs, e.UserID)
+		}
+
+		dateList := make([]string, 0, len(dates))
+		for d := range dates {
+			dateList = append(dateList, d)
+		}
+		var leaves []models.LeaveRequest
+		dc.db.Where("status = ? AND user_id IN ?", models.LeaveApproved, userIDs).Find(&leaves)
+		for _, l := range leaves {
+			for _, d := range dateList {
+				if d >= l.StartDate && d <= l.EndDate {
+					onLeave[keyOf(l.UserID, d)] = true
+				}
+			}
+		}
+
+		for i := range shifts {
+			if emp, ok := empOf[shifts[i].PersonnelID]; ok {
+				if uid, ok2 := userOfEmp[emp]; ok2 {
+					shifts[i].OnLeave = onLeave[keyOf(uid, shifts[i].Date)]
+				}
+			}
+		}
 	}
 
 	for i := range shifts {
-		shifts[i].LeadName = name[shifts[i].LeadID]
-		if shifts[i].AssistantID != nil {
-			shifts[i].AssistantName = name[*shifts[i].AssistantID]
-		}
+		shifts[i].PersonnelName = name[shifts[i].PersonnelID]
+		shifts[i].Department = dept[shifts[i].PersonnelID]
+		shifts[i].ServicePointName = pointName[shifts[i].ServicePointID]
 	}
 	return shifts
 }
 
-// List ตารางเวรในช่วงวันที่ที่ขอมา พนักงานทุกตำแหน่งดูได้ เพราะต้องรู้ว่าตัวเองเข้าเวรวันไหน
+func keyOf(userID uint, date string) string {
+	return fmt.Sprintf("%d|%s", userID, date)
+}
+
+// List ตารางเวรในช่วงวันที่ที่ขอมา พนักงานทุกตำแหน่งดูได้ เพราะต้องรู้ว่าตัวเองเข้าเวรจุดไหน
 func (dc *DutyController) List(c *gin.Context) {
 	var shifts []models.DutyShift
 	q := dc.db.Model(&models.DutyShift{})
 
-	// ไม่ส่งช่วงวันมาก็คืนทั้งหมด หน้าเว็บส่งมาเป็นสัปดาห์
 	if from := c.Query("from"); from != "" {
 		q = q.Where("date >= ?", from)
 	}
 	if to := c.Query("to"); to != "" {
 		q = q.Where("date <= ?", to)
 	}
+	if sp := c.Query("service_point_id"); sp != "" {
+		q = q.Where("service_point_id = ?", sp)
+	}
 
-	// เรียงตามวันแล้วตามช่วงเวร เช้าก่อนบ่ายก่อนเย็น
-	order := "date ASC, CASE period WHEN 'morning' THEN 0 WHEN 'afternoon' THEN 1 ELSE 2 END"
+	// เรียงตามวัน ช่วงเวร จุดบริการ แล้วให้ผู้รับผิดชอบหลักขึ้นก่อนในแต่ละกลุ่ม
+	order := "date ASC, CASE period WHEN 'morning' THEN 0 WHEN 'afternoon' THEN 1 ELSE 2 END, service_point_id ASC, lead DESC"
 	if err := q.Order(order).Find(&shifts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "อ่านตารางเวรไม่สำเร็จ"})
 		return
 	}
-	c.JSON(http.StatusOK, dc.fillNames(shifts))
+	c.JSON(http.StatusOK, dc.enrich(shifts))
 }
 
-// ensurePeople ตรวจว่าคนที่จะจัดเวรให้มีอยู่จริงในทะเบียนบุคลากร
-func (dc *DutyController) ensurePeople(leadID uint, assistantID *uint) (string, bool) {
-	var n int64
-	dc.db.Model(&models.Personnel{}).Where("personnel_id = ?", leadID).Count(&n)
-	if n == 0 {
-		return "ไม่พบหัวหน้าเวรคนนี้ในทะเบียนบุคลากร", false
-	}
-	if assistantID != nil {
-		if *assistantID == leadID {
-			return "หัวหน้าเวรกับผู้ช่วยต้องเป็นคนละคน", false
-		}
-		dc.db.Model(&models.Personnel{}).Where("personnel_id = ?", *assistantID).Count(&n)
-		if n == 0 {
-			return "ไม่พบผู้ช่วยเวรคนนี้ในทะเบียนบุคลากร", false
-		}
-	}
-	return "", true
-}
-
-// Create เพิ่มเวรหนึ่งช่วง เฉพาะหัวหน้าหอสมุด
+// Create มอบหมายคนหนึ่งคนเข้าจุดบริการหนึ่งจุดในช่วงเวรหนึ่งช่วง เฉพาะหัวหน้าหอสมุด
 func (dc *DutyController) Create(c *gin.Context) {
 	var req dto.DutyShiftRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "กรอกข้อมูลไม่ครบหรือรูปแบบไม่ถูกต้อง"})
 		return
 	}
-	if msg, ok := dc.ensurePeople(req.LeadID, req.AssistantID); !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": msg})
+
+	var n int64
+	dc.db.Model(&models.Personnel{}).Where("personnel_id = ?", req.PersonnelID).Count(&n)
+	if n == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบเจ้าหน้าที่คนนี้ในทะเบียนบุคลากร"})
+		return
+	}
+	dc.db.Model(&models.ServicePoint{}).Where("service_point_id = ? AND active = ?", req.ServicePointID, true).Count(&n)
+	if n == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบจุดบริการนี้"})
 		return
 	}
 
-	// วันเดียวช่วงเดียวมีได้เวรเดียว กันจัดซ้อนกันเอง
-	var dup int64
-	dc.db.Model(&models.DutyShift{}).Where("date = ? AND period = ?", req.Date, req.Period).Count(&dup)
-	if dup > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "วันนี้ช่วงนี้มีเวรอยู่แล้ว แก้ของเดิมแทนการเพิ่มใหม่"})
+	// คนเดียวกันอยู่สองจุดพร้อมกันไม่ได้ ตัวคนไม่ได้แยกร่าง
+	dc.db.Model(&models.DutyShift{}).
+		Where("date = ? AND period = ? AND personnel_id = ?", req.Date, req.Period, req.PersonnelID).Count(&n)
+	if n > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "คนนี้มีเวรในช่วงเวลานี้อยู่แล้ว"})
 		return
 	}
 
 	shift := models.DutyShift{
-		Date:        req.Date,
-		Period:      models.DutyPeriod(req.Period),
-		LeadID:      req.LeadID,
-		AssistantID: req.AssistantID,
-		Note:        req.Note,
+		Date:           req.Date,
+		Period:         models.DutyPeriod(req.Period),
+		ServicePointID: req.ServicePointID,
+		PersonnelID:    req.PersonnelID,
+		Lead:           req.Lead,
+		Note:           req.Note,
 	}
 	if err := dc.db.Create(&shift).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "บันทึกไม่สำเร็จ"})
 		return
 	}
-	c.JSON(http.StatusCreated, dc.fillNames([]models.DutyShift{shift})[0])
+	c.JSON(http.StatusCreated, dc.enrich([]models.DutyShift{shift})[0])
 }
 
-// Update แก้เวรที่มีอยู่ เฉพาะหัวหน้าหอสมุด
-func (dc *DutyController) Update(c *gin.Context) {
-	var shift models.DutyShift
-	if err := dc.db.First(&shift, c.Param("id")).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบเวรนี้"})
-		return
-	}
-
-	var req dto.DutyShiftRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "กรอกข้อมูลไม่ครบหรือรูปแบบไม่ถูกต้อง"})
-		return
-	}
-	if msg, ok := dc.ensurePeople(req.LeadID, req.AssistantID); !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": msg})
-		return
-	}
-
-	var dup int64
-	dc.db.Model(&models.DutyShift{}).
-		Where("date = ? AND period = ? AND shift_id <> ?", req.Date, req.Period, shift.ShiftID).Count(&dup)
-	if dup > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "วันนี้ช่วงนี้มีเวรอยู่แล้ว"})
-		return
-	}
-
-	shift.Date = req.Date
-	shift.Period = models.DutyPeriod(req.Period)
-	shift.LeadID = req.LeadID
-	shift.AssistantID = req.AssistantID
-	shift.Note = req.Note
-	if err := dc.db.Save(&shift).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "บันทึกไม่สำเร็จ"})
-		return
-	}
-	c.JSON(http.StatusOK, dc.fillNames([]models.DutyShift{shift})[0])
-}
-
-// Delete ลบเวร เฉพาะหัวหน้าหอสมุด
+// Delete ถอนคนออกจากเวร เฉพาะหัวหน้าหอสมุด
 func (dc *DutyController) Delete(c *gin.Context) {
 	if err := dc.db.Delete(&models.DutyShift{}, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "ลบเวรเรียบร้อย"})
+	c.JSON(http.StatusOK, gin.H{"message": "ถอนออกจากเวรเรียบร้อย"})
 }

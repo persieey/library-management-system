@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
+import FormControlLabel from '@mui/material/FormControlLabel'
 import MenuItem from '@mui/material/MenuItem'
 import Snackbar from '@mui/material/Snackbar'
 import TextField from '@mui/material/TextField'
@@ -20,22 +22,21 @@ import {
   PERIODS,
   PERIOD_LABEL,
   PERIOD_TIME,
-  type DutyDraft,
   type DutyPeriod,
   type DutyShift,
+  type ServicePoint,
 } from '../../../interface/IDutyInterface'
 import { fonts, mgr } from '../../../theme'
 
 const label = { fontFamily: fonts.thai, fontWeight: 500, fontSize: 12, letterSpacing: '0.48px', color: mgr.inkMuted }
 const body = { fontFamily: fonts.thai, fontWeight: 400, fontSize: 14, lineHeight: 1.45, color: mgr.ink }
-const action = { fontFamily: fonts.thai, fontWeight: 600, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }
 
 const fieldSx = {
   '& .MuiOutlinedInput-root': { borderRadius: '8px', fontFamily: fonts.thai, fontSize: 14 },
   '& .MuiOutlinedInput-notchedOutline': { borderColor: mgr.border },
 } as const
 
-const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
+const DAY_SHORT = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -62,47 +63,51 @@ export default function SchedulesPage() {
   const { token, allows } = useAuth()
   const isManager = allows('manager')
 
-  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()))
+  const [selected, setSelected] = useState(() => iso(new Date()))
+  const [points, setPoints] = useState<ServicePoint[]>([])
   const [shifts, setShifts] = useState<DutyShift[]>([])
   const [people, setPeople] = useState<Personnel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
 
-  const [editing, setEditing] = useState<DutyShift | null>(null)
-  const [draft, setDraft] = useState<DutyDraft | null>(null)
+  const [draft, setDraft] = useState<{ period: DutyPeriod; point: ServicePoint } | null>(null)
+  const [pickPerson, setPickPerson] = useState<number>(0)
+  const [pickLead, setPickLead] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const days = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(weekStart)
-        d.setDate(d.getDate() + i)
-        return d
-      }),
-    [weekStart],
-  )
-
-  const range = useMemo(() => ({ from: iso(days[0]), to: iso(days[6]) }), [days])
+  const week = useMemo(() => {
+    const start = mondayOf(new Date(selected))
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start)
+      d.setDate(d.getDate() + i)
+      return d
+    })
+  }, [selected])
 
   const load = useCallback(async () => {
     if (!token) return
     setLoading(true)
     try {
-      setShifts(await dutyApi.listDuties(token, range))
+      const [sp, rows] = await Promise.all([
+        dutyApi.listServicePoints(token),
+        dutyApi.listDuties(token, { from: selected, to: selected }),
+      ])
+      setPoints(sp)
+      setShifts(rows)
       setError('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'อ่านตารางเวรไม่สำเร็จ')
     } finally {
       setLoading(false)
     }
-  }, [token, range])
+  }, [token, selected])
 
   useEffect(() => {
     void load()
   }, [load])
 
-  // รายชื่อบุคลากรใช้เฉพาะตอนหัวหน้าเปิดฟอร์ม คนอื่นไม่ต้องโหลด และ API ก็กันไว้เฉพาะ manager
+  // รายชื่อบุคลากรใช้เฉพาะตอนหัวหน้าเปิดฟอร์ม และ API ก็กันไว้เฉพาะ manager อยู่แล้ว
   useEffect(() => {
     if (!token || !isManager) return
     listPersonnel(token)
@@ -110,29 +115,35 @@ export default function SchedulesPage() {
       .catch(() => setPeople([]))
   }, [token, isManager])
 
-  const shiftAt = (date: string, period: DutyPeriod) =>
-    shifts.find((s) => s.date === date && s.period === period)
+  const staffAt = (pointId: number, period: DutyPeriod) =>
+    shifts.filter((s) => s.service_point_id === pointId && s.period === period)
 
-  const openNew = (date: string, period: DutyPeriod) => {
-    setEditing(null)
-    setDraft({ date, period, lead_id: people[0]?.id ?? 0, assistant_id: undefined, note: '' })
-  }
+  /** คนที่มีเวรอยู่แล้วในช่วงนี้ ไม่ควรให้เลือกซ้ำเพราะอยู่สองจุดพร้อมกันไม่ได้ */
+  const busyIn = (period: DutyPeriod) => new Set(shifts.filter((s) => s.period === period).map((s) => s.personnel_id))
 
-  const openEdit = (s: DutyShift) => {
-    setEditing(s)
-    setDraft({ date: s.date, period: s.period, lead_id: s.lead_id, assistant_id: s.assistant_id, note: s.note })
+  const openAssign = (period: DutyPeriod, point: ServicePoint) => {
+    const busy = busyIn(period)
+    const first = people.find((p) => !busy.has(p.id))
+    setPickPerson(first?.id ?? 0)
+    setPickLead(staffAt(point.id, period).length === 0)
+    setDraft({ period, point })
   }
 
   const save = async () => {
-    if (!token || !draft) return
+    if (!token || !draft || !pickPerson) return
     setSaving(true)
     setError('')
     try {
-      if (editing) await dutyApi.updateDuty(token, editing.id, draft)
-      else await dutyApi.createDuty(token, draft)
+      await dutyApi.createDuty(token, {
+        date: selected,
+        period: draft.period,
+        service_point_id: draft.point.id,
+        personnel_id: pickPerson,
+        lead: pickLead,
+        note: '',
+      })
       setDraft(null)
-      setEditing(null)
-      setToast('บันทึกตารางเวรแล้ว')
+      setToast('จัดเวรเรียบร้อย')
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ')
@@ -145,38 +156,74 @@ export default function SchedulesPage() {
     if (!token) return
     try {
       await dutyApi.deleteDuty(token, s.id)
-      setToast('ลบเวรแล้ว')
+      setToast('ถอนออกจากเวรแล้ว')
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ลบไม่สำเร็จ')
     }
   }
 
-  const shiftWeek = (delta: number) => {
-    const d = new Date(weekStart)
-    d.setDate(d.getDate() + delta * 7)
-    setWeekStart(d)
-  }
-
   const todayIso = iso(new Date())
 
   return (
     <BackOfficeLayout title="ตารางเวร">
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <Button onClick={() => shiftWeek(-1)} sx={{ ...body, minWidth: 0, color: mgr.accentGreen }}>
-            ← สัปดาห์ก่อน
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        {/* แถบเลือกวัน เห็นทั้งสัปดาห์แล้วกดเลือกทีละวัน เพราะหนึ่งวันมีหลายจุดบริการจนใส่ตารางสัปดาห์ไม่ไหว */}
+        <Box sx={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <Button
+            onClick={() => {
+              const d = new Date(selected)
+              d.setDate(d.getDate() - 7)
+              setSelected(iso(d))
+            }}
+            sx={{ ...body, minWidth: 0, color: mgr.accentGreen }}
+          >
+            ←
           </Button>
-          <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 16, color: mgr.ink }}>
-            {thaiDate(range.from)} – {thaiDate(range.to)}
-          </Typography>
-          <Button onClick={() => shiftWeek(1)} sx={{ ...body, minWidth: 0, color: mgr.accentGreen }}>
-            สัปดาห์ถัดไป →
+          {week.map((d) => {
+            const key = iso(d)
+            const active = key === selected
+            return (
+              <Box
+                key={key}
+                onClick={() => setSelected(key)}
+                sx={{
+                  cursor: 'pointer',
+                  px: '14px',
+                  py: '8px',
+                  borderRadius: '10px',
+                  minWidth: 62,
+                  textAlign: 'center',
+                  border: `1px solid ${active ? mgr.sidebar : mgr.border}`,
+                  bgcolor: active ? mgr.sidebar : key === todayIso ? mgr.accentLight : 'transparent',
+                  color: active ? '#fff' : mgr.ink,
+                }}
+              >
+                <Typography sx={{ ...body, fontSize: 12, color: 'inherit', opacity: 0.85 }}>
+                  {DAY_SHORT[d.getDay()]}
+                </Typography>
+                <Typography sx={{ ...body, fontWeight: 600, color: 'inherit' }}>{d.getDate()}</Typography>
+              </Box>
+            )
+          })}
+          <Button
+            onClick={() => {
+              const d = new Date(selected)
+              d.setDate(d.getDate() + 7)
+              setSelected(iso(d))
+            }}
+            sx={{ ...body, minWidth: 0, color: mgr.accentGreen }}
+          >
+            →
           </Button>
-          <Button onClick={() => setWeekStart(mondayOf(new Date()))} sx={{ ...body, minWidth: 0, color: mgr.inkMuted }}>
-            สัปดาห์นี้
+          <Button onClick={() => setSelected(todayIso)} sx={{ ...body, minWidth: 0, color: mgr.inkMuted }}>
+            วันนี้
           </Button>
         </Box>
+
+        <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 17, color: mgr.ink }}>
+          {thaiDate(selected)}
+        </Typography>
 
         {error && (
           <Alert severity="error" sx={{ fontFamily: fonts.thai, fontSize: 13, borderRadius: '8px' }}>
@@ -186,11 +233,11 @@ export default function SchedulesPage() {
 
         <Card noPadding>
           <Box sx={{ overflowX: 'auto' }}>
-            <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
+            <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
               <Box component="thead">
                 <Box component="tr">
-                  <Box component="th" sx={{ ...label, textAlign: 'left', p: '12px 20px', borderBottom: `1px solid ${mgr.border}`, width: 150 }}>
-                    วัน
+                  <Box component="th" sx={{ ...label, textAlign: 'left', p: '12px 20px', borderBottom: `1px solid ${mgr.border}`, width: 250 }}>
+                    จุดบริการ
                   </Box>
                   {PERIODS.map((p) => (
                     <Box key={p} component="th" sx={{ ...label, textAlign: 'left', p: '12px 20px', borderBottom: `1px solid ${mgr.border}` }}>
@@ -207,137 +254,122 @@ export default function SchedulesPage() {
                     </Box>
                   </Box>
                 )}
+                {!loading && points.length === 0 && (
+                  <Box component="tr">
+                    <Box component="td" colSpan={4} sx={{ ...body, p: '20px', textAlign: 'center', color: mgr.inkMuted }}>
+                      ยังไม่มีจุดบริการในระบบ
+                    </Box>
+                  </Box>
+                )}
                 {!loading &&
-                  days.map((d) => {
-                    const date = iso(d)
-                    const isToday = date === todayIso
-                    return (
-                      <Box component="tr" key={date}>
-                        <Box
-                          component="td"
-                          sx={{
-                            p: '12px 20px',
-                            borderBottom: `1px solid ${mgr.border}`,
-                            bgcolor: isToday ? mgr.accentLight : 'transparent',
-                          }}
-                        >
-                          <Typography sx={{ ...body, fontWeight: isToday ? 600 : 400 }}>
-                            {DAY_NAMES[d.getDay()]}
-                          </Typography>
-                          <Typography sx={{ ...body, fontSize: 12.5, color: mgr.inkMuted }}>{thaiDate(date)}</Typography>
-                        </Box>
+                  points.map((point) => (
+                    <Box component="tr" key={point.id}>
+                      <Box component="td" sx={{ p: '14px 20px', borderBottom: `1px solid ${mgr.border}`, verticalAlign: 'top' }}>
+                        <Typography sx={{ ...body, fontWeight: 600 }}>{point.name}</Typography>
+                        <Typography sx={{ ...body, fontSize: 12.5, color: mgr.inkMuted }}>
+                          {point.location} · ต้องมีอย่างน้อย {point.min_staff} คน
+                        </Typography>
+                      </Box>
 
-                        {PERIODS.map((p) => {
-                          const s = shiftAt(date, p)
-                          return (
-                            <Box
-                              key={p}
-                              component="td"
-                              sx={{
-                                p: '12px 20px',
-                                borderBottom: `1px solid ${mgr.border}`,
-                                verticalAlign: 'top',
-                                bgcolor: isToday ? mgr.accentLight : 'transparent',
-                              }}
-                            >
-                              {s ? (
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                  <Typography sx={{ ...body, fontWeight: 500 }}>{s.lead_name}</Typography>
-                                  {s.assistant_name && (
-                                    <Typography sx={{ ...body, fontSize: 13, color: mgr.inkMuted }}>
-                                      ผู้ช่วย: {s.assistant_name}
+                      {PERIODS.map((period) => {
+                        const rows = staffAt(point.id, period)
+                        const short = rows.length > 0 && rows.length < point.min_staff
+                        return (
+                          <Box
+                            key={period}
+                            component="td"
+                            sx={{ p: '14px 20px', borderBottom: `1px solid ${mgr.border}`, verticalAlign: 'top' }}
+                          >
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {rows.map((s) => (
+                                <Box key={s.id} sx={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                  <Typography sx={{ ...body, fontWeight: s.lead ? 600 : 400 }}>
+                                    {s.lead && '★ '}
+                                    {s.personnel_name}
+                                    {s.on_leave && (
+                                      <Typography component="span" sx={{ ...body, color: mgr.danger, fontSize: 12.5 }}>
+                                        {' '}
+                                        (ลาอนุมัติแล้ว)
+                                      </Typography>
+                                    )}
+                                  </Typography>
+                                  {isManager && (
+                                    <Typography
+                                      onClick={() => remove(s)}
+                                      sx={{ ...body, fontSize: 12.5, color: mgr.danger, cursor: 'pointer' }}
+                                    >
+                                      ถอน
                                     </Typography>
                                   )}
-                                  {isManager && (
-                                    <Box sx={{ display: 'flex', gap: '12px', mt: '4px' }}>
-                                      <Typography onClick={() => openEdit(s)} sx={{ ...action, color: mgr.accentGreen }}>
-                                        แก้ไข
-                                      </Typography>
-                                      <Typography onClick={() => remove(s)} sx={{ ...action, color: mgr.danger }}>
-                                        ลบ
-                                      </Typography>
-                                    </Box>
-                                  )}
                                 </Box>
-                              ) : isManager ? (
-                                <Typography onClick={() => openNew(date, p)} sx={{ ...action, color: mgr.inkMuted }}>
-                                  + จัดเวร
+                              ))}
+
+                              {rows.length === 0 && (
+                                <Typography sx={{ ...body, color: mgr.inkMuted }}>ปิดบริการ</Typography>
+                              )}
+
+                              {short && (
+                                <Typography sx={{ ...body, fontSize: 12.5, color: mgr.warning }}>
+                                  คนไม่ครบขั้นต่ำ
                                 </Typography>
-                              ) : (
-                                <Typography sx={{ ...body, color: mgr.inkMuted }}>—</Typography>
+                              )}
+
+                              {isManager && (
+                                <Typography
+                                  onClick={() => openAssign(period, point)}
+                                  sx={{ ...body, fontSize: 13, color: mgr.accentGreen, cursor: 'pointer', fontWeight: 600 }}
+                                >
+                                  + เพิ่มคน
+                                </Typography>
                               )}
                             </Box>
-                          )
-                        })}
-                      </Box>
-                    )
-                  })}
+                          </Box>
+                        )
+                      })}
+                    </Box>
+                  ))}
               </Box>
             </Box>
           </Box>
         </Card>
 
-        {!isManager && (
-          <Typography sx={{ ...body, fontSize: 13, color: mgr.inkMuted }}>
-            ดูได้อย่างเดียว การจัดเวรเป็นหน้าที่ของหัวหน้าหอสมุด
-          </Typography>
-        )}
+        <Typography sx={{ ...body, fontSize: 13, color: mgr.inkMuted }}>
+          ★ คือผู้รับผิดชอบหลักของจุดบริการนั้น
+          {!isManager && ' · ดูได้อย่างเดียว การจัดเวรเป็นหน้าที่ของหัวหน้าหอสมุด'}
+        </Typography>
       </Box>
 
       <Dialog open={!!draft} onClose={() => setDraft(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 17 }}>
-          {editing ? 'แก้ไขเวร' : 'จัดเวรใหม่'}
-        </DialogTitle>
+        <DialogTitle sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 17 }}>เพิ่มคนเข้าเวร</DialogTitle>
         <DialogContent>
           {draft && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: '14px', pt: '6px' }}>
               <Typography sx={{ ...body, color: mgr.inkMuted }}>
-                {thaiDate(draft.date)} · ช่วง{PERIOD_LABEL[draft.period]}
+                {draft.point.name} · {thaiDate(selected)} · ช่วง{PERIOD_LABEL[draft.period]}
               </Typography>
 
               <TextField
                 select
                 size="small"
-                label="หัวหน้าเวร"
-                value={draft.lead_id || ''}
-                onChange={(e) => setDraft({ ...draft, lead_id: Number(e.target.value) })}
+                label="เจ้าหน้าที่"
+                value={pickPerson || ''}
+                onChange={(e) => setPickPerson(Number(e.target.value))}
                 sx={fieldSx}
               >
-                {people.map((p) => (
-                  <MenuItem key={p.id} value={p.id} sx={{ fontFamily: fonts.thai, fontSize: 14 }}>
-                    {fullName(p)}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                select
-                size="small"
-                label="ผู้ช่วย (ไม่บังคับ)"
-                value={draft.assistant_id ?? ''}
-                onChange={(e) =>
-                  setDraft({ ...draft, assistant_id: e.target.value === '' ? undefined : Number(e.target.value) })
-                }
-                sx={fieldSx}
-              >
-                <MenuItem value="" sx={{ fontFamily: fonts.thai, fontSize: 14 }}>
-                  ไม่มีผู้ช่วย
-                </MenuItem>
-                {people
-                  .filter((p) => p.id !== draft.lead_id)
-                  .map((p) => (
-                    <MenuItem key={p.id} value={p.id} sx={{ fontFamily: fonts.thai, fontSize: 14 }}>
-                      {fullName(p)}
+                {people.map((p) => {
+                  const busy = busyIn(draft.period).has(p.id)
+                  return (
+                    <MenuItem key={p.id} value={p.id} disabled={busy} sx={{ fontFamily: fonts.thai, fontSize: 14 }}>
+                      {fullName(p)} · {p.department}
+                      {busy && ' (มีเวรช่วงนี้แล้ว)'}
                     </MenuItem>
-                  ))}
+                  )
+                })}
               </TextField>
 
-              <TextField
-                size="small"
-                label="หมายเหตุ"
-                value={draft.note}
-                onChange={(e) => setDraft({ ...draft, note: e.target.value })}
-                sx={fieldSx}
+              <FormControlLabel
+                control={<Checkbox checked={pickLead} onChange={(e) => setPickLead(e.target.checked)} />}
+                label={<Typography sx={body}>เป็นผู้รับผิดชอบหลักของจุดนี้</Typography>}
               />
             </Box>
           )}
@@ -349,10 +381,10 @@ export default function SchedulesPage() {
           <Button
             variant="contained"
             onClick={save}
-            disabled={saving || !draft?.lead_id}
+            disabled={saving || !pickPerson}
             sx={{ fontFamily: fonts.thai, fontSize: 14, borderRadius: '8px', bgcolor: mgr.sidebar }}
           >
-            {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+            {saving ? 'กำลังบันทึก...' : 'เพิ่ม'}
           </Button>
         </DialogActions>
       </Dialog>

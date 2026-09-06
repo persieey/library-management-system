@@ -73,8 +73,8 @@ func SetupRouter(authControllers *controllers.AuthController,
 	duties := api.Group("/duties")
 	duties.Use(middleware.JWTAuthMiddleware(jwtProvider), middleware.RequirePosition("staff", "librarian", "manager"))
 	duties.GET("", dutyController.List)
+	duties.GET("/service-points", dutyController.ListServicePoints)
 	duties.POST("", middleware.RequirePosition("manager"), dutyController.Create)
-	duties.PUT("/:id", middleware.RequirePosition("manager"), dutyController.Update)
 	duties.DELETE("/:id", middleware.RequirePosition("manager"), dutyController.Delete)
 
 	// ---------- การลา ----------

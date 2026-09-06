@@ -25,6 +25,9 @@ func SeedLibrary(db *gorm.DB, cfg *Config) error {
 	if err := seedEvents(db); err != nil {
 		return err
 	}
+	if err := seedServicePoints(db); err != nil {
+		return err
+	}
 	return seedDuties(db)
 }
 
@@ -156,10 +159,30 @@ func seedEvents(db *gorm.DB) error {
 	return db.Create(&events).Error
 }
 
-// seedDuties สร้างตารางเวรตัวอย่างสองสัปดาห์ เริ่มจากวันจันทร์ของสัปดาห์นี้
+// seedServicePoints จุดบริการที่ต้องมีคนประจำ อ้างอิงโครงจริงของหอสมุดมหาวิทยาลัย
+// ที่แยกเคาน์เตอร์ยืม-คืน เคาน์เตอร์ตอบคำถาม และโซนบริการอื่นออกจากกัน
+func seedServicePoints(db *gorm.DB) error {
+	var count int64
+	if err := db.Model(&models.ServicePoint{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	points := []models.ServicePoint{
+		{Name: "เคาน์เตอร์ยืม-คืน", Location: "ชั้น 1", MinStaff: 2, SortOrder: 1, Active: true},
+		{Name: "เคาน์เตอร์ตอบคำถามและช่วยค้นคว้า", Location: "ชั้น 2", MinStaff: 1, SortOrder: 2, Active: true},
+		{Name: "โซน Learning Space", Location: "ชั้น 1", MinStaff: 1, SortOrder: 3, Active: true},
+		{Name: "ห้องบริการสารสนเทศดิจิทัล", Location: "ชั้น 3", MinStaff: 1, SortOrder: 4, Active: true},
+	}
+	return db.Create(&points).Error
+}
+
+// seedDuties จัดเวรตัวอย่างสองสัปดาห์ตามจุดบริการ
 //
-// เป็นข้อมูลตั้งต้นให้หน้าตารางเวรมีอะไรให้ดู หัวหน้าแก้หรือลบทีหลังได้
-// จับคู่คนแบบวนไปเรื่อยๆ ให้ทุกคนได้เข้าเวรใกล้เคียงกัน
+// จัดแบบที่หอสมุดจริงทำ คือแต่ละจุดบริการต้องมีคนประจำตามจำนวนขั้นต่ำของจุดนั้น
+// ไม่ใช่จัดรวมทั้งห้องสมุดเป็นเวรเดียว คนแรกของแต่ละจุดเป็นผู้รับผิดชอบหลัก
 func seedDuties(db *gorm.DB) error {
 	var count int64
 	if err := db.Model(&models.DutyShift{}).Count(&count).Error; err != nil {
@@ -173,44 +196,55 @@ func seedDuties(db *gorm.DB) error {
 	if err := db.Where("status = ?", models.PersonnelActive).Order("personnel_id").Find(&people).Error; err != nil {
 		return err
 	}
-	if len(people) < 2 {
-		// ไม่มีบุคลากรพอจัดเวร ข้ามไปเงียบๆ ไม่ใช่ความผิดพลาด
+	var points []models.ServicePoint
+	if err := db.Where("active = ?", true).Order("sort_order").Find(&points).Error; err != nil {
+		return err
+	}
+	if len(people) == 0 || len(points) == 0 {
+		// ยังไม่มีข้อมูลตั้งต้นให้จัด ข้ามไปเงียบๆ ไม่ใช่ความผิดพลาด
 		return nil
 	}
 
 	// ถอยไปหาวันจันทร์ของสัปดาห์นี้ Go นับวันอาทิตย์เป็น 0
 	start := time.Now()
-	back := (int(start.Weekday()) + 6) % 7
-	start = start.AddDate(0, 0, -back)
+	start = start.AddDate(0, 0, -((int(start.Weekday()) + 6) % 7))
 
 	periods := []models.DutyPeriod{models.DutyMorning, models.DutyAfternoon, models.DutyEvening}
-	notes := map[models.DutyPeriod]string{
-		models.DutyMorning:   "เปิดบริการและจัดชั้นหนังสือ",
-		models.DutyAfternoon: "บริการยืม-คืนและตอบคำถาม",
-		models.DutyEvening:   "ปิดบริการและตรวจความเรียบร้อย",
-	}
 
 	shifts := []models.DutyShift{}
 	n := 0
-	for day := 0; day < 12; day++ {
+	for day := 0; day < 14; day++ {
 		date := start.AddDate(0, 0, day)
-		// เสาร์อาทิตย์เปิดครึ่งวัน มีแค่เวรเช้ากับบ่าย
+		weekend := date.Weekday() == time.Saturday || date.Weekday() == time.Sunday
+
 		todays := periods
-		if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
+		if weekend {
+			// เสาร์อาทิตย์เปิดครึ่งวัน ไม่มีเวรเย็น
 			todays = periods[:2]
 		}
-		for _, p := range todays {
-			lead := people[n%len(people)]
-			assistant := people[(n+1)%len(people)]
+
+		for _, period := range todays {
+			for _, point := range points {
+				// จุดบริการรองเปิดเฉพาะช่วงกลางวันของวันธรรมดา
+				// หอสมุดจริงลดจุดบริการลงตอนเย็นและวันหยุด เพราะคนใช้น้อยและเจ้าหน้าที่มีจำกัด
+				if point.SortOrder > 2 && (weekend || period == models.DutyEvening) {
+					continue
+				}
+				for i := 0; i < point.MinStaff; i++ {
+					person := people[n%len(people)]
+					n++
+					shifts = append(shifts, models.DutyShift{
+						Date:           date.Format("2006-01-02"),
+						Period:         period,
+						ServicePointID: point.ServicePointID,
+						PersonnelID:    person.PersonnelID,
+						Lead:           i == 0,
+					})
+				}
+			}
+			// ขยับจุดเริ่มอีกหนึ่งก้าวทุกช่วงเวร ไม่งั้นถ้าจำนวนช่องต่อช่วงหารจำนวนคนลงตัว
+			// จะได้คนชุดเดิมทุกช่วงของวัน ซึ่งไม่ใช่ตารางเวรที่ใช้ได้จริง
 			n++
-			assistantID := assistant.PersonnelID
-			shifts = append(shifts, models.DutyShift{
-				Date:        date.Format("2006-01-02"),
-				Period:      p,
-				LeadID:      lead.PersonnelID,
-				AssistantID: &assistantID,
-				Note:        notes[p],
-			})
 		}
 	}
 	return db.Create(&shifts).Error
