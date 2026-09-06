@@ -59,6 +59,19 @@ const fieldSx = {
   '& .MuiOutlinedInput-notchedOutline': { borderColor: mgr.border },
 } as const
 
+// ช่องที่แก้เองไม่ได้ ทำให้ดูต่างจากช่องกรอกชัดๆ จะได้ไม่กดแล้วงงว่าทำไมพิมพ์ไม่ได้
+const readOnlyFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '8px',
+    fontFamily: fonts.thai,
+    fontSize: 14,
+    bgcolor: '#f4f6f4',
+    color: mgr.inkMuted,
+  },
+  '& .MuiOutlinedInput-notchedOutline': { borderColor: mgr.border, borderStyle: 'dashed' },
+  '& input': { cursor: 'default' },
+} as const
+
 /** ช่องกรอกหนึ่งช่องพร้อมป้ายกำกับด้านบน ใช้ซ้ำทั้งสองฟอร์ม */
 function Field({
   label,
@@ -67,27 +80,30 @@ function Field({
   type = 'text',
   autoComplete,
   helperText,
+  readOnly = false,
 }: {
   label: string
   value: string
-  onChange: (v: string) => void
+  onChange?: (v: string) => void
   type?: string
   autoComplete?: string
   helperText?: string
+  readOnly?: boolean
 }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
       <Typography sx={labelSx}>{label}</Typography>
       <TextField
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange?.(e.target.value)}
         type={type}
         autoComplete={autoComplete}
         helperText={helperText}
         size="small"
         fullWidth
-        sx={fieldSx}
+        sx={readOnly ? readOnlyFieldSx : fieldSx}
         slotProps={{
+          input: { readOnly },
           formHelperText: { sx: { fontFamily: fonts.thai, fontSize: 12, color: mgr.inkMuted, mx: 0 } },
         }}
       />
@@ -162,9 +178,9 @@ export default function ProfilePage() {
     }
   }
 
+  // ชื่อแก้ไม่ได้แล้ว เหลือแค่สองช่องนี้ที่ทำให้ปุ่มบันทึกทำงาน
   const profileDirty =
-    !!user &&
-    (form.name !== user.name || form.email !== user.email || form.phone !== (user.phone ?? ''))
+    !!user && (form.email !== user.email || form.phone !== (user.phone ?? ''))
   const passwordReady =
     passwords.current.length > 0 && passwords.next.length >= 6 && passwords.confirm.length > 0
 
@@ -173,7 +189,16 @@ export default function ProfilePage() {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: 620 }}>
         <Card title="ข้อมูลส่วนตัว" subtitle={`ตำแหน่ง ${POSITION_LABELS[user?.position ?? '']}`}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <Field label="ชื่อ-นามสกุล" value={form.name} onChange={(v) => set('name', v)} />
+            <Field
+              label="ชื่อ-นามสกุล"
+              value={form.name}
+              readOnly
+              helperText={
+                isEmployee
+                  ? 'ชื่อในทะเบียนบุคลากร แก้ไขเองไม่ได้ ต้องแจ้งหัวหน้าหอสมุด'
+                  : 'ชื่อตามทะเบียนสมาชิก แก้ไขเองไม่ได้ ต้องแจ้งเจ้าหน้าที่'
+              }
+            />
             <Field
               label="อีเมล"
               value={form.email}
@@ -215,7 +240,8 @@ export default function ProfilePage() {
               value={passwords.current}
               onChange={(v) => setPassword('current', v)}
               type="password"
-              autoComplete="current-password"
+              autoComplete="off"
+              helperText="ต้องพิมพ์เอง เพื่อยืนยันว่าเป็นเจ้าของบัญชีจริง"
             />
             <Field
               label="รหัสผ่านใหม่"
