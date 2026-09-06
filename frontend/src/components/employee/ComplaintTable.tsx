@@ -31,11 +31,11 @@ export const ComplaintTable: React.FC<ComplaintTableProps> = ({
         <table className="complaint-table">
           <thead>
             <tr>
-              <th style={{ width: '12%' }}>ID</th>
-              <th>Topic</th>
-              <th style={{ width: '18%' }}>Category</th>
-              <th style={{ width: '16%' }}>Date / Time</th>
-              <th style={{ width: '16%' }}>Status</th>
+              <th style={{ width: '12%' }}>รหัส</th>
+              <th>เรื่องที่แจ้ง</th>
+              <th style={{ width: '18%' }}>หมวดหมู่</th>
+              <th style={{ width: '16%' }}>วันที่แจ้ง</th>
+              <th style={{ width: '16%' }}>สถานะ</th>
             </tr>
           </thead>
           <tbody>

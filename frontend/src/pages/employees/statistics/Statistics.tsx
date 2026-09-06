@@ -271,17 +271,17 @@ export default function Statistics(): React.JSX.Element {
           {/* --- Header Controls (Filter & Export) --- */}
           <div className="stats-header-controls">
             <div className="time-filter-group">
-              <span className="filter-label">Period:</span>
+              <span className="filter-label">ช่วงเวลา:</span>
               <select 
                 className="custom-dropdown"
                 value={timeFilter}
                 onChange={(e) => setTimeFilter(e.target.value)}
               >
-                <option value="This Week">This Week</option>
-                <option value="This Month (Aug 2026)">This Month (Aug 2026)</option>
-                <option value="Last Month (Jul 2026)">Last Month (Jul 2026)</option>
-                <option value="Semester 1/2026">Semester 1/2026</option>
-                <option value="custom">Custom Date Range...</option>
+                <option value="This Week">สัปดาห์นี้</option>
+                <option value="This Month (Aug 2026)">เดือนนี้ (ส.ค. 2569)</option>
+                <option value="Last Month (Jul 2026)">เดือนที่แล้ว (ก.ค. 2569)</option>
+                <option value="Semester 1/2026">ภาคเรียนที่ 1/2569</option>
+                <option value="custom">กำหนดช่วงเองที่ต้องการ...</option>
               </select>
               {timeFilter === 'custom' && (
                 <div className="date-range-inputs">
@@ -305,17 +305,17 @@ export default function Statistics(): React.JSX.Element {
             <div className="export-action-group">
               <button className="btn-export-excel" onClick={handleExportExcel} title="ส่งออกไฟล์ Excel (.csv)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                Export Excel
+                ส่งออก Excel
               </button>
               <button className="btn-download-pdf" onClick={handleDownloadPDF} title="พิมพ์และบันทึกเอกสาร PDF">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                Download PDF
+                ดาวน์โหลด PDF
               </button>
             </div>
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading statistical data...</div>
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>กำลังโหลดข้อมูลสถิติ...</div>
           ) : (
             <>
               {/* =========================================
@@ -325,19 +325,19 @@ export default function Statistics(): React.JSX.Element {
                 <>
                   <div className="summary-cards-row">
                     <StatCard 
-                      title="Total Library Visitors" 
+                      title="ผู้เข้าใช้หอสมุดทั้งหมด" 
                       value={summaryData?.total_visitors?.toLocaleString() || 0} 
-                      unit="visits" 
+                      unit="คน" 
                       bgType="gray" 
                     />
                     <StatCard 
-                      title="Average Peak Hours" 
+                      title="ช่วงเวลาที่คนใช้มากที่สุด" 
                       value={summaryData?.peak_hours || '13:00-15:00'} 
-                      unit="hrs" 
+                      unit="ชม." 
                       bgType="orange" 
                     />
                     <StatCard 
-                      title="Total Fines Collected" 
+                      title="ค่าปรับที่เก็บได้ทั้งหมด" 
                       value={summaryData?.total_fines?.toLocaleString() || 0} 
                       unit="฿" 
                       bgType="green" 
@@ -345,7 +345,7 @@ export default function Statistics(): React.JSX.Element {
                   </div>
 
                   <div className="chart-section">
-                    <h3>Average Visitors by Time Slot (Peak Hours)</h3>
+                    <h3>ผู้เข้าใช้เฉลี่ยตามช่วงเวลา</h3>
                     <div className="css-bar-chart">
                       {(() => {
                         const chartData = summaryData?.peak_chart_data || [];
@@ -407,15 +407,15 @@ export default function Statistics(): React.JSX.Element {
               ========================================= */}
               {activeMenu === 'Top 10 Popular Books' && (
                 <div className="stats-table-section" style={{ marginTop: 0 }}>
-                  <h3 className="stats-section-title">Top 10 Most Borrowed Books</h3>
+                  <h3 className="stats-section-title">หนังสือที่ถูกยืมมากที่สุด 10 อันดับ</h3>
                   <div className="stats-table-card">
                     <table className="stats-table">
                       <thead>
                         <tr>
-                          <th>Rank</th>
-                          <th>Book Title</th>
-                          <th>Category</th>
-                          <th>Total Borrows (times)</th>
+                          <th>อันดับ</th>
+                          <th>ชื่อหนังสือ</th>
+                          <th>หมวดหมู่</th>
+                          <th>จำนวนครั้งที่ยืม</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -427,12 +427,12 @@ export default function Statistics(): React.JSX.Element {
                               <td className="col-category">{b.category}</td>
                               <td className="col-count">
                                 <strong>{b.borrow_count?.toLocaleString() || 0}</strong>
-                                <span className="text-unit">times</span>
+                                <span className="text-unit">ครั้ง</span>
                               </td>
                             </tr>
                           ))
                         ) : (
-                          <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>No records found</td></tr>
+                          <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>ไม่พบข้อมูล</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -447,28 +447,28 @@ export default function Statistics(): React.JSX.Element {
                 <>
                   <div className="summary-cards-row">
                     <StatCard 
-                      title="Total Borrow-Returns" 
+                      title="จำนวนยืม-คืนทั้งหมด" 
                       value={returnsData?.total_borrow_returns?.toLocaleString() || 0} 
-                      unit="items" 
+                      unit="ชิ้น" 
                       bgType="gray" 
                     />
                     <StatCard 
-                      title="On-Time Return Rate" 
+                      title="อัตราคืนตรงเวลา" 
                       value={typeof returnsData?.on_time_rate === 'number' ? returnsData.on_time_rate.toFixed(1) : '0.0'} 
                       unit="%" 
                       bgType="green" 
                     />
                     <StatCard 
-                      title="Average Overdue Days" 
+                      title="จำนวนวันเกินกำหนดเฉลี่ย" 
                       value={returnsData?.avg_overdue_days || 0} 
-                      unit="days" 
+                      unit="วัน" 
                       bgType="orange" 
                       valueColor="#ea580c" 
                     />
                   </div>
                   
                   <div className="chart-section">
-                    <h3>Book Return Distribution</h3>
+                    <h3>สัดส่วนการคืนหนังสือ</h3>
                     <div className="horizontal-bar-container">
                       {(returnsData?.breakdown || []).map((item, idx) => (
                         <div key={idx} className="h-bar-row">
@@ -496,19 +496,19 @@ export default function Statistics(): React.JSX.Element {
                 <>
                   <div className="summary-cards-row">
                     <StatCard 
-                      title="Total Room Bookings" 
+                      title="จำนวนการจองห้องทั้งหมด" 
                       value={roomsData?.total_bookings?.toLocaleString() || 0} 
-                      unit="times" 
+                      unit="ครั้ง" 
                       bgType="gray" 
                     />
                     <StatCard 
-                      title="Actual Check-in Rate" 
+                      title="อัตราเข้าใช้จริง" 
                       value={typeof roomsData?.check_in_rate === 'number' ? roomsData.check_in_rate.toFixed(1) : '0.0'} 
                       unit="%" 
                       bgType="green" 
                     />
                     <StatCard 
-                      title="Cancellation / No Show" 
+                      title="ยกเลิกหรือไม่มาใช้" 
                       value={typeof roomsData?.cancellation_rate === 'number' ? roomsData.cancellation_rate.toFixed(1) : '0.0'} 
                       unit="%" 
                       bgType="orange" 
@@ -516,17 +516,17 @@ export default function Statistics(): React.JSX.Element {
                   </div>
                   
                   <div className="stats-table-section">
-                    <h3 className="stats-section-title">Study Room Utilization</h3>
+                    <h3 className="stats-section-title">การใช้งานห้องค้นคว้า</h3>
                     <div className="stats-table-card">
                       <table className="stats-table">
                         <thead>
                           <tr>
-                            <th>Room No.</th>
-                            <th>Type / Capacity</th>
-                            <th>Bookings</th>
-                            <th>Total Hours</th>
-                            <th>Check-in Rate</th>
-                            <th>Cancellation Rate</th>
+                            <th>ห้อง</th>
+                            <th>ประเภท / ความจุ</th>
+                            <th>จำนวนการจอง</th>
+                            <th>ชั่วโมงรวม</th>
+                            <th>อัตราเข้าใช้จริง</th>
+                            <th>อัตราการยกเลิก</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -535,14 +535,14 @@ export default function Statistics(): React.JSX.Element {
                               <tr key={idx}>
                                 <td><strong>{r.room_number}</strong></td>
                                 <td>{r.room_type}</td>
-                                <td><strong>{r.total_bookings}</strong> <span className="text-unit">times</span></td>
+                                <td><strong>{r.total_bookings}</strong> <span className="text-unit">ครั้ง</span></td>
                                 <td>{r.total_hours} hrs</td>
                                 <td><span className="trend-up">{r.check_in_rate}%</span></td>
                                 <td><span className="trend-down">{r.cancellation_rate}%</span></td>
                               </tr>
                             ))
                           ) : (
-                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>No records found</td></tr>
+                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>ไม่พบข้อมูล</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -558,34 +558,34 @@ export default function Statistics(): React.JSX.Element {
                 <>
                   <div className="summary-cards-row">
                     <StatCard 
-                      title="Total Searches" 
+                      title="จำนวนการค้นหาทั้งหมด" 
                       value={ebooksData?.total_searches?.toLocaleString() || 0} 
-                      unit="times" 
+                      unit="ครั้ง" 
                       bgType="gray" 
                     />
                     <StatCard 
-                      title="File Downloads (PDF/EPUB)" 
+                      title="ดาวน์โหลดไฟล์ (PDF/EPUB)" 
                       value={ebooksData?.total_downloads?.toLocaleString() || 0} 
-                      unit="files" 
+                      unit="ไฟล์" 
                       bgType="green" 
                     />
                     <StatCard 
-                      title="Zero Result Searches" 
+                      title="ค้นแล้วไม่เจอผลลัพธ์" 
                       value={ebooksData?.no_result_rate || 0.0} 
                       unit="%" 
                       bgType="orange" 
                     />
                   </div>
                   <div className="stats-table-section">
-                    <h3 className="stats-section-title">Top Search Keywords</h3>
+                    <h3 className="stats-section-title">คำค้นหายอดนิยม</h3>
                     <div className="stats-table-card">
                       <table className="stats-table">
                         <thead>
                           <tr>
-                            <th>Rank</th>
-                            <th>Search Keyword</th>
-                            <th>Category</th>
-                            <th>Downloads</th>
+                            <th>อันดับ</th>
+                            <th>คำค้นหา</th>
+                            <th>หมวดหมู่</th>
+                            <th>ดาวน์โหลด</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -597,12 +597,12 @@ export default function Statistics(): React.JSX.Element {
                                 <td className="col-category">{item.category}</td>
                                 <td className="col-count">
                                   <strong>{item.download_count?.toLocaleString()}</strong>{' '}
-                                  <span className="text-unit">times</span>
+                                  <span className="text-unit">ครั้ง</span>
                                 </td>
                               </tr>
                             ))
                           ) : (
-                            <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>No records found</td></tr>
+                            <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>ไม่พบข้อมูล</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -618,19 +618,19 @@ export default function Statistics(): React.JSX.Element {
                 <>
                   <div className="summary-cards-row">
                     <StatCard 
-                      title="Total Equipment Rentals" 
+                      title="จำนวนการยืมอุปกรณ์ทั้งหมด" 
                       value={equipmentData?.total_rentals?.toLocaleString() || 0} 
-                      unit="times" 
+                      unit="ครั้ง" 
                       bgType="gray" 
                     />
                     <StatCard 
-                      title="Intact Return Rate" 
+                      title="อัตราคืนในสภาพสมบูรณ์" 
                       value={typeof equipmentData?.intact_rate === 'number' ? equipmentData.intact_rate.toFixed(1) : '100.0'} 
                       unit="%" 
                       bgType="green" 
                     />
                     <StatCard 
-                      title="Damaged / Lost Rate" 
+                      title="อัตราชำรุดหรือสูญหาย" 
                       value={typeof equipmentData?.damaged_rate === 'number' ? equipmentData.damaged_rate.toFixed(1) : '0.0'} 
                       unit="%" 
                       bgType="orange" 
@@ -639,7 +639,7 @@ export default function Statistics(): React.JSX.Element {
                   </div>
                   
                   <div className="chart-section">
-                    <h3>Rental Frequency by Equipment Type</h3>
+                    <h3>ความถี่การยืมแยกตามประเภทอุปกรณ์</h3>
                     <div className="horizontal-bar-container">
                       {(equipmentData?.devices || []).map((dev, idx) => (
                         <div key={idx} className="h-bar-row">
@@ -667,28 +667,28 @@ export default function Statistics(): React.JSX.Element {
                 <>
                   <div className="summary-cards-row">
                     <StatCard 
-                      title="Total Complaints" 
+                      title="เรื่องร้องเรียนทั้งหมด" 
                       value={totalComplaints.toLocaleString()} 
-                      unit="cases" 
+                      unit="เรื่อง" 
                       bgType="gray" 
                     />
                     <StatCard 
-                      title="Resolution Rate" 
+                      title="อัตราการแก้ไขสำเร็จ" 
                       value={resolutionRate} 
                       unit="%" 
                       bgType="green" 
                     />
                     <StatCard 
-                      title="In Progress / Coordinating" 
+                      title="กำลังดำเนินงานหรือประสานงาน" 
                       value={inProgressComplaints.toLocaleString()} 
-                      unit="cases" 
+                      unit="เรื่อง" 
                       bgType="orange" 
                       valueColor="#ea580c" 
                     />
                   </div>
                   
                   <div className="chart-section">
-                    <h3>Complaints by Category (สถิติการร้องเรียนแยกตามหมวดหมู่)</h3>
+                    <h3>สถิติการร้องเรียนแยกตามหมวดหมู่</h3>
                     <div className="horizontal-bar-container">
                       {categoryList.length > 0 ? (
                         categoryList.map((item, idx) => (
@@ -708,19 +708,19 @@ export default function Statistics(): React.JSX.Element {
                           </div>
                         ))
                       ) : (
-                        <div style={{ color: '#94a3b8', textAlign: 'center', padding: '1rem' }}>No category records</div>
+                        <div style={{ color: '#94a3b8', textAlign: 'center', padding: '1rem' }}>ไม่พบข้อมูลหมวดหมู่</div>
                       )}
                     </div>
                   </div>
 
                   <div className="stats-table-section">
-                    <h3 className="stats-section-title">Complaint Resolution & SLA Performance by Category (ประสิทธิภาพการจัดการแยกตามหมวดหมู่)</h3>
+                    <h3 className="stats-section-title">ประสิทธิภาพการจัดการแยกตามหมวดหมู่</h3>
                     <div className="stats-table-card">
                       <table className="stats-table stats-table-category">
                         <thead>
                           <tr>
                             <th style={{ textAlign: 'center', width: '6%' }}>#</th>
-                            <th>หมวดหมู่ (Category)</th>
+                            <th>หมวดหมู่</th>
                             <th style={{ textAlign: 'center' }}>รับแจ้งทั้งหมด</th>
                             <th style={{ textAlign: 'center' }}>สัดส่วน (%)</th>
                             <th style={{ textAlign: 'center' }}>แก้ไขเสร็จสิ้น</th>

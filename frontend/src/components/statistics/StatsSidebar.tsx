@@ -24,7 +24,7 @@ interface StatsSidebarProps {
 export const STATS_MENU_ITEMS: MenuItemConfig[] = [
   {
     id: 'Overview',
-    label: 'Overview',
+    label: 'ภาพรวม',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="7" height="7"></rect>
@@ -36,7 +36,7 @@ export const STATS_MENU_ITEMS: MenuItemConfig[] = [
   },
   {
     id: 'Top 10 Popular Books',
-    label: 'Top 10 Popular Books',
+    label: 'หนังสือยอดนิยม 10 อันดับ',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -46,7 +46,7 @@ export const STATS_MENU_ITEMS: MenuItemConfig[] = [
   },
   {
     id: 'Book Return Statistics',
-    label: 'Book Return Statistics',
+    label: 'สถิติการคืนหนังสือ',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -56,7 +56,7 @@ export const STATS_MENU_ITEMS: MenuItemConfig[] = [
   },
   {
     id: 'Study Room Usage',
-    label: 'Study Room Usage',
+    label: 'การใช้ห้องค้นคว้า',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -67,7 +67,7 @@ export const STATS_MENU_ITEMS: MenuItemConfig[] = [
   },
   {
     id: 'E-Book Search Statistics',
-    label: 'E-Book Search Statistics',
+    label: 'สถิติการค้นหา e-book',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="11" cy="11" r="8"></circle>
@@ -77,7 +77,7 @@ export const STATS_MENU_ITEMS: MenuItemConfig[] = [
   },
   {
     id: 'Equipment Rental Stats',
-    label: 'Equipment Rental Stats',
+    label: 'สถิติการยืมอุปกรณ์',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -88,7 +88,7 @@ export const STATS_MENU_ITEMS: MenuItemConfig[] = [
   },
   {
     id: 'Complaint Statistics',
-    label: 'Complaint Statistics',
+    label: 'สถิติเรื่องร้องเรียน',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>

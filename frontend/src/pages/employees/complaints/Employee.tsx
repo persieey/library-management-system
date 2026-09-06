@@ -246,28 +246,28 @@ export default function Employee(): React.JSX.Element {
             <div className="filter-pills">
               {activeTab === 'box' && (
                 <>
-                  <button className={`pill ${activeFilter === 'All' ? 'active' : ''}`} onClick={() => handleFilterChange('All')}>All</button>
-                  <button className={`pill ${activeFilter === 'Pending Inspection' ? 'active' : ''}`} onClick={() => handleFilterChange('Pending Inspection')}>Pending Inspection</button>
-                  <button className={`pill ${activeFilter === 'Awaiting Supervisor' ? 'active' : ''}`} onClick={() => handleFilterChange('Awaiting Supervisor')}>Awaiting Supervisor</button>
-                  <button className={`pill ${activeFilter === 'Cancelled' ? 'active' : ''}`} onClick={() => handleFilterChange('Cancelled')}>Cancelled</button>
+                  <button className={`pill ${activeFilter === 'All' ? 'active' : ''}`} onClick={() => handleFilterChange('All')}>ทั้งหมด</button>
+                  <button className={`pill ${activeFilter === 'Pending Inspection' ? 'active' : ''}`} onClick={() => handleFilterChange('Pending Inspection')}>รอตรวจสอบ</button>
+                  <button className={`pill ${activeFilter === 'Awaiting Supervisor' ? 'active' : ''}`} onClick={() => handleFilterChange('Awaiting Supervisor')}>รอหัวหน้าพิจารณา</button>
+                  <button className={`pill ${activeFilter === 'Cancelled' ? 'active' : ''}`} onClick={() => handleFilterChange('Cancelled')}>ยกเลิก</button>
                 </>
               )}
 
               {activeTab === 'pending' && (
                 <>
-                  <button className={`pill ${activeFilter === 'All' ? 'active' : ''}`} onClick={() => handleFilterChange('All')}>All</button>
-                  <button className={`pill ${activeFilter === 'Awaiting Supervisor' ? 'active' : ''}`} onClick={() => handleFilterChange('Awaiting Supervisor')}>Awaiting Supervisor</button>
-                  <button className={`pill ${activeFilter === 'Coordinating' ? 'active' : ''}`} onClick={() => handleFilterChange('Coordinating')}>Coordinating</button>
-                  <button className={`pill ${activeFilter === 'Cancelled' ? 'active' : ''}`} onClick={() => handleFilterChange('Cancelled')}>Cancelled</button>
+                  <button className={`pill ${activeFilter === 'All' ? 'active' : ''}`} onClick={() => handleFilterChange('All')}>ทั้งหมด</button>
+                  <button className={`pill ${activeFilter === 'Awaiting Supervisor' ? 'active' : ''}`} onClick={() => handleFilterChange('Awaiting Supervisor')}>รอหัวหน้าพิจารณา</button>
+                  <button className={`pill ${activeFilter === 'Coordinating' ? 'active' : ''}`} onClick={() => handleFilterChange('Coordinating')}>ประสานงาน</button>
+                  <button className={`pill ${activeFilter === 'Cancelled' ? 'active' : ''}`} onClick={() => handleFilterChange('Cancelled')}>ยกเลิก</button>
                 </>
               )}
 
               {activeTab === 'verify' && (
                 <>
-                  <button className={`pill ${activeFilter === 'All' ? 'active' : ''}`} onClick={() => handleFilterChange('All')}>All</button>
-                  <button className={`pill ${activeFilter === 'In Progress' ? 'active' : ''}`} onClick={() => handleFilterChange('In Progress')}>In Progress</button>
-                  <button className={`pill ${activeFilter === 'Coordinating' ? 'active' : ''}`} onClick={() => handleFilterChange('Coordinating')}>Coordinating</button>
-                  <button className={`pill ${activeFilter === 'Completed' ? 'active' : ''}`} onClick={() => handleFilterChange('Completed')}>Completed</button>
+                  <button className={`pill ${activeFilter === 'All' ? 'active' : ''}`} onClick={() => handleFilterChange('All')}>ทั้งหมด</button>
+                  <button className={`pill ${activeFilter === 'In Progress' ? 'active' : ''}`} onClick={() => handleFilterChange('In Progress')}>กำลังดำเนินงาน</button>
+                  <button className={`pill ${activeFilter === 'Coordinating' ? 'active' : ''}`} onClick={() => handleFilterChange('Coordinating')}>ประสานงาน</button>
+                  <button className={`pill ${activeFilter === 'Completed' ? 'active' : ''}`} onClick={() => handleFilterChange('Completed')}>เสร็จสิ้น</button>
                 </>
               )}
             </div>
@@ -280,19 +280,19 @@ export default function Employee(): React.JSX.Element {
                 </svg>
                 <input
                   type="text"
-                  placeholder="Search by ID, topic, or category..."
+                  placeholder="ค้นหาจากรหัส เรื่อง หรือหมวดหมู่..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
 
               <div className="date-filter-box">
-                <span>Month: </span>
+                <span>เดือน: </span>
                 <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}>
-                  <option value="All">All</option>
-                  <option value="ส.ค">Aug (ส.ค.)</option>
-                  <option value="ก.ค">Jul (ก.ค.)</option>
-                  <option value="มิ.ย">Jun (มิ.ย.)</option>
+                  <option value="All">ทั้งหมด</option>
+                  <option value="ส.ค">สิงหาคม</option>
+                  <option value="ก.ค">กรกฎาคม</option>
+                  <option value="มิ.ย">มิถุนายน</option>
                 </select>
               </div>
             </div>

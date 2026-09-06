@@ -55,7 +55,7 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
           }}
         >
           <h4 style={{ margin: 0, color: '#12372F', fontSize: '1.1rem', fontWeight: 700 }}>
-            {title || 'Photo Preview'}
+            {title || 'ดูรูปภาพ'}
           </h4>
           <button
             onClick={onClose}

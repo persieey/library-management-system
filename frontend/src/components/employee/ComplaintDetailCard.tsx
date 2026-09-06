@@ -79,15 +79,15 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
         </div>
         <div className="info-box">
           <div className="info-item">
-            <span>Category</span>
+            <span>หมวดหมู่</span>
             <strong>{selectedItem.category}</strong>
           </div>
           <div className="info-item">
-            <span>Location</span>
+            <span>สถานที่</span>
             <strong>{selectedItem.location || '-'}</strong>
           </div>
           <div className="info-item">
-            <span>Reported Date</span>
+            <span>วันที่แจ้ง</span>
             <strong>{selectedItem.date} {selectedItem.time}</strong>
           </div>
         </div>
@@ -166,10 +166,10 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
               <span style={{ fontSize: '1.4rem' }}>✓</span> Issue Completed & Resolved (Case Closed)
             </div>
             <div style={{ marginBottom: '0.6rem', color: '#334155', fontSize: '0.95rem' }}>
-              <strong>Assigned Department:</strong> {selectedItem.externalUnit || 'Internal Handling'}
+              <strong>หน่วยงานที่รับผิดชอบ:</strong> {selectedItem.externalUnit || 'ดำเนินการภายใน'}
             </div>
             <div style={{ color: '#334155', fontSize: '0.95rem', lineHeight: '1.6' }}>
-              <strong>Resolution Summary:</strong>
+              <strong>สรุปผลการดำเนินงาน:</strong>
               <p
                 style={{
                   margin: '0.4rem 0 0 0',
@@ -179,7 +179,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                   border: '1px solid #dcfce7',
                 }}
               >
-                {selectedItem.resolutionSummary || 'Maintenance completed and tested successfully.'}
+                {selectedItem.resolutionSummary || 'ซ่อมเสร็จและทดสอบเรียบร้อย'}
               </p>
             </div>
           </div>
@@ -212,7 +212,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
               <span style={{ fontSize: '1.4rem' }}>✕</span> This complaint has been cancelled / rejected
             </div>
             <div style={{ color: '#334155', fontSize: '0.95rem' }}>
-              <strong>Cancellation Reason:</strong>
+              <strong>เหตุผลที่ยกเลิก:</strong>
               <p
                 style={{
                   margin: '0.4rem 0 0 0',
@@ -222,7 +222,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                   border: '1px solid #fee2e2',
                 }}
               >
-                {selectedItem.rejectReason || 'Does not meet university library criteria.'}
+                {selectedItem.rejectReason || 'ไม่เข้าเกณฑ์ของหอสมุด'}
               </p>
             </div>
           </div>
@@ -240,21 +240,21 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                   {selectedItem.status === COMPLAINT_STATUS.PENDING_INSPECTION ? (
                     <>
                       <div className="form-group">
-                        <label>On-site Inspection Notes / Assessment (Staff):</label>
+                        <label>บันทึกผลตรวจหน้างาน (เจ้าหน้าที่):</label>
                         <textarea
                           rows={3}
-                          placeholder="Describe on-site inspection findings, damages, and required repairs..."
+                          placeholder="อธิบายสิ่งที่พบหน้างาน ความเสียหาย และสิ่งที่ต้องซ่อม..."
                           value={inspectorReportInput}
                           onChange={(e) => setInspectorReportInput(e.target.value)}
                         ></textarea>
                       </div>
 
                       <div className="form-group">
-                        <label>Rejection / Cancellation Reason (If not approved):</label>
+                        <label>เหตุผลที่ไม่อนุมัติหรือยกเลิก:</label>
                         <input
                           type="text"
                           className="full-input"
-                          placeholder="e.g. Invalid request, against energy saving policy"
+                          placeholder="เช่น เรื่องไม่เข้าเกณฑ์ ขัดกับนโยบายประหยัดพลังงาน"
                           value={rejectReasonInput}
                           onChange={(e) => setRejectReasonInput(e.target.value)}
                         />
@@ -281,7 +281,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                             })
                           }
                         >
-                          {isProcessing ? 'Saving...' : '✓ Submit Inspection & Forward to Supervisor'}
+                          {isProcessing ? 'กำลังบันทึก...' : '✓ ส่งผลตรวจให้หัวหน้าพิจารณา'}
                         </button>
                       </div>
                     </>
@@ -309,7 +309,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                         <span style={{ fontSize: '1.2rem' }}>🕒</span> Forwarded to Supervisor (Pending Approval)
                       </div>
                       <div style={{ color: '#334155', fontSize: '0.95rem' }}>
-                        <strong>On-site Inspection Notes:</strong>
+                        <strong>บันทึกผลตรวจหน้างาน:</strong>
                         <p
                           style={{
                             margin: '0.4rem 0 0 0',
@@ -319,7 +319,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                             border: '1px solid #f3e8ff',
                           }}
                         >
-                          {selectedItem.inspectorReport || 'Inspected on-site by staff.'}
+                          {selectedItem.inspectorReport || 'เจ้าหน้าที่ตรวจหน้างานแล้ว'}
                         </p>
                       </div>
                     </div>
@@ -333,7 +333,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                   {selectedItem.status === COMPLAINT_STATUS.AWAITING_SUPERVISOR ? (
                     <>
                       <div className="form-group">
-                        <label>Inspection Report from Staff:</label>
+                        <label>รายงานผลตรวจจากเจ้าหน้าที่:</label>
                         <p
                           style={{
                             background: '#f8fafc',
@@ -343,30 +343,30 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                             color: '#334155',
                           }}
                         >
-                          {selectedItem.inspectorReport || 'No inspection notes recorded.'}
+                          {selectedItem.inspectorReport || 'ยังไม่มีบันทึกผลตรวจ'}
                         </p>
                       </div>
 
                       <div className="form-group">
-                        <label>Forward to External Department / Contractor:</label>
+                        <label>ส่งต่อหน่วยงานภายนอกหรือผู้รับเหมา:</label>
                         <select
                           className="full-input"
                           value={externalUnitInput}
                           onChange={(e) => setExternalUnitInput(e.target.value)}
                         >
-                          <option value="">-- Do not forward (Handle Internally) --</option>
-                          <option value="กองอาคารสถานที่">Division of Buildings & Grounds (กองอาคารสถานที่)</option>
-                          <option value="ศูนย์คอมพิวเตอร์">Computer & Network Center (ศูนย์คอมพิวเตอร์)</option>
-                          <option value="งานเทคโนโลยีการศึกษา">Educational Technology Unit (งานเทคโนโลยีการศึกษา)</option>
+                          <option value="">-- ไม่ส่งต่อ ดำเนินการภายใน --</option>
+                          <option value="กองอาคารสถานที่">กองอาคารสถานที่</option>
+                          <option value="ศูนย์คอมพิวเตอร์">ศูนย์คอมพิวเตอร์</option>
+                          <option value="งานเทคโนโลยีการศึกษา">งานเทคโนโลยีการศึกษา</option>
                         </select>
                       </div>
 
                       <div className="form-group">
-                        <label>Rejection / Cancellation Reason (If not approved):</label>
+                        <label>เหตุผลที่ไม่อนุมัติหรือยกเลิก:</label>
                         <input
                           type="text"
                           className="full-input"
-                          placeholder="Specify reason, e.g. Insufficient budget, out of service scope"
+                          placeholder="ระบุเหตุผล เช่น งบไม่พอ อยู่นอกขอบเขตงาน"
                           value={rejectReasonInput}
                           onChange={(e) => setRejectReasonInput(e.target.value)}
                         />
@@ -398,7 +398,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                               }
                             }}
                           >
-                            {isProcessing ? 'Saving...' : '✓ Approve & Start Operations (หัวหน้าอนุมัติ)'}
+                            {isProcessing ? 'กำลังบันทึก...' : '✓ อนุมัติและเริ่มดำเนินงาน'}
                           </button>
                         </div>
                       ) : (
@@ -441,7 +441,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                         <span style={{ fontSize: '1.2rem' }}>✓</span> Approved and Forwarded to External Department
                       </div>
                       <div style={{ color: '#334155', fontSize: '0.95rem' }}>
-                        <strong>Coordinating Unit:</strong> {selectedItem.externalUnit || 'Internal Handling'}
+                        <strong>หน่วยงานที่ประสาน:</strong> {selectedItem.externalUnit || 'ดำเนินการภายใน'}
                       </div>
 
                       <div style={{ marginTop: '1.2rem', display: 'flex', justifyContent: 'flex-start' }}>
@@ -471,9 +471,9 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                   <div className="form-group">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <label>Assigned Department / Contractor:</label>
+                        <label>หน่วยงานหรือผู้รับเหมาที่มอบหมาย:</label>
                         <p style={{ fontWeight: 600, color: '#1e293b', margin: '0.2rem 0 0 0' }}>
-                          {selectedItem.externalUnit || 'Internal Handling'}
+                          {selectedItem.externalUnit || 'ดำเนินการภายใน'}
                         </p>
                       </div>
                       {selectedItem.externalUnit && selectedItem.externalUnit !== '-' && (
@@ -490,17 +490,17 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                   </div>
 
                   <div className="form-group">
-                    <label>Resolution Summary / Actions Taken *:</label>
+                    <label>สรุปผลการดำเนินงาน *:</label>
                     <textarea
                       rows={3}
-                      placeholder="e.g. Replaced damaged parts, restored AC functionality and tested operation..."
+                      placeholder="เช่น เปลี่ยนอะไหล่ที่ชำรุด ซ่อมแอร์และทดสอบการทำงานแล้ว..."
                       value={resolutionSummaryInput}
                       onChange={(e) => setResolutionSummaryInput(e.target.value)}
                     ></textarea>
                   </div>
 
                   <div className="form-group">
-                    <label>Attach After-Repair Photo Evidence (Optional):</label>
+                    <label>แนบรูปหลังซ่อม (ไม่บังคับ):</label>
                     <input
                       type="file"
                       ref={resolutionFileRef}
@@ -514,7 +514,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                         className="img-btn"
                         onClick={() => resolutionFileRef.current?.click()}
                       >
-                        📷 {resolutionImageInput ? 'Change Resolution Photo' : 'Upload Resolution Photo'}
+                        📷 {resolutionImageInput ? 'เปลี่ยนรูป' : 'อัปโหลดรูปหลังซ่อม'}
                       </button>
                       {resolutionImageInput && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -549,7 +549,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                         })
                       }
                     >
-                      {isProcessing ? 'Saving...' : '★ Verify & Close Case'}
+                      {isProcessing ? 'กำลังบันทึก...' : '★ ยืนยันผลและปิดเคส'}
                     </button>
                   </div>
                 </>
