@@ -14,10 +14,10 @@ import NotFound from '../pages/not-found'
 import RequirePosition, { RequireLogin } from '../components/RequirePosition'
 import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../config/roles'
 import ManagerDashboard from '../pages/manager'
-import ManagerSchedules from '../pages/manager/schedules'
 import ManagerLeave from '../pages/manager/leave'
 import ProfilePage from '../pages/employees/profile'
 import MyLeavePage from '../pages/employees/leave'
+import SchedulesPage from '../pages/employees/schedules'
 
 const COMING_SOON_ROUTES = [
   // หน้าที่ยังไม่ได้ทำ ต้องมีตัวรองรับไม่ให้ 404 เพราะมีเมนูชี้มา
@@ -44,14 +44,6 @@ function AppRoutes() {
         element={
           <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
             <ManagerDashboard />
-          </RequirePosition>
-        }
-      />
-      <Route
-        path="/manager/schedules"
-        element={
-          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
-            <ManagerSchedules />
           </RequirePosition>
         }
       />
@@ -142,6 +134,15 @@ function AppRoutes() {
         element={
           <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
             <ProfilePage />
+          </RequirePosition>
+        }
+      />
+
+      <Route
+        path="/employees/schedules"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <SchedulesPage />
           </RequirePosition>
         }
       />

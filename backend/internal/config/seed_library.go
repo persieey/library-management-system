@@ -22,7 +22,10 @@ func SeedLibrary(db *gorm.DB, cfg *Config) error {
 	if err := seedPR(db); err != nil {
 		return err
 	}
-	return seedEvents(db)
+	if err := seedEvents(db); err != nil {
+		return err
+	}
+	return seedDuties(db)
 }
 
 // seedStaffAccounts เพิ่มบัญชีบรรณารักษ์และเจ้าหน้าที่ไว้ทดสอบ
@@ -151,4 +154,64 @@ func seedEvents(db *gorm.DB) error {
 		{Title: "Citation and EndNote Workshop", Description: "Hands-on workshop on building a citation library with EndNote.", Location: "Computer Lab, 3rd Floor", Image: "event-3", StartAt: now.AddDate(0, 0, 23)},
 	}
 	return db.Create(&events).Error
+}
+
+// seedDuties สร้างตารางเวรตัวอย่างสองสัปดาห์ เริ่มจากวันจันทร์ของสัปดาห์นี้
+//
+// เป็นข้อมูลตั้งต้นให้หน้าตารางเวรมีอะไรให้ดู หัวหน้าแก้หรือลบทีหลังได้
+// จับคู่คนแบบวนไปเรื่อยๆ ให้ทุกคนได้เข้าเวรใกล้เคียงกัน
+func seedDuties(db *gorm.DB) error {
+	var count int64
+	if err := db.Model(&models.DutyShift{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	var people []models.Personnel
+	if err := db.Where("status = ?", models.PersonnelActive).Order("personnel_id").Find(&people).Error; err != nil {
+		return err
+	}
+	if len(people) < 2 {
+		// ไม่มีบุคลากรพอจัดเวร ข้ามไปเงียบๆ ไม่ใช่ความผิดพลาด
+		return nil
+	}
+
+	// ถอยไปหาวันจันทร์ของสัปดาห์นี้ Go นับวันอาทิตย์เป็น 0
+	start := time.Now()
+	back := (int(start.Weekday()) + 6) % 7
+	start = start.AddDate(0, 0, -back)
+
+	periods := []models.DutyPeriod{models.DutyMorning, models.DutyAfternoon, models.DutyEvening}
+	notes := map[models.DutyPeriod]string{
+		models.DutyMorning:   "เปิดบริการและจัดชั้นหนังสือ",
+		models.DutyAfternoon: "บริการยืม-คืนและตอบคำถาม",
+		models.DutyEvening:   "ปิดบริการและตรวจความเรียบร้อย",
+	}
+
+	shifts := []models.DutyShift{}
+	n := 0
+	for day := 0; day < 12; day++ {
+		date := start.AddDate(0, 0, day)
+		// เสาร์อาทิตย์เปิดครึ่งวัน มีแค่เวรเช้ากับบ่าย
+		todays := periods
+		if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
+			todays = periods[:2]
+		}
+		for _, p := range todays {
+			lead := people[n%len(people)]
+			assistant := people[(n+1)%len(people)]
+			n++
+			assistantID := assistant.PersonnelID
+			shifts = append(shifts, models.DutyShift{
+				Date:        date.Format("2006-01-02"),
+				Period:      p,
+				LeadID:      lead.PersonnelID,
+				AssistantID: &assistantID,
+				Note:        notes[p],
+			})
+		}
+	}
+	return db.Create(&shifts).Error
 }

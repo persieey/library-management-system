@@ -16,6 +16,7 @@ func SetupRouter(authControllers *controllers.AuthController,
 	eventController *controllers.EventController,
 	personnelController *controllers.PersonnelController,
 	leaveController *controllers.LeaveController,
+	dutyController *controllers.DutyController,
 	jwtProvider *utils.JWTProvider) *gin.Engine {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
@@ -67,6 +68,15 @@ func SetupRouter(authControllers *controllers.AuthController,
 
 	// ---------- บุคลากร ----------
 	// งานบุคคลเป็นเรื่องของหัวหน้าหอสมุดเท่านั้น
+	// ---------- ตารางเวร ----------
+	// ทุกตำแหน่งดูได้เพราะต้องรู้ว่าตัวเองเข้าเวรวันไหน แต่จัดเวรได้เฉพาะหัวหน้า
+	duties := api.Group("/duties")
+	duties.Use(middleware.JWTAuthMiddleware(jwtProvider), middleware.RequirePosition("staff", "librarian", "manager"))
+	duties.GET("", dutyController.List)
+	duties.POST("", middleware.RequirePosition("manager"), dutyController.Create)
+	duties.PUT("/:id", middleware.RequirePosition("manager"), dutyController.Update)
+	duties.DELETE("/:id", middleware.RequirePosition("manager"), dutyController.Delete)
+
 	// ---------- การลา ----------
 	// พนักงานทุกตำแหน่งยื่นและดูของตัวเองได้ ส่วนการอนุมัติเป็นของหัวหน้าเท่านั้น
 	leaves := api.Group("/leaves")

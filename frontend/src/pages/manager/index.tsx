@@ -12,7 +12,7 @@ import type { Complaint } from '../../interface/complaint'
 import { fonts, mgr } from '../../theme'
 
 const MODULES = [
-  { icon: '🗓️', label: 'ตารางเวร', desc: 'จัดการเวรประจำวันและหัวหน้าเวร', to: '/manager/schedules' },
+  { icon: '🗓️', label: 'ตารางเวร', desc: 'จัดการเวรประจำวันและหัวหน้าเวร', to: '/employees/schedules' },
   { icon: '📝', label: 'คำขอลา', desc: 'ตรวจสอบและอนุมัติการลาของเจ้าหน้าที่', to: '/manager/leave' },
   { icon: '📣', label: 'กิจกรรมและประชาสัมพันธ์', desc: 'เผยแพร่กิจกรรมและข่าวประชาสัมพันธ์', to: '/employees/pr' },
   { icon: '💬', label: 'เรื่องร้องเรียน', desc: 'ติดตามและแก้ไขข้อเสนอแนะจากผู้ใช้', to: '/employees/complaints' },

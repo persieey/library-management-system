@@ -33,7 +33,8 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		return nil, err
 	}
 	if err = db.AutoMigrate(&models.Personnel{},
-		&models.LeaveRequest{}); err != nil {
+		&models.LeaveRequest{},
+		&models.DutyShift{}); err != nil {
 		return nil, err
 	}
 	if err = db.AutoMigrate(&models.PRItem{}); err != nil {

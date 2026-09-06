@@ -36,7 +36,6 @@ export interface NavAction {
 // จะได้ไม่ต้องแก้สองที่เวลาปรับเมนู
 export const MANAGER_MENU: NavAction[] = [
   { icon: 'overview', label: 'ภาพรวม', to: '/manager' },
-  { icon: 'schedules', label: 'ตารางเวร', to: '/manager/schedules' },
   { icon: 'leave', label: 'อนุมัติการลา', to: '/manager/leave' },
   { icon: 'personnel', label: 'บุคลากร', to: '/manager/personnel' },
 ]
@@ -62,6 +61,14 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     label: 'งานหัวหน้าหอสมุด',
     positions: CAN_MANAGE_PERSONNEL,
     children: MANAGER_MENU,
+  },
+  {
+    // ตารางเวรทุกตำแหน่งต้องดูได้ เพราะต้องรู้ว่าตัวเองเข้าเวรวันไหน
+    // หน้าเดียวกันนี้หัวหน้าจะเห็นปุ่มจัดเวรเพิ่มขึ้นมา
+    icon: 'schedules',
+    label: 'ตารางเวร',
+    to: '/employees/schedules',
+    positions: CAN_ACCESS_BACKOFFICE,
   },
   {
     // การลาเป็นงานของพนักงานทุกคน ไม่ใช่เฉพาะหัวหน้า
