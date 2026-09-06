@@ -41,13 +41,14 @@ func main() {
 	prController := controllers.NewPRController(db)
 	eventController := controllers.NewEventController(db)
 	personnelController := controllers.NewPersonnelController(db)
+	leaveController := controllers.NewLeaveController(db)
 
 	// เลื่อนสถานะข่าวที่ตั้งเวลาไว้ ทำงานเบื้องหลังตลอดอายุเซิร์ฟเวอร์
 	go scheduler.StartPRScheduler(db)
 
 	router := routes.SetupRouter(authController, userController,
 		complaintController, statisticsController,
-		prController, eventController, personnelController, jwtProvider)
+		prController, eventController, personnelController, leaveController, jwtProvider)
 
 	// port:= os.Getenv("SERVER_PORT")
 

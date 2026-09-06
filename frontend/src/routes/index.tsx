@@ -18,6 +18,7 @@ import ManagerDashboard from '../pages/manager'
 import ManagerSchedules from '../pages/manager/schedules'
 import ManagerLeave from '../pages/manager/leave'
 import ProfilePage from '../pages/employees/profile'
+import MyLeavePage from '../pages/employees/leave'
 
 const COMING_SOON_ROUTES = [
   // หน้าที่ยังไม่ได้ทำ ต้องมีตัวรองรับไม่ให้ 404 เพราะมีเมนูชี้มา
@@ -142,6 +143,15 @@ function AppRoutes() {
         element={
           <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
             <ProfilePage />
+          </RequirePosition>
+        }
+      />
+
+      <Route
+        path="/employees/leave"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <MyLeavePage />
           </RequirePosition>
         }
       />

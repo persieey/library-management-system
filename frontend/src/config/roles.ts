@@ -37,7 +37,7 @@ export interface NavAction {
 export const MANAGER_MENU: NavAction[] = [
   { icon: 'overview', label: 'ภาพรวม', to: '/manager' },
   { icon: 'schedules', label: 'ตารางเวร', to: '/manager/schedules' },
-  { icon: 'leave', label: 'การลา', to: '/manager/leave' },
+  { icon: 'leave', label: 'อนุมัติการลา', to: '/manager/leave' },
   { icon: 'personnel', label: 'บุคลากร', to: '/manager/personnel' },
 ]
 
@@ -62,6 +62,14 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     label: 'งานหัวหน้าหอสมุด',
     positions: CAN_MANAGE_PERSONNEL,
     children: MANAGER_MENU,
+  },
+  {
+    // การลาเป็นงานของพนักงานทุกคน ไม่ใช่เฉพาะหัวหน้า
+    // หน้านี้คือฝั่งยื่นคำขอและดูของตัวเอง ส่วนฝั่งอนุมัติอยู่ในกลุ่มงานหัวหน้าหอสมุด
+    icon: 'leave',
+    label: 'การลาของฉัน',
+    to: '/employees/leave',
+    positions: CAN_ACCESS_BACKOFFICE,
   },
   {
     // ระบบร้องเรียนและสถิติ เป็นของ B6707590 (ธนกร) เจ้าหน้าที่ทุกตำแหน่งดูได้
