@@ -1,17 +1,15 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
 import BackOfficeLayout from '../../components/BackOfficeLayout'
-import { mgr } from '../../theme'
-import { fonts } from '../../theme'
-
-const STATS = [
-  { label: 'เจ้าหน้าที่เข้าเวรวันนี้', value: 6, color: mgr.ink },
-  { label: 'คำขอลาที่รออนุมัติ', value: 3, color: mgr.warning },
-  { label: 'กิจกรรมที่กำลังจะถึง', value: 4, color: mgr.ink },
-  { label: 'เรื่องร้องเรียนที่ยังไม่ปิด', value: 2, color: mgr.danger },
-]
+import { useAuth } from '../../auth/useAuth'
+import * as leaveApi from '../../services/https/leaves'
+import * as eventApi from '../../services/https/events'
+import { complaintService } from '../../services/complaintService'
+import type { Complaint } from '../../interface/complaint'
+import { fonts, mgr } from '../../theme'
 
 const MODULES = [
   { icon: '🗓️', label: 'ตารางเวร', desc: 'จัดการเวรประจำวันและหัวหน้าเวร', to: '/manager/schedules' },
@@ -20,14 +18,16 @@ const MODULES = [
   { icon: '💬', label: 'เรื่องร้องเรียน', desc: 'ติดตามและแก้ไขข้อเสนอแนะจากผู้ใช้', to: '/employees/complaints' },
 ]
 
-const RECENT = [
-  { text: 'คำขอลาของ Kanya P. ได้รับการอนุมัติแล้ว', time: '10 นาทีที่แล้ว' },
-  { text: 'เผยแพร่กิจกรรมใหม่ "Database Research Workshop" แล้ว', time: '1 ชั่วโมงที่แล้ว' },
-  { text: 'ปิดเรื่องร้องเรียน #204 แล้ว', time: '3 ชั่วโมงที่แล้ว' },
-  { text: 'อัปเดตตารางเวรสัปดาห์หน้าแล้ว', time: 'เมื่อวาน' },
-]
+/** สถานะเรื่องร้องเรียนที่ถือว่ายังไม่จบ ต้องตรงกับ constants/complaintConstants ของ B6707590 */
+const OPEN_COMPLAINT = ['รอตรวจสอบ', 'รอหัวหน้าพิจารณา', 'อยู่ระหว่างประสานงาน', 'กำลังดำเนินงาน']
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+interface Counts {
+  pendingLeave: number | null
+  upcomingEvents: number | null
+  openComplaints: number | null
+}
+
+function StatCard({ label, value, color }: { label: string; value: number | null; color: string }) {
   return (
     <Paper
       variant="outlined"
@@ -36,8 +36,9 @@ function StatCard({ label, value, color }: { label: string; value: number; color
       <Typography sx={{ fontFamily: fonts.thai, fontWeight: 500, fontSize: 12, letterSpacing: '0.48px', lineHeight: 1.2, color: mgr.inkMuted }}>
         {label}
       </Typography>
-      <Typography sx={{ fontFamily: fonts.inter, fontWeight: 700, fontSize: 30, lineHeight: 1.1, color }}>
-        {value}
+      <Typography sx={{ fontFamily: fonts.inter, fontWeight: 700, fontSize: 30, lineHeight: 1.1, color: value === null ? mgr.inkMuted : color }}>
+        {/* ขีดกลางระหว่างรอข้อมูล ดีกว่าโชว์ 0 ซึ่งอ่านเหมือนไม่มีงานค้าง */}
+        {value === null ? '—' : value}
       </Typography>
     </Paper>
   )
@@ -79,6 +80,33 @@ function ModuleCard({ icon, label, desc, to }: { icon: string; label: string; de
 }
 
 export default function ManagerDashboard() {
+  const { token } = useAuth()
+  const [counts, setCounts] = useState<Counts>({ pendingLeave: null, upcomingEvents: null, openComplaints: null })
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+
+    // ยิงสามเส้นพร้อมกัน เส้นไหนล้มก็ปล่อยการ์ดนั้นเป็นขีดกลาง ไม่ทำให้ทั้งหน้าพัง
+    const num = <T,>(p: Promise<T[]>, count: (rows: T[]) => number) =>
+      p.then(count).catch(() => null)
+
+    const today = new Date().toISOString().slice(0, 10)
+
+    Promise.all([
+      num(leaveApi.listAllLeaves(token), (rows) => rows.filter((r) => r.status === 'pending').length),
+      num(eventApi.listEvents(), (rows) => rows.filter((e) => (e.date ?? '').slice(0, 10) >= today).length),
+      // ระบบร้องเรียนเป็นของ B6707590 ใช้ service ของเขา ซึ่งอ่าน token จาก localStorage เอง
+      num<Complaint>(complaintService.getAll(), (rows) => rows.filter((c) => OPEN_COMPLAINT.includes(c.status)).length),
+    ]).then(([pendingLeave, upcomingEvents, openComplaints]) => {
+      if (!cancelled) setCounts({ pendingLeave, upcomingEvents, openComplaints })
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
   return (
     <BackOfficeLayout title="ภาพรวม">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -86,45 +114,21 @@ export default function ManagerDashboard() {
           ยินดีต้อนรับกลับ นี่คือสิ่งที่เกิดขึ้นในห้องสมุดวันนี้
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: '20px' }}>
-          {STATS.map((s) => <StatCard key={s.label} {...s} />)}
+        <Box sx={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          <StatCard label="คำขอลาที่รออนุมัติ" value={counts.pendingLeave} color={mgr.warning} />
+          <StatCard label="กิจกรรมที่กำลังจะถึง" value={counts.upcomingEvents} color={mgr.ink} />
+          <StatCard label="เรื่องร้องเรียนที่ยังไม่ปิด" value={counts.openComplaints} color={mgr.danger} />
         </Box>
 
         <Box>
           <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 17, lineHeight: 1.3, color: mgr.ink, mb: '20px' }}>
             จัดการ
           </Typography>
-          <Box sx={{ display: 'flex', gap: '20px' }}>
-            {MODULES.map((m) => <ModuleCard key={m.to} {...m} />)}
-          </Box>
-        </Box>
-
-        <Box>
-          <Typography sx={{ fontFamily: fonts.kanit, fontWeight: 600, fontSize: 17, lineHeight: 1.3, color: mgr.ink, mb: '16px' }}>
-            กิจกรรมล่าสุด
-          </Typography>
-          <Paper variant="outlined" sx={{ borderRadius: '12px', borderColor: mgr.border, overflow: 'hidden' }}>
-            {RECENT.map((item, i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  px: '20px',
-                  py: '16px',
-                  borderTop: i > 0 ? `1px solid ${mgr.border}` : 'none',
-                }}
-              >
-                <Typography sx={{ fontFamily: fonts.thai, fontWeight: 400, fontSize: 14, lineHeight: 1.45, color: mgr.ink }}>
-                  {item.text}
-                </Typography>
-                <Typography sx={{ fontFamily: fonts.thai, fontWeight: 400, fontSize: 13, lineHeight: 1.4, color: mgr.inkMuted, ml: 2, flexShrink: 0 }}>
-                  {item.time}
-                </Typography>
-              </Box>
+          <Box sx={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            {MODULES.map((m) => (
+              <ModuleCard key={m.to} {...m} />
             ))}
-          </Paper>
+          </Box>
         </Box>
       </Box>
     </BackOfficeLayout>

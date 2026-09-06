@@ -4,7 +4,6 @@ import EventsPage from '../pages/events'
 import EventDetailPage from '../pages/events/detail'
 import BooksPage from '../pages/books'
 import BookDetailPage from '../pages/books/detail'
-import Personnel from '../pages/personnel'
 import EmployeesHome from '../pages/employees'
 import ManagePR from '../pages/employees/pr'
 import ComplaintsPage from '../pages/employees/complaints/Employee'
@@ -166,14 +165,6 @@ function AppRoutes() {
         }
       />
 
-      <Route
-        path="/personnel"
-        element={
-          <RequirePosition positions={CAN_MANAGE_PERSONNEL}>
-            <Personnel />
-          </RequirePosition>
-        }
-      />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
