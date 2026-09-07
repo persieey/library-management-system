@@ -69,6 +69,28 @@ func (rb *RoomBookingController) Create(c *gin.Context) {
 		return
 	}
 
+	// กันจองซ้ำที่ฝั่ง server
+	//
+	// หน้าเว็บ grey out ช่องที่จองแล้วให้อยู่ แต่นั่นกันได้แค่คนที่กดผ่านหน้าจอ
+	// ยิง API ตรงยังจองทับได้ ตามกฎใน backend/README.md ที่ว่าห้ามพึ่ง frontend
+	// ในการกันสิทธิ์ จึงต้องเช็คซ้ำตรงนี้
+	//
+	// สองช่วงเวลาทับกันเมื่อ ของเดิมเริ่มก่อนของใหม่จบ และของเดิมจบหลังของใหม่เริ่ม
+	// ใช้เงื่อนไขเดียวกับ Availability จะได้ตรงกับช่องที่หน้าเว็บปิดไว้
+	// การจองที่ถูกยกเลิกแล้วไม่นับ เพราะห้องว่างกลับมาแล้ว
+	var clash int64
+	if err := rb.db.Model(&models.RoomBooking{}).
+		Where("room_id = ? AND status <> ? AND start_date_time < ? AND end_date_time > ?",
+			req.RoomID, "cancelled", end, start).
+		Count(&clash).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ตรวจสอบช่วงเวลาไม่สำเร็จ"})
+		return
+	}
+	if clash > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "ช่วงเวลานี้มีคนจองห้องนี้ไว้แล้ว กรุณาเลือกช่วงเวลาอื่น"})
+		return
+	}
+
 	item := models.RoomBooking{
 		UserID:        userID.(uint),
 		RoomID:        req.RoomID,

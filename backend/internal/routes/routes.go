@@ -27,6 +27,14 @@ func SetupRouter(authControllers *controllers.AuthController,
 	jwtProvider *utils.JWTProvider) *gin.Engine {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
+	// รูปแนบของใบแจ้งซ่อม — เปิดให้ <img src> โหลดได้ตรงๆ
+	//
+	// เปิดเฉพาะโฟลเดอร์ repairs เท่านั้น ห้ามเปิด ./uploads ทั้งก้อน
+	// เพราะไฟล์ PDF ของ E-Book ถูกเก็บไว้ที่ ./uploads ตรงๆ (ebook_controller.go)
+	// ถ้าเปิดทั้งโฟลเดอร์ ใครก็โหลด ebook ได้โดยไม่ต้องล็อกอิน
+	// ข้ามการตรวจสิทธิ์ที่ GET /ebooks/:id/file กันไว้ทั้งหมด
+	router.Static("/uploads/repairs", "./uploads/repairs")
+
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "ok",
