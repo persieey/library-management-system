@@ -6,7 +6,8 @@ import "./RoomBookingUI.css";
 
 const OPEN_HOUR = 8;
 const CLOSE_HOUR = 19;
-const MAX_TOTAL_HOURS = 6;
+// โควตาต่อคนต่อวัน ต้องตรงกับ maxBookingHoursPerDay ฝั่ง backend
+const MAX_HOURS_PER_DAY = 6;
 const MAX_ADVANCE_DAYS = 3;
 
 const HOURS = Array.from(
@@ -54,6 +55,15 @@ function dayOptions(): DayOption[] {
   }
   return opts;
 }
+// ช่องเวลานี้ผ่านไปแล้วหรือยัง — เทียบกับนาฬิกาจริงตอนนี้
+//
+// ตอนบ่ายสี่ ช่องบ่ายสามถือว่าผ่านไปแล้ว จองไม่ได้
+// backend เช็คซ้ำอีกชั้นที่ RoomBookingController.Create การปิดปุ่มตรงนี้
+// เป็นแค่การบอกผู้ใช้ล่วงหน้า ไม่ใช่การป้องกัน
+function isHourPast(day: Date, hour: number) {
+  return hourToDate(day, hour).getTime() <= Date.now();
+}
+
 function dateKey(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
@@ -191,19 +201,27 @@ export default function RoomBookingUI() {
   // "completed" (returned) is history and doesn't belong here.
   const visibleBookings = activeBookings;
 
-  const usedHoursTotal = useMemo(() => {
-    return activeBookings.reduce((sum, b) => {
+  // ชั่วโมงที่ใช้ไปแล้ว *ของวันที่กำลังดูอยู่* ไม่ใช่ยอดรวมทุกวัน
+  //
+  // นับการจองที่ยังไม่ถูกยกเลิกทั้งหมด รวมที่คืนห้องแล้ว เพราะใช้ห้องไปจริง
+  // ในวันนั้นแล้ว ตรงกับที่ backend นับใน Create
+  const usedHoursOnDay = useMemo(() => {
+    const key = dateKey(activeDay.date);
+    return myBookings
+      .filter((b) => b.status !== "cancelled")
+      .filter((b) => dateKey(new Date(b.start_datetime)) === key)
+      .reduce((sum, b) => {
       const h =
         (new Date(b.end_datetime).getTime() - new Date(b.start_datetime).getTime()) /
         (1000 * 60 * 60);
       return sum + h;
     }, 0);
-  }, [activeBookings]);
+  }, [myBookings, activeDay]);
 
-  const remainingHours = Math.max(0, MAX_TOTAL_HOURS - usedHoursTotal);
+  const remainingHours = Math.max(0, MAX_HOURS_PER_DAY - usedHoursOnDay);
   const selectedCount = selectedHours.size;
   const remainingAfterSelection = Math.max(0, remainingHours - selectedCount);
-  const totalLimitReached = remainingHours === 0;
+  const dayLimitReached = remainingHours === 0;
 
   const isHourBooked = useCallback(
     (roomId: number, hour: number) => {
@@ -222,10 +240,18 @@ export default function RoomBookingUI() {
     if (isHourBooked(roomId, hour)) return;
     setNotice(null);
 
-    if (totalLimitReached && !(roomId === selectedRoomId && selectedHours.has(hour))) {
+    if (isHourPast(activeDay.date, hour)) {
       setNotice({
         type: "error",
-        text: "You've used your 6h total booking limit. Cancel a booking below to free up time.",
+        text: "ช่วงเวลานี้ผ่านไปแล้ว จองย้อนหลังไม่ได้",
+      });
+      return;
+    }
+
+    if (dayLimitReached && !(roomId === selectedRoomId && selectedHours.has(hour))) {
+      setNotice({
+        type: "error",
+        text: `ใช้โควตา ${MAX_HOURS_PER_DAY} ชั่วโมงของวันนี้ครบแล้ว ยกเลิกการจองด้านล่างเพื่อคืนเวลา หรือเลือกวันอื่น`,
       });
       return;
     }
@@ -245,7 +271,7 @@ export default function RoomBookingUI() {
       if (next.size >= remainingHours) {
         setNotice({
           type: "error",
-          text: `You only have ${remainingHours}h left of your total booking limit — can't select more.`,
+          text: `วันนี้เหลือโควตาอีก ${remainingHours} ชั่วโมง เลือกเพิ่มไม่ได้แล้ว`,
         });
         return prev;
       }
@@ -373,32 +399,37 @@ export default function RoomBookingUI() {
                       {HOURS.map((h) => {
                         const booked = isHourBooked(room.room_id, h);
                         const selected = isHourSelected(room.room_id, h);
+                        const past = isHourPast(activeDay.date, h);
                         const atCap =
                           !booked &&
+                          !past &&
                           !selected &&
-                          (totalLimitReached ||
+                          (dayLimitReached ||
                             (room.room_id === selectedRoomId &&
                               selectedHours.size >= remainingHours));
                         const cls = [
                           "rb-cell",
                           booked ? "booked" : "",
+                          past ? "past" : "",
                           selected ? "selected" : "",
                           atCap ? "disabled-cap" : "",
                         ]
                           .filter(Boolean)
                           .join(" ");
+
+                        let cellTitle: string | undefined;
+                        if (past) cellTitle = "ช่วงเวลานี้ผ่านไปแล้ว";
+                        else if (atCap)
+                          cellTitle = `วันนี้เหลือโควตาอีก ${remainingHours} ชั่วโมง`;
+
                         return (
                           <button
                             key={h}
                             type="button"
-                            disabled={booked}
+                            disabled={booked || past}
                             onClick={() => toggleCell(room.room_id, h)}
                             className={cls}
-                            title={
-                              atCap
-                                ? `Only ${remainingHours}h left of your total booking limit`
-                                : undefined
-                            }
+                            title={cellTitle}
                           />
                         );
                       })}
@@ -434,7 +465,7 @@ export default function RoomBookingUI() {
                 </div>
               </div>
               <p className="rb-remaining">
-                {remainingAfterSelection}h remaining of your {MAX_TOTAL_HOURS}h total limit
+                เหลือ {remainingAfterSelection} ชม. จากโควตา {MAX_HOURS_PER_DAY} ชม. ของวันนี้
               </p>
             </div>
 

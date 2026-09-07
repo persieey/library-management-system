@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -9,6 +10,13 @@ import (
 
 	"github.com/SA-1-69/T09/backend/internal/dto"
 	"github.com/SA-1-69/T09/backend/internal/models"
+)
+
+// โควตาการจองห้องต่อคนต่อวัน — แก้ที่นี่ที่เดียว
+// ต้องตรงกับ MAX_HOURS_PER_DAY ในหน้า RoomBookingUI ฝั่งเว็บ
+const (
+	maxBookingHoursPerDay   = 6
+	maxBookingMinutesPerDay = maxBookingHoursPerDay * 60
 )
 
 type RoomBookingController struct {
@@ -66,6 +74,51 @@ func (rb *RoomBookingController) Create(c *gin.Context) {
 	}
 	if !end.After(start) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "end_datetime ต้องอยู่หลัง start_datetime"})
+		return
+	}
+
+	// จองย้อนหลังไม่ได้ — เทียบกับเวลาจริงตอนนี้
+	//
+	// เช่นตอนบ่ายสี่จะย้อนไปจองช่องบ่ายสามไม่ได้ ดูที่เวลาเริ่มเป็นหลัก
+	// ช่องที่เริ่มไปแล้วถือว่าหมดสิทธิ์จอง ถึงจะยังไม่จบช่องก็ตาม
+	if start.Before(time.Now()) {
+		c.JSON(http.StatusConflict, gin.H{"error": "ช่วงเวลานี้ผ่านไปแล้ว จองย้อนหลังไม่ได้"})
+		return
+	}
+
+	// โควตา 6 ชั่วโมงต่อคนต่อวัน
+	//
+	// นับรวมทุกห้องในวันเดียวกัน ไม่ใช่ต่อห้อง และไม่ใช่ยอดรวมทุกวันกองกัน
+	// การจองที่ถูกยกเลิกไม่นับ แต่ที่คืนห้องแล้ว (completed) นับ
+	// เพราะใช้ห้องไปจริงแล้วในวันนั้น
+	//
+	// นับเป็นนาทีเพื่อเลี่ยงปัญหาปัดเศษของ float
+	dayStart := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
+	dayEnd := dayStart.Add(24 * time.Hour)
+
+	var sameDay []models.RoomBooking
+	if err := rb.db.
+		Where("user_id = ? AND status <> ? AND start_date_time >= ? AND start_date_time < ?",
+			userID, "cancelled", dayStart, dayEnd).
+		Find(&sameDay).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ตรวจสอบโควตาไม่สำเร็จ"})
+		return
+	}
+
+	usedMinutes := 0
+	for _, b := range sameDay {
+		usedMinutes += int(b.EndDateTime.Sub(b.StartDateTime).Minutes())
+	}
+	wantMinutes := int(end.Sub(start).Minutes())
+
+	if usedMinutes+wantMinutes > maxBookingMinutesPerDay {
+		remaining := (maxBookingMinutesPerDay - usedMinutes) / 60
+		if remaining < 0 {
+			remaining = 0
+		}
+		c.JSON(http.StatusConflict, gin.H{
+			"error": fmt.Sprintf("เกินโควตา %d ชั่วโมงต่อวัน วันนี้เหลืออีก %d ชั่วโมง", maxBookingHoursPerDay, remaining),
+		})
 		return
 	}
 
