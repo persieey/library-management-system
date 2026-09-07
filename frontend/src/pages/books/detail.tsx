@@ -6,7 +6,7 @@ import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import { usePublicBooks } from '../../hooks/usePublicBooks'
 import { bookCoverUrl } from '../../services/https/books'
-import coverFallback from '../../assets/book-1.png'
+import CoverImage from '../../components/catalog/CoverImage'
 import { colors, fonts } from '../../theme'
 
 // ปลายทางของปุ่ม "View" บนการ์ดหนังสือ
@@ -71,15 +71,13 @@ function BookDetailPage() {
         </Typography>
 
         <Box sx={{ display: 'flex', gap: '40px' }}>
-          <Box
-            component="img"
-            src={book.cover_path ? bookCoverUrl(book.book_id, book.updated_at) : coverFallback}
-            alt=""
-            onError={(e) => {
-              e.currentTarget.src = coverFallback
-            }}
-            sx={{ height: 420, width: 280, flexShrink: 0, borderRadius: '10px', objectFit: 'cover' }}
-          />
+          <Box sx={{ width: 280, flexShrink: 0 }}>
+            <CoverImage
+              src={book.cover_path ? bookCoverUrl(book.book_id, book.updated_at) : ''}
+              title={book.title}
+              height={420}
+            />
+          </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <Typography sx={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.brown900 }}>
               {book.title}

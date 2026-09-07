@@ -128,12 +128,14 @@ func SetupRouter(authControllers *controllers.AuthController,
 	// ── ebooks ──
 	ebooks := api.Group("/ebooks")
 
-	// สาธารณะ : ให้ <img src> โหลดรูปปกได้
+	// สาธารณะ : รายชื่อกับรูปปก ให้หน้า /ebooks ของคนทั่วไปดูได้
+	// วางไว้ก่อน ebooks.Use(JWT) แบบเดียวกับ /books
+	// ส่วนตัวไฟล์ยังต้องล็อกอิน อยู่ใต้ JWT ตามเดิม
+	ebooks.GET("", ebookController.GetAll)
 	ebooks.GET("/:id/cover", ebookController.GetCover)
 
 	ebooks.Use(middleware.JWTAuthMiddleware(jwtProvider))
 
-	ebooks.GET("", ebookController.GetAll)
 	ebooks.GET("/:id/file", ebookController.GetFile)
 
 	ebooks.POST("", middleware.RequirePosition("librarian", "manager"), ebookController.Create)

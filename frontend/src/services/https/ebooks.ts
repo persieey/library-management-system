@@ -12,6 +12,18 @@ export async function listEbooks(token: string): Promise<Ebook[]> {
 }
 
 
+/**
+ * รายชื่อ E-Book สำหรับหน้าสาธารณะ /ebooks
+ *
+ * endpoint เดียวกับ listEbooks แต่ไม่แนบ token เพราะ GET /api/v1/ebooks
+ * ถูกวางไว้ก่อน JWTAuthMiddleware ใน routes.go
+ * ได้แค่ข้อมูลบรรณานุกรมกับรูปปก ตัวไฟล์ยังต้องล็อกอินถึงจะเปิดได้
+ */
+export async function listPublicEbooks(signal?: AbortSignal): Promise<Ebook[]> {
+  const res = await apiFetch<{ ebooks: Ebook[] }>('/api/v1/ebooks', { signal })
+  return res.ebooks ?? []
+}
+
 export async function createEbook(
   token: string,
   draft: EbookDraft & Partial<Pick<Ebook, 'file_name' | 'file_type' | 'file_path' | 'cover_path'>>,

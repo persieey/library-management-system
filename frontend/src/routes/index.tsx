@@ -4,6 +4,7 @@ import EventsPage from '../pages/events'
 import EventDetailPage from '../pages/events/detail'
 import BooksPage from '../pages/books'
 import BookDetailPage from '../pages/books/detail'
+import EbooksPage from '../pages/ebooks'
 import EmployeesHome from '../pages/employees'
 import ManagePR from '../pages/employees/pr'
 import ComplaintsPage from '../pages/employees/complaints/Employee'
@@ -39,6 +40,7 @@ function AppRoutes() {
       <Route path="/events/:id" element={<EventDetailPage />} />
       <Route path="/books" element={<BooksPage />} />
       <Route path="/books/:id" element={<BookDetailPage />} />
+      <Route path="/ebooks" element={<EbooksPage />} />
 
       {/* Manager portal — all pages behind MANAGE_PERSONNEL permission */}
       <Route

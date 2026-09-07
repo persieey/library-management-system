@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import type { Book } from '../interface/IBookInterface'
 import { bookCoverUrl } from '../services/https/books'
-import coverFallback from '../assets/book-1.png'
+import CoverImage from './catalog/CoverImage'
 import { colors, fonts } from '../theme'
 
 interface BookCardProps {
@@ -35,15 +35,10 @@ function BookCard({ book }: BookCardProps) {
         '&:hover': { boxShadow: '0 6px 18px rgba(59,42,30,0.12)' },
       }}
     >
-      <Box
-        component="img"
-        src={book.cover_path ? bookCoverUrl(book.book_id, book.updated_at) : coverFallback}
-        alt=""
-        // เผื่อไฟล์ปกหายไปจากเครื่องแต่ cover_path ยังค้างอยู่ในฐานข้อมูล
-        onError={(e) => {
-          e.currentTarget.src = coverFallback
-        }}
-        sx={{ height: 300, width: '100%', borderRadius: '10px', objectFit: 'cover' }}
+      <CoverImage
+        src={book.cover_path ? bookCoverUrl(book.book_id, book.updated_at) : ''}
+        title={book.title}
+        height={300}
       />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: 18 }}>
         {book.category && (

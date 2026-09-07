@@ -2,25 +2,25 @@ import Box from '@mui/material/Box'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import Reveal from '../../components/Reveal'
-import BookCard from '../../components/BookCard'
+import EbookCard from '../../components/EbookCard'
 import CatalogHero from '../../components/catalog/CatalogHero'
 import CatalogToolbar from '../../components/catalog/CatalogToolbar'
 import CatalogStatus from '../../components/catalog/CatalogStatus'
-import { usePublicBooks } from '../../hooks/usePublicBooks'
+import { usePublicEbooks } from '../../hooks/usePublicEbooks'
 import { useCatalogFilter } from '../../hooks/useCatalogFilter'
-import type { Book } from '../../interface/IBookInterface'
+import type { Ebook } from '../../interface/IEbookInterface'
 
-// รายการหนังสือทั้งหมด — ปลายทางของปุ่ม Books บนหน้าแรก
-// ข้อมูลมาจาก GET /api/v1/books ซึ่งเปิดให้คนที่ยังไม่ล็อกอินดูได้
-function BooksPage() {
-  const { books, isLoading, error } = usePublicBooks()
+// รายการ E-Book ทั้งหมด — ปลายทางของปุ่ม eBooks บนหน้าแรก
+// หน้าตาและวิธีใช้เหมือนหน้าหนังสือทุกอย่าง ต่างแค่การ์ดมีปุ่มเปิดไฟล์
+function EbooksPage() {
+  const { ebooks, isLoading, error } = usePublicEbooks()
 
-  const filter = useCatalogFilter<Book>(books, {
-    searchText: (b) => [b.title, b.author, b.publisher, b.isbn, b.call_number, b.category],
-    category: (b) => b.category,
-    title: (b) => b.title,
-    author: (b) => b.author,
-    createdAt: (b) => b.created_at,
+  const filter = useCatalogFilter<Ebook>(ebooks, {
+    searchText: (e) => [e.title, e.author, e.publisher, e.isbn, e.category],
+    category: (e) => e.category,
+    title: (e) => e.title,
+    author: (e) => e.author,
+    createdAt: (e) => e.created_at,
   })
 
   const hasResults = !isLoading && !error && filter.results.length > 0
@@ -30,9 +30,9 @@ function BooksPage() {
       <Header />
 
       <CatalogHero
-        title="หนังสือทั้งหมด"
-        subtitle="ค้นหาจากชื่อเรื่อง ผู้แต่ง สำนักพิมพ์ ISBN หรือเลขเรียกหนังสือ"
-        placeholder="พิมพ์เพื่อค้นหาหนังสือ . . ."
+        title="E-Book ทั้งหมด"
+        subtitle="อ่านออนไลน์ได้ทันทีหลังเข้าสู่ระบบ ค้นหาจากชื่อเรื่อง ผู้แต่ง สำนักพิมพ์ หรือ ISBN"
+        placeholder="พิมพ์เพื่อค้นหา E-Book . . ."
         query={filter.query}
         onQueryChange={filter.setQuery}
       />
@@ -49,7 +49,7 @@ function BooksPage() {
             py: { xs: '32px', md: '48px' },
           }}
         >
-          {!isLoading && !error && books.length > 0 && (
+          {!isLoading && !error && ebooks.length > 0 && (
             <CatalogToolbar
               categories={filter.categories}
               category={filter.category}
@@ -57,7 +57,7 @@ function BooksPage() {
               sort={filter.sort}
               onSortChange={filter.setSort}
               shown={filter.results.length}
-              total={books.length}
+              total={ebooks.length}
               isFiltered={filter.isFiltered}
               onReset={filter.reset}
             />
@@ -66,9 +66,9 @@ function BooksPage() {
           <CatalogStatus
             isLoading={isLoading}
             error={error}
-            isEmpty={books.length === 0}
-            emptyText="ยังไม่มีหนังสือในระบบ"
-            isNoMatch={books.length > 0 && filter.results.length === 0}
+            isEmpty={ebooks.length === 0}
+            emptyText="ยังไม่มี E-Book ในระบบ"
+            isNoMatch={ebooks.length > 0 && filter.results.length === 0}
           />
 
           {hasResults && (
@@ -79,10 +79,9 @@ function BooksPage() {
                 gap: '24px',
               }}
             >
-              {filter.results.map((book, i) => (
-                // delay หยุดเพิ่มหลังใบที่ 12 ไม่งั้นใบท้ายๆ รอนานเกินไป
-                <Reveal key={book.book_id} delay={Math.min(i, 11) * 60}>
-                  <BookCard book={book} />
+              {filter.results.map((ebook, i) => (
+                <Reveal key={ebook.ebook_id} delay={Math.min(i, 11) * 60}>
+                  <EbookCard ebook={ebook} />
                 </Reveal>
               ))}
             </Box>
@@ -95,4 +94,4 @@ function BooksPage() {
   )
 }
 
-export default BooksPage
+export default EbooksPage
