@@ -8,6 +8,7 @@ import (
 	"github.com/SA-1-69/T09/backend/internal/config" // <= ของเราเอง
 	"github.com/SA-1-69/T09/backend/internal/controllers"
 	"github.com/SA-1-69/T09/backend/internal/routes"
+	"github.com/SA-1-69/T09/backend/internal/jobs"
 	"github.com/SA-1-69/T09/backend/internal/scheduler"
 	"github.com/SA-1-69/T09/backend/internal/utils"
 )
@@ -31,6 +32,12 @@ func main() {
 	if err := config.SeedLibrary(db, cfg); err != nil {
 		log.Fatalf("seed ข้อมูลหอสมุดไม่สำเร็จ: %v", err)
 	}
+	if err := config.SeedRooms(db); err != nil {
+		log.Fatalf("seed rooms ไม่สำเร็จ: %v", err)
+	}
+	if err := config.SeedEquipment(db); err != nil {
+		log.Fatalf("seed equipment ไม่สำเร็จ: %v", err)
+	}
 
 	jwtProvider := utils.NewJWTProvider(cfg.JWTSecret, cfg.JWTExpiresIn)
 	authController := controllers.NewAuthController(db, jwtProvider)
@@ -50,13 +57,22 @@ func main() {
 	bookCopyController := controllers.NewBookCopyController(db)
 	inspectionController := controllers.NewInspectionController(db)
 
+	// ระบบอุปกรณ์ แจ้งซ่อม และจองห้องของ B6715588
+	equipmentController := controllers.NewEquipmentController(db)
+	repairController := controllers.NewRepairController(db)
+	roomBookingController := controllers.NewRoomBookingController(db)
+
+	// ปิดการจองที่เลยเวลาแล้วโดยอัตโนมัติ ทำงานเบื้องหลังตลอดอายุเซิร์ฟเวอร์
+	jobs.StartExpiryWorker(db)
+
 	// เลื่อนสถานะข่าวที่ตั้งเวลาไว้ ทำงานเบื้องหลังตลอดอายุเซิร์ฟเวอร์
 	go scheduler.StartPRScheduler(db)
 
 	router := routes.SetupRouter(authController, userController,
 		complaintController, statisticsController,
 		prController, eventController, personnelController, leaveController, dutyController,
-		ebookController, bookController, bookCopyController, inspectionController, jwtProvider)
+		ebookController, bookController, bookCopyController, inspectionController,
+		equipmentController, repairController, roomBookingController, jwtProvider)
 
 	// port:= os.Getenv("SERVER_PORT")
 

@@ -11,7 +11,8 @@ import { fonts } from '../theme'
 
 interface LoginModalProps {
   open: boolean
-  onClose: () => void
+  /** didLogin = true เมื่อปิดเพราะล็อกอินสำเร็จ, false เมื่อผู้ใช้กดปิดเอง */
+  onClose: (didLogin?: boolean) => void
 }
 
 // การ์ดล็อกอินตาม Figma (log in 55:248) ขนาด 400x450
@@ -44,7 +45,7 @@ function LoginModal({ open, onClose }: LoginModalProps) {
     setError('')
     try {
       await login({ email: email.trim(), password })
-      onClose()
+      onClose(true)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่')
     } finally {
@@ -53,7 +54,7 @@ function LoginModal({ open, onClose }: LoginModalProps) {
   }
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={() => onClose(false)}>
       <Box
         component="form"
         onSubmit={handleSubmit}

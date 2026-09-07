@@ -2,20 +2,20 @@
 
 import "time"
 
-// Room ข้อมูลห้องศึกษา
-type Room struct {
+// StatRoom ข้อมูลห้องศึกษา (โดเมนสถิติ — คนละตารางกับระบบจองห้องของ B6715588)
+type StatRoom struct {
 	RoomID   string `gorm:"primaryKey;column:room_id;size:50" json:"room_id"`
 	RoomName string `gorm:"column:room_name;size:100;not null" json:"room_name"`
 	Building string `gorm:"column:building;size:50" json:"building"`
 	Capacity string `gorm:"column:capacity;size:20" json:"capacity"`
 }
 
-func (Room) TableName() string {
-	return "rooms"
+func (StatRoom) TableName() string {
+	return "stat_rooms"
 }
 
-// RoomBooking ข้อมูลการจองห้อง
-type RoomBooking struct {
+// StatRoomBooking ข้อมูลการจองห้อง (โดเมนสถิติ)
+type StatRoomBooking struct {
 	BookingID     string    `gorm:"primaryKey;column:booking_id;size:50" json:"booking_id"`
 	MemberID      *uint     `gorm:"column:member_id" json:"member_id"`
 	RoomID        string    `gorm:"column:room_id;size:50;not null" json:"room_id"`
@@ -24,12 +24,12 @@ type RoomBooking struct {
 	EndDateTime   time.Time `gorm:"column:end_date_time;not null" json:"end_date_time"`
 	Status        string    `gorm:"column:status;size:50;default:'Check-in'" json:"status"`
 
-	Room   *Room   `gorm:"foreignKey:RoomID;references:RoomID" json:"room,omitempty"`
-	Member *Member `gorm:"foreignKey:MemberID;references:MemberID" json:"member,omitempty"`
+	Room   *StatRoom `gorm:"foreignKey:RoomID;references:RoomID" json:"room,omitempty"`
+	Member *Member   `gorm:"foreignKey:MemberID;references:MemberID" json:"member,omitempty"`
 }
 
-func (RoomBooking) TableName() string {
-	return "room_bookings"
+func (StatRoomBooking) TableName() string {
+	return "stat_room_bookings"
 }
 
 // EbookSearchLog ประวัติการค้นหา E-Book
@@ -113,16 +113,16 @@ func (Fine) TableName() string {
 	return "fines"
 }
 
-// Equipment แคตตาล็อกอุปกรณ์
-type Equipment struct {
+// StatEquipment แคตตาล็อกอุปกรณ์ (โดเมนสถิติ — คนละตารางกับระบบอุปกรณ์ของ B6715588)
+type StatEquipment struct {
 	EquipmentID   string `gorm:"primaryKey;column:equipment_id;size:50" json:"equipment_id"`
 	EquipmentName string `gorm:"column:equipment_name;size:100;not null" json:"equipment_name"`
 	Category      string `gorm:"column:category;size:100" json:"category"`
 	Status        string `gorm:"column:status;size:50;default:'พร้อมใช้งาน'" json:"status"`
 }
 
-func (Equipment) TableName() string {
-	return "equipments"
+func (StatEquipment) TableName() string {
+	return "stat_equipment"
 }
 
 // EquipmentRental การยืม-คืนอุปกรณ์
@@ -134,8 +134,8 @@ type EquipmentRental struct {
 	ReturnDate   time.Time `gorm:"column:return_date" json:"return_date"`
 	ReturnStatus string    `gorm:"column:return_status;size:50;default:'สมบูรณ์'" json:"return_status"`
 
-	Equipment *Equipment `gorm:"foreignKey:EquipmentID;references:EquipmentID" json:"equipment,omitempty"`
-	Member    *Member    `gorm:"foreignKey:MemberID;references:MemberID" json:"member,omitempty"`
+	Equipment *StatEquipment `gorm:"foreignKey:EquipmentID;references:EquipmentID" json:"equipment,omitempty"`
+	Member    *Member        `gorm:"foreignKey:MemberID;references:MemberID" json:"member,omitempty"`
 }
 
 func (EquipmentRental) TableName() string {

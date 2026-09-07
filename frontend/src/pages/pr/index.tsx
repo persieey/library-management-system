@@ -15,6 +15,7 @@ import BookCard from '../../components/BookCard'
 import { colors, fonts } from '../../theme'
 import { useEvents } from '../../context/EventContext'
 import { usePublicBooks } from '../../hooks/usePublicBooks'
+import { useLoginPrompt } from '../../context/LoginPrompt'
 
 import imgBg from '../../assets/hero-bg.jpg'
 
@@ -32,10 +33,11 @@ import iconMystery from '../../assets/icons/cat-mystery.svg'
 import iconBiography from '../../assets/icons/cat-biography.svg'
 
 // left = ตำแหน่ง x ใน Figma ลบขอบซ้ายของแถบ (220) — ดีไซน์วางมือ ระยะจึงไม่เท่ากัน
+// guard: true = ต้องล็อกอินก่อน ถ้ายังไม่ล็อกอินให้เด้งหน้าต่างล็อกอินแล้วค่อยพาไปต่อ
 const quickLinks = [
   { icon: iconBook, label: 'Books', to: '/books', left: 112 },
   { icon: iconBookFill, label: 'eBooks', to: '/ebooks', left: 351 },
-  { icon: iconBook, label: 'Recording Room', to: '/recording-room', left: 601 },
+  { icon: iconBook, label: 'Recording Room', to: '/booking', left: 601, guard: true },
   { icon: iconBookFill, label: 'borrow', to: '/borrow', left: 856 },
 ]
 
@@ -51,6 +53,8 @@ const categories = [
 ]
 
 function HeroSection() {
+  const { requireLogin } = useLoginPrompt()
+
   const [ready, setReady] = useState(false)
   useEffect(() => {
     const id = requestAnimationFrame(() => setReady(true))
@@ -128,9 +132,14 @@ function HeroSection() {
           {quickLinks.map((link) => (
             <Box
               key={link.label}
-              component="a"
-              href={link.to}
+              {...(link.guard
+                ? { component: 'button' as const, type: 'button' as const, onClick: () => requireLogin(link.to) }
+                : { component: Link, to: link.to })}
               sx={{
+                border: 'none',
+                background: 'transparent',
+                p: 0,
+                cursor: 'pointer',
                 position: 'absolute',
                 top: '36px',
                 left: `${link.left}px`,

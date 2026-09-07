@@ -111,6 +111,24 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     to: '/employees/ebooks',
     positions: CAN_MANAGE_BOOKS,
   },
+  {
+    // ระบบจองห้อง เป็นของ B6715588 (บรรพต) เจ้าหน้าที่ทุกตำแหน่งดูได้
+    icon: 'roomBooking',
+    label: 'จัดการการจองห้อง',
+    to: '/staff/recording-room',
+    positions: CAN_ACCESS_BACKOFFICE,
+  },
+  {
+    // ระบบอุปกรณ์และแจ้งซ่อม เป็นของ B6715588 เจ้าหน้าที่ทุกตำแหน่งดูได้
+    icon: 'equipment',
+    label: 'อุปกรณ์',
+    positions: CAN_ACCESS_BACKOFFICE,
+    children: [
+      { icon: 'equipment', label: 'รายการอุปกรณ์', to: '/staff/equipment' },
+      { icon: 'repair', label: 'แจ้งซ่อม', to: '/staff/repair-request' },
+      { icon: 'repairTrack', label: 'ติดตามการซ่อม', to: '/staff/track-repair' },
+    ],
+  },
 ]
 
 type Allows = (...positions: Position[]) => boolean

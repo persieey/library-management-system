@@ -15,6 +15,7 @@ import BuildOutlined from '@mui/icons-material/BuildOutlined'
 import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined'
 import AutoStoriesOutlined from '@mui/icons-material/AutoStoriesOutlined'
 import SwapHorizOutlined from '@mui/icons-material/SwapHorizOutlined'
+import MeetingRoomOutlined from '@mui/icons-material/MeetingRoomOutlined'
 
 /**
  * ไอคอนของเมนู — ใช้ชุด @mui/icons-material ที่โปรเจคมีอยู่แล้ว ไม่ต้องลงอะไรเพิ่ม
@@ -42,6 +43,7 @@ const ICONS: Record<string, ReactNode> = {
   logout: <LogoutOutlined sx={SIZE} />,
   home: <HomeOutlined sx={SIZE} />,
   recordingRoom: <MicNoneOutlined sx={SIZE} />,
+  roomBooking: <MeetingRoomOutlined sx={SIZE} />,
   equipment: <DevicesOutlined sx={SIZE} />,
   repair: <BuildOutlined sx={SIZE} />,
   repairTrack: <FactCheckOutlined sx={SIZE} />,

@@ -21,6 +21,9 @@ func SetupRouter(authControllers *controllers.AuthController,
 	bookController *controllers.BookController,
 	bookCopyController *controllers.BookCopyController,
 	inspectionController *controllers.InspectionController,
+	equipmentController *controllers.EquipmentController,
+	repairController *controllers.RepairController,
+	roomBookingController *controllers.RoomBookingController,
 	jwtProvider *utils.JWTProvider) *gin.Engine {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
@@ -179,6 +182,49 @@ func SetupRouter(authControllers *controllers.AuthController,
 	inspections.POST("", middleware.RequirePosition("librarian", "manager"), inspectionController.Create)
 	inspections.PUT("/:id", middleware.RequirePosition("librarian", "manager"), inspectionController.Update)
 	inspections.DELETE("/:id", middleware.RequirePosition("manager"), inspectionController.Delete)
+
+
+	// ---------- อุปกรณ์ / แจ้งซ่อม / จองห้อง (ระบบของ B6715588) ----------
+	// ยกกลุ่ม route มาจากโปรเจกต์ของบรรพตทั้งชุด สิทธิ์เป็นไปตามที่เจ้าของเขียนไว้เดิม
+
+	// ---------- อุปกรณ์ ----------
+	equipment := api.Group("/equipment")
+	equipment.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	equipment.Use(middleware.RequireEmployee())
+	{
+		equipment.GET("", equipmentController.List)
+		equipment.POST("", equipmentController.Create)
+		equipment.PATCH("/:id/status", equipmentController.UpdateStatus)
+	}
+
+	// ---------- แจ้งซ่อม ----------
+	repairs := api.Group("/repairs")
+	repairs.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	{
+		repairs.POST("", repairController.Create)
+		repairs.GET("/mine", repairController.MyRepairs)
+		repairs.GET("", middleware.RequireEmployee(), repairController.List)
+		repairs.PATCH("/:id/status", middleware.RequireEmployee(), repairController.UpdateStatus)
+	}
+
+	// ---------- ห้อง / การจองห้อง ----------
+	roomsGroup := api.Group("/rooms")
+	roomsGroup.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	roomsGroup.GET("", roomBookingController.ListRooms)
+	roomsGroup.POST("", middleware.RequireEmployee(), roomBookingController.CreateRoom)
+
+	// เปลี่ยนจาก /bookings เป็น /room-bookings ให้ชัดว่าเป็นการจอง "ห้อง"
+	// แยกจากระบบจองหนังสือ/อุปกรณ์ของอีกทีม
+	roomBookings := api.Group("/room-bookings")
+	roomBookings.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	{
+		roomBookings.POST("", roomBookingController.Create)
+		roomBookings.GET("/availability", roomBookingController.Availability) // ทุกคน login แล้วดูได้
+		roomBookings.GET("/mine", roomBookingController.MyBookings)           // ทุกคน login แล้วดูของตัวเองได้
+		roomBookings.PATCH("/:id/cancel", roomBookingController.Cancel)       // เจ้าของ หรือ staff
+		roomBookings.GET("", middleware.RequireEmployee(), roomBookingController.List)
+		roomBookings.PATCH("/:id/status", middleware.RequireEmployee(), roomBookingController.UpdateStatus)
+	}
 
 	return router
 }

@@ -60,6 +60,25 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// ระบบจองห้อง แจ้งซ่อม และอุปกรณ์ ยกมาจากสาขา B6715588 (บรรพต) เจ้าของสามระบบนี้
+	// Equipment ต้องมาก่อน RepairRequest เพราะตารางนั้นอ้าง equipment เป็น foreign key
+	// และ Room ต้องมาก่อน RoomBooking ด้วยเหตุผลเดียวกัน
+	if err = db.AutoMigrate(&models.Equipment{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.RepairRequest{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.RepairLog{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.Room{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.RoomBooking{}); err != nil {
+		return nil, err
+	}
+
 	// ระบบร้องเรียนและสถิติ ยกมาจากสาขา B6707590 (ธนกร) เจ้าของสองระบบนี้
 	// ใช้ loop เพราะมีหลายตาราง และให้เตือนแทนการหยุดทำงาน
 	// เผื่อตารางไหนชนกับของเดิมจะได้ยังสตาร์ทเซิร์ฟเวอร์ได้
@@ -67,14 +86,14 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		&models.ExternalDepartment{},
 		&models.Complaint{},
 		&models.InspectionRecord{},
-		&models.Room{},
-		&models.RoomBooking{},
+		&models.StatRoom{},
+		&models.StatRoomBooking{},
 		&models.BorrowTransaction{},
 		&models.ReturnTransaction{},
 		&models.Fine{},
 		&models.EbookSearchLog{},
 		&models.RecordCenter{},
-		&models.Equipment{},
+		&models.StatEquipment{},
 		&models.EquipmentRental{},
 	}
 	for _, m := range complaintAndStats {

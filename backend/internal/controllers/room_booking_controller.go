@@ -1,0 +1,217 @@
+package controllers
+
+import (
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+
+	"github.com/SA-1-69/T09/backend/internal/dto"
+	"github.com/SA-1-69/T09/backend/internal/models"
+)
+
+type RoomBookingController struct {
+	db *gorm.DB
+}
+
+func NewRoomBookingController(db *gorm.DB) *RoomBookingController {
+	return &RoomBookingController{db: db}
+}
+
+// GET /api/v1/rooms — ใครก็ดูได้ (ไว้เลือกห้องก่อนจอง)
+func (rb *RoomBookingController) ListRooms(c *gin.Context) {
+	var rooms []models.Room
+	if err := rb.db.Order("room_id asc").Find(&rooms).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "โหลดข้อมูลห้องไม่สำเร็จ"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"rooms": rooms})
+}
+
+// GET /api/v1/room-bookings — staff เห็นทุกการจองห้อง
+func (rb *RoomBookingController) List(c *gin.Context) {
+	var items []models.RoomBooking
+	if err := rb.db.Preload("User").Preload("Room").
+		Order("room_booking_id desc").Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "โหลดข้อมูลการจองห้องไม่สำเร็จ"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"room_bookings": items})
+}
+
+// POST /api/v1/room-bookings — ผู้ใช้ที่ login แล้วจองห้องได้
+func (rb *RoomBookingController) Create(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "กรุณาเข้าสู่ระบบก่อน"})
+		return
+	}
+
+	var req dto.CreateRoomBookingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	start, err := time.Parse(time.RFC3339, req.StartDateTime)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "start_datetime ต้องเป็นรูปแบบ RFC3339"})
+		return
+	}
+	end, err := time.Parse(time.RFC3339, req.EndDateTime)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "end_datetime ต้องเป็นรูปแบบ RFC3339"})
+		return
+	}
+	if !end.After(start) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "end_datetime ต้องอยู่หลัง start_datetime"})
+		return
+	}
+
+	item := models.RoomBooking{
+		UserID:        userID.(uint),
+		RoomID:        req.RoomID,
+		BookingType:   req.BookingType,
+		StartDateTime: start,
+		EndDateTime:   end,
+		Status:        "pending",
+	}
+
+	if err := rb.db.Create(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "จองห้องไม่สำเร็จ"})
+		return
+	}
+	c.JSON(http.StatusCreated, item)
+}
+
+// PATCH /api/v1/room-bookings/:id/status — staff เท่านั้น
+func (rb *RoomBookingController) UpdateStatus(c *gin.Context) {
+	id := c.Param("id")
+
+	var req dto.UpdateRoomBookingStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "status ไม่ถูกต้อง"})
+		return
+	}
+
+	var item models.RoomBooking
+	if err := rb.db.First(&item, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบการจองห้อง"})
+		return
+	}
+
+	item.Status = req.Status
+	if err := rb.db.Save(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตสถานะไม่สำเร็จ"})
+		return
+	}
+	c.JSON(http.StatusOK, item)
+}
+
+// GET /api/v1/room-bookings/availability?room_id=1&date=2026-09-02
+// ทุกคน login แล้วดูได้ — คืนแค่ช่วงเวลาที่ถูกจอง ไม่โชว์ว่าใครจอง (ป้องกันความเป็นส่วนตัว)
+func (rb *RoomBookingController) Availability(c *gin.Context) {
+	roomID := c.Query("room_id")
+	dateStr := c.Query("date") // YYYY-MM-DD
+
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "date ต้องเป็นรูปแบบ YYYY-MM-DD"})
+		return
+	}
+	dayStart := date
+	dayEnd := date.Add(24 * time.Hour)
+
+	var items []models.RoomBooking
+	if err := rb.db.
+		Where("room_id = ? AND status != ? AND start_date_time < ? AND end_date_time > ?",
+    		roomID, "cancelled", dayEnd, dayStart).
+		Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "โหลดข้อมูลไม่สำเร็จ"})
+		return
+	}
+
+	slots := make([]gin.H, 0, len(items))
+	for _, b := range items {
+		slots = append(slots, gin.H{
+			"start_datetime": b.StartDateTime,
+			"end_datetime":   b.EndDateTime,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"booked_slots": slots})
+}
+
+// GET /api/v1/room-bookings/mine — เห็นแค่การจองของตัวเอง (ไม่ต้องเป็น employee)
+func (rb *RoomBookingController) MyBookings(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+
+	var items []models.RoomBooking
+	if err := rb.db.Preload("Room").
+		Where("user_id = ? AND status != ?", userID, "cancelled").
+		Order("start_date_time asc").Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "โหลดข้อมูลการจองไม่สำเร็จ"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"room_bookings": items})
+}
+
+// PATCH /api/v1/room-bookings/:id/cancel — ยกเลิกได้เฉพาะเจ้าของการจอง (หรือ staff)
+// และยกเลิกได้เฉพาะตอนที่ยังไม่ได้ไปรับห้อง (status = pending) เท่านั้น
+func (rb *RoomBookingController) Cancel(c *gin.Context) {
+	id := c.Param("id")
+	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
+
+	var item models.RoomBooking
+	if err := rb.db.First(&item, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบการจอง"})
+		return
+	}
+
+	if item.UserID != userID.(uint) && role != "employee" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "ยกเลิกได้เฉพาะการจองของตัวเอง"})
+		return
+	}
+
+	if item.Status != "pending" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ยกเลิกได้เฉพาะการจองที่ยังไม่ได้รับห้อง"})
+		return
+	}
+
+	item.Status = "cancelled"
+	if err := rb.db.Save(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ยกเลิกไม่สำเร็จ"})
+		return
+	}
+	c.JSON(http.StatusOK, item)
+}
+
+// POST /api/v1/rooms — staff เท่านั้น
+func (rb *RoomBookingController) CreateRoom(c *gin.Context) {
+	var req struct {
+		RoomName string `json:"room_name" binding:"required"`
+		RoomType string `json:"room_type" binding:"required,oneof=individual group"`
+		Building string `json:"building"`
+		Floor    string `json:"floor"`
+		Capacity int    `json:"capacity"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	room := models.Room{
+		RoomName: req.RoomName,
+		RoomType: req.RoomType,
+		Building: req.Building,
+		Floor:    req.Floor,
+		Capacity: req.Capacity,
+		Status:   "available",
+	}
+	if err := rb.db.Create(&room).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "เพิ่มห้องไม่สำเร็จ"})
+		return
+	}
+	c.JSON(http.StatusCreated, room)
+}

@@ -9,7 +9,7 @@ import seal from '../assets/logo.png'
 import wordmark from '../assets/logo-wordmark.png'
 import { useAuth } from '../auth/useAuth'
 import { actionsFor, positionDisplayName, type NavAction } from '../config/roles'
-import LoginModal from './LoginModal'
+import { useLoginPrompt } from '../context/LoginPrompt'
 import UserMenu from './UserMenu'
 import NotificationBell from './NotificationBell'
 import { colors, fonts } from '../theme'
@@ -54,14 +54,7 @@ const pillSx = {
   '&:hover': { bgcolor: colors.headerPillHover },
 } as const
 
-const RESOURCE_LINKS = [
-  { label: 'Books', to: '/books' },
-  { label: 'eBooks', to: '/ebooks' },
-  { label: 'Online Databases', to: '/online-databases' },
-  { label: 'BU Research', to: '/bu-research' },
-  { label: 'Theses', to: '/theses' },
-  { label: 'Online Resource', to: '/online-resource' },
-]
+type DropdownItem = { label: string; to?: string; onSelect?: () => void }
 
 // เมนูแบบดรอปดาวน์ที่ใช้ซ้ำทั้ง Resources และปุ่มสิทธิ์พิเศษที่มีเมนูย่อย
 function DropdownMenu({
@@ -71,7 +64,7 @@ function DropdownMenu({
 }: {
   anchorEl: HTMLElement | null
   onClose: () => void
-  items: { label: string; to?: string }[]
+  items: DropdownItem[]
 }) {
   return (
     <Menu
@@ -80,17 +73,31 @@ function DropdownMenu({
       onClose={onClose}
       slotProps={{ paper: { sx: { bgcolor: `${colors.brandGreen}f2`, minWidth: 200, mt: 1 } } }}
     >
-      {items.map((item) => (
-        <MenuItem
-          key={item.to ?? item.label}
-          component={Link}
-          to={item.to ?? '/'}
-          onClick={onClose}
-          sx={{ fontFamily: fonts.kanit, fontSize: NAV_FONT_SIZE, color: 'white' }}
-        >
-          {item.label}
-        </MenuItem>
-      ))}
+      {items.map((item) =>
+        item.onSelect ? (
+          // รายการที่ต้องเช็คสิทธิ์ก่อน (เช่นจองห้อง) — ไม่ใช่ลิงก์ตรงๆ
+          <MenuItem
+            key={item.label}
+            onClick={() => {
+              onClose()
+              item.onSelect!()
+            }}
+            sx={{ fontFamily: fonts.kanit, fontSize: NAV_FONT_SIZE, color: 'white' }}
+          >
+            {item.label}
+          </MenuItem>
+        ) : (
+          <MenuItem
+            key={item.to ?? item.label}
+            component={Link}
+            to={item.to ?? '/'}
+            onClick={onClose}
+            sx={{ fontFamily: fonts.kanit, fontSize: NAV_FONT_SIZE, color: 'white' }}
+          >
+            {item.label}
+          </MenuItem>
+        ),
+      )}
     </Menu>
   )
 }
@@ -98,6 +105,19 @@ function DropdownMenu({
 function ResourcesMenu() {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)
+  const { requireLogin } = useLoginPrompt()
+
+  // ปุ่ม "Room Booking" ทำงานแบบเดียวกับปุ่มจองห้องบนหน้าแรก
+  // ยังไม่ล็อกอิน → เด้งหน้าต่างล็อกอินก่อน แล้วค่อยพาไป /booking
+  const resourceLinks: DropdownItem[] = [
+    { label: 'Books', to: '/books' },
+    { label: 'eBooks', to: '/ebooks' },
+    { label: 'Online Databases', to: '/online-databases' },
+    { label: 'BU Research', to: '/bu-research' },
+    { label: 'Theses', to: '/theses' },
+    { label: 'Online Resource', to: '/online-resource' },
+    { label: 'Room Booking', onSelect: () => requireLogin('/booking') },
+  ]
 
   return (
     <>
@@ -117,7 +137,7 @@ function ResourcesMenu() {
       >
         Resources
       </Button>
-      <DropdownMenu anchorEl={anchorEl} onClose={() => setAnchorEl(null)} items={RESOURCE_LINKS} />
+      <DropdownMenu anchorEl={anchorEl} onClose={() => setAnchorEl(null)} items={resourceLinks} />
     </>
   )
 }
@@ -162,8 +182,8 @@ function HeaderAction({ action }: { action: NavAction }) {
 
 function Header() {
   const { user, isLoading, allows } = useAuth()
+  const { openLogin } = useLoginPrompt()
   const [scrolled, setScrolled] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false)
 
   // ไม่ย่อขนาดตอนเลื่อนแล้ว เพราะแถบเตี้ยอยู่แล้ว เหลือแค่เงาบอกว่าหน้าถูกเลื่อนลงมา
   useEffect(() => {
@@ -244,7 +264,7 @@ function Header() {
               (user ? (
                 <UserMenu compact onDark />
               ) : (
-                <Button onClick={() => setLoginOpen(true)} sx={navTextSx}>
+                <Button onClick={openLogin} sx={navTextSx}>
                   Sign in
                 </Button>
               ))}
@@ -252,7 +272,6 @@ function Header() {
         </Box>
       </Box>
 
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   )
 }

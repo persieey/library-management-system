@@ -1,0 +1,434 @@
+/* Vite's default template centers #root and gives the page a dark
+   background — override that so this UI fills the viewport edge-to-edge
+   on a plain white page instead of floating in a dark frame. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: #ffffff;
+  color-scheme: light;
+}
+
+#root {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 20px 0px 0px 0px;
+  text-align: left;
+  background: #ffffff;
+}
+
+.rb-page {
+  min-height: 90vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Header */
+.rb-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #12372F;
+  color: #ffffff;
+  padding: 4px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Pushes page content below the fixed header (must match header's rendered height) */
+.rb-header-spacer {
+  height: 72px;
+}
+
+.rb-logo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.rb-logo-img {
+  height: 90px;
+  display: block;
+}
+
+.rb-logo-title {
+  font-size: 20px;
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0.02em;
+}
+
+.rb-logo-sub {
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  color: #cbd5cf;
+  margin-top: 4px;
+}
+
+.rb-nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  font-size: 14px;
+}
+
+.rb-nav a,
+.rb-nav-dropdown,
+button.rb-logout-btn {
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+button.rb-logout-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.rb-nav a:hover,
+.rb-nav-dropdown:hover,
+button.rb-logout-btn:hover {
+  opacity: 0.8;
+}
+
+/* Main content */
+.rb-main {
+  flex: 1;
+  padding: 32px 40px;
+}
+
+.rb-selectors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.rb-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.rb-label {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.rb-select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  background: #ffffff;
+  color: #111827;
+}
+
+/* Two-column layout: schedule + summary */
+.rb-columns {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.rb-panel {
+  background: #f3f4f1;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.rb-panel-title {
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+  font-size: 15px;
+}
+
+/* Schedule grid */
+.rb-schedule-scroll {
+  overflow-x: auto;
+}
+
+.rb-schedule-inner {
+  min-width: 760px;
+  user-select: none;
+}
+
+.rb-schedule-header,
+.rb-schedule-row {
+  display: grid;
+  grid-template-columns: 90px repeat(12, 1fr);
+  align-items: center;
+}
+
+.rb-schedule-header {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.rb-schedule-header span {
+  text-align: center;
+}
+
+.rb-schedule-row {
+  margin-bottom: 6px;
+}
+
+.rb-room-label {
+  font-size: 12px;
+  color: #4b5563;
+  padding-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rb-room-divider {
+  border-right: 1px solid #d1d5db;
+  height: 24px;
+}
+
+.rb-cell {
+  height: 28px;
+  margin: 0 2px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rb-cell.disabled-cap {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.rb-cell:hover:not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.rb-cell.selected {
+  background: #4ade80;
+  border-color: #22c55e;
+}
+
+.rb-cell.booked {
+  background: #d1d5db;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+/* Booking summary */
+.rb-summary-user {
+  font-size: 14px;
+  color: #374151;
+  margin: 0 0 4px 0;
+}
+
+.rb-summary-user.id {
+  margin-bottom: 12px;
+}
+
+.rb-summary-divider {
+  border-top: 1px solid #d1d5db;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rb-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.rb-summary-row .rb-key {
+  color: #6b7280;
+}
+
+.rb-summary-row .rb-value {
+  color: #111827;
+  font-weight: 500;
+}
+
+.rb-remaining {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 12px;
+}
+
+/* My bookings */
+.rb-empty {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.rb-booking-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rb-booking-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.rb-cancel-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #b91c1c;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.rb-cancel-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+/* Notice */
+.rb-notice {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.rb-notice.error {
+  color: #dc2626;
+}
+
+.rb-notice.success {
+  color: #15803d;
+}
+
+/* Confirm button */
+.rb-confirm-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.rb-confirm-btn {
+  background: #12372F;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 32px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+}
+
+.rb-confirm-btn:hover {
+  opacity: 0.9;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .rb-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .rb-header {
+    padding: 12px 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .rb-header-spacer {
+    height: 96px;
+  }
+
+  .rb-logo-title {
+    font-size: 17px;
+  }
+
+  .rb-nav {
+    gap: 18px;
+    font-size: 13px;
+  }
+
+  .rb-main {
+    padding: 20px 16px;
+  }
+
+  .rb-selectors {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .rb-panel {
+    padding: 16px;
+  }
+
+  .rb-confirm-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .rb-header {
+    padding: 10px 14px;
+  }
+
+  .rb-header-spacer {
+    height: 112px;
+  }
+
+  .rb-nav {
+    gap: 12px;
+    font-size: 12px;
+  }
+}
+.rb-status-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #4ade80;
+  color: #14532d;
+  white-space: nowrap;
+}

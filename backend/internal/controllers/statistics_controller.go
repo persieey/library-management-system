@@ -210,21 +210,21 @@ func (sc *StatisticsController) GetReturnStats(c *gin.Context) {
 func (sc *StatisticsController) GetRoomStats(c *gin.Context) {
 	from, to, hasFilter := utils.ParseDateRange(c)
 
-	rbQuery := sc.DB.Model(&models.RoomBooking{})
+	rbQuery := sc.DB.Model(&models.StatRoomBooking{})
 	if hasFilter {
 		rbQuery = rbQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 	}
 	var totalBookings int64
 	rbQuery.Count(&totalBookings)
 
-	checkinQuery := sc.DB.Model(&models.RoomBooking{}).Where("status = ?", "Check-in")
+	checkinQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("status = ?", "Check-in")
 	if hasFilter {
 		checkinQuery = checkinQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 	}
 	var checkinCount int64
 	checkinQuery.Count(&checkinCount)
 
-	cancelQuery := sc.DB.Model(&models.RoomBooking{}).Where("status = ?", "Cancelled")
+	cancelQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("status = ?", "Cancelled")
 	if hasFilter {
 		cancelQuery = cancelQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 	}
@@ -237,26 +237,26 @@ func (sc *StatisticsController) GetRoomStats(c *gin.Context) {
 		cancellationRate = utils.Round(float64(cancelCount)/float64(totalBookings)*100.0, 1)
 	}
 
-	var rooms []models.Room
+	var rooms []models.StatRoom
 	sc.DB.Order("room_id ASC").Find(&rooms)
 
 	roomList := make([]dto.RoomRow, 0)
 	for _, r := range rooms {
-		rQuery := sc.DB.Model(&models.RoomBooking{}).Where("room_id = ?", r.RoomID)
+		rQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("room_id = ?", r.RoomID)
 		if hasFilter {
 			rQuery = rQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 		}
 		var rTotal int64
 		rQuery.Count(&rTotal)
 
-		rCheckQuery := sc.DB.Model(&models.RoomBooking{}).Where("room_id = ? AND status = ?", r.RoomID, "Check-in")
+		rCheckQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("room_id = ? AND status = ?", r.RoomID, "Check-in")
 		if hasFilter {
 			rCheckQuery = rCheckQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 		}
 		var rCheckin int64
 		rCheckQuery.Count(&rCheckin)
 
-		rCancelQuery := sc.DB.Model(&models.RoomBooking{}).Where("room_id = ? AND status = ?", r.RoomID, "Cancelled")
+		rCancelQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("room_id = ? AND status = ?", r.RoomID, "Cancelled")
 		if hasFilter {
 			rCancelQuery = rCancelQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 		}
@@ -371,12 +371,12 @@ func (sc *StatisticsController) GetEquipmentStats(c *gin.Context) {
 
 	var dbDevices []dto.DeviceRow
 	devQuery := sc.DB.Table("equipment_rentals").
-		Select("COALESCE(equipments.equipment_name, equipment_rentals.equipment_id) as name, COUNT(equipment_rentals.rental_id) as count").
-		Joins("LEFT JOIN equipments ON equipment_rentals.equipment_id = equipments.equipment_id")
+		Select("COALESCE(stat_equipment.equipment_name, equipment_rentals.equipment_id) as name, COUNT(equipment_rentals.rental_id) as count").
+		Joins("LEFT JOIN stat_equipment ON equipment_rentals.equipment_id = stat_equipment.equipment_id")
 	if hasFilter {
 		devQuery = devQuery.Where("equipment_rentals.rent_date >= ? AND equipment_rentals.rent_date <= ?", from, to)
 	}
-	devQuery.Group("COALESCE(equipments.equipment_name, equipment_rentals.equipment_id)").
+	devQuery.Group("COALESCE(stat_equipment.equipment_name, equipment_rentals.equipment_id)").
 		Order("count DESC").
 		Scan(&dbDevices)
 

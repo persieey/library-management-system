@@ -1,0 +1,71 @@
+/* ------------------------------------------------------------------ */
+/* Equipment Summary dashboard (renders inside .staff-content)         */
+/* ------------------------------------------------------------------ */
+
+.eq-page {
+  padding: 4px;
+}
+
+.eq-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #12372f;
+  margin: 0 0 20px 0;
+}
+
+.eq-error {
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+/* ---- search ---- */
+.eq-search {
+  display: block;
+  margin-bottom: 16px;
+}
+
+/* ---- table ---- */
+.eq-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.eq-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.eq-table th {
+  text-align: left;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.eq-table td {
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f2f4;
+  color: #1f2937;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.eq-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.eq-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.eq-empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 32px 18px !important;
+}

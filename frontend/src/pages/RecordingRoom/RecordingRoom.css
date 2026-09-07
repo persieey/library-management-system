@@ -1,0 +1,155 @@
+/* ------------------------------------------------------------------ */
+/* Room & Key Management table (renders inside .staff-content)         */
+/* ------------------------------------------------------------------ */
+
+.rr-page {
+  padding: 4px;
+}
+
+.rr-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #12372f;
+  margin: 0 0 20px 0;
+}
+
+.rr-error {
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+.rr-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.rr-search {
+  flex-shrink: 0;
+}
+
+.rr-filters {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.rr-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.rr-filter select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: #ffffff;
+  color: #1f2937;
+  outline: none;
+}
+
+.rr-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.rr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.rr-table th {
+  text-align: left;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.rr-table td {
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f2f4;
+  color: #1f2937;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.rr-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rr-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.rr-empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 32px 18px !important;
+}
+
+.rr-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rr-btn-take {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.rr-btn-take:hover {
+  background: #15803d;
+}
+
+.rr-btn-return {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.rr-btn-return:hover {
+  background: #b91c1c;
+}
+
+.rr-btn-done {
+  background: #e5e7eb;
+  color: #4b5563;
+  cursor: default;
+}
+
+.rr-action-none {
+  color: #9ca3af;
+}
+
+@media (max-width: 640px) {
+  .rr-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rr-search {
+    width: 100%;
+  }
+
+  .rr-filters {
+    justify-content: space-between;
+  }
+}

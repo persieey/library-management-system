@@ -21,13 +21,15 @@ import MyLeavePage from '../pages/employees/leave'
 import SchedulesPage from '../pages/employees/schedules'
 import ManageBooks from '../pages/employees/books'
 import ManageEbooks from '../pages/employees/ebooks'
+// ระบบอุปกรณ์ / จองห้อง / แจ้งซ่อม ยกมาจากสาขา B6715588
+import EquipmentPage from '../pages/Equipment/Equipment'
+import RecordingRoomPage from '../pages/RecordingRoom/RecordingRoom'
+import RepairRequestPage from '../pages/RepairRequestUI/RepairRequestUI'
+import TrackRepairPage from '../pages/TrackRepair/TrackRepair'
+import RoomBookingPage from '../pages/RoomBookingUI/RoomBookingUI'
 
 const COMING_SOON_ROUTES = [
   // หน้าที่ยังไม่ได้ทำ ต้องมีตัวรองรับไม่ให้ 404 เพราะมีเมนูชี้มา
-  { path: 'recording-room', title: 'Recording Room', positions: CAN_ACCESS_BACKOFFICE },
-  { path: 'equipment', title: 'Equipment', positions: CAN_ACCESS_BACKOFFICE },
-  { path: 'repair-request', title: 'Repair request', positions: CAN_ACCESS_BACKOFFICE },
-  { path: 'repair-track', title: 'Track the repair', positions: CAN_ACCESS_BACKOFFICE },
   { path: 'catalog', title: 'Catalog', positions: CAN_MANAGE_PR },
   { path: 'loans', title: 'Loans', positions: CAN_MANAGE_PR },
 ]
@@ -186,6 +188,53 @@ function AppRoutes() {
           <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
             <MyLeavePage />
           </RequirePosition>
+        }
+      />
+
+      {/* ระบบอุปกรณ์ / จองห้อง / แจ้งซ่อม ของ B6715588 — เจ้าหน้าที่ทุกตำแหน่งเข้าได้ */}
+      <Route
+        path="/staff/equipment"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <EquipmentPage />
+          </RequirePosition>
+        }
+      />
+
+      <Route
+        path="/staff/recording-room"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <RecordingRoomPage />
+          </RequirePosition>
+        }
+      />
+
+      <Route
+        path="/staff/repair-request"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <RepairRequestPage />
+          </RequirePosition>
+        }
+      />
+
+      <Route
+        path="/staff/track-repair"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <TrackRepairPage />
+          </RequirePosition>
+        }
+      />
+
+      {/* หน้าจองห้องสำหรับผู้ใช้ที่ล็อกอินแล้ว (สมาชิกหรือเจ้าหน้าที่) */}
+      <Route
+        path="/booking"
+        element={
+          <RequireLogin>
+            <RoomBookingPage />
+          </RequireLogin>
         }
       />
 
