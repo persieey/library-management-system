@@ -166,8 +166,10 @@ export const BACK_OFFICE_MENU: NavAction[] = [
       { icon: 'overview', label: 'ภาพรวมระบบ', to: '/procurement' },
       { icon: 'procurement', label: 'สร้างใบขอซื้อ', to: '/procurement/create' },
       { icon: 'reports', label: 'รายการขอซื้อ', to: '/procurement/requests' },
+      { icon: 'complaints', label: 'ตรวจสอบรายละเอียด', to: '/procurement/details' },
       { icon: 'audit', label: 'ลงทะเบียนทรัพย์สิน', to: '/procurement/register-asset' },
       { icon: 'leave', label: 'อนุมัติใบขอซื้อ', to: '/procurement/approve', positions: CAN_MANAGE_PERSONNEL },
+      { icon: 'overview', label: 'ภาพรวมการจัดซื้อ', to: '/procurement/overview', positions: CAN_MANAGE_PERSONNEL },
     ],
   },
   {
@@ -180,6 +182,7 @@ export const BACK_OFFICE_MENU: NavAction[] = [
       { icon: 'repairTrack', label: 'บันทึกผลตรวจนับ', to: '/asset-audit/physical' },
       { icon: 'reports', label: 'รายการที่ไม่ตรง', to: '/asset-audit/discrepancies' },
       { icon: 'overview', label: 'สร้างรายงาน', to: '/asset-audit/report' },
+      { icon: 'leave', label: 'ส่งรายงานให้หัวหน้า', to: '/asset-audit/submit' },
       { icon: 'reports', label: 'อนุมัติรายงาน', to: '/asset-audit/review', positions: CAN_MANAGE_PERSONNEL },
     ],
   },
