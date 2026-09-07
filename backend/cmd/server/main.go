@@ -62,6 +62,11 @@ func main() {
 	repairController := controllers.NewRepairController(db)
 	roomBookingController := controllers.NewRoomBookingController(db)
 
+	// ระบบจัดซื้อทรัพย์สินและตรวจนับทรัพย์สินของ B6710248
+	requestController := controllers.NewRequestController(db)
+	assetController := controllers.NewAssetController(db)
+	auditController := controllers.NewAuditController(db)
+
 	// ปิดการจองที่เลยเวลาแล้วโดยอัตโนมัติ ทำงานเบื้องหลังตลอดอายุเซิร์ฟเวอร์
 	jobs.StartExpiryWorker(db)
 
@@ -72,7 +77,8 @@ func main() {
 		complaintController, statisticsController,
 		prController, eventController, personnelController, leaveController, dutyController,
 		ebookController, bookController, bookCopyController, inspectionController,
-		equipmentController, repairController, roomBookingController, jwtProvider)
+		equipmentController, repairController, roomBookingController,
+		requestController, assetController, auditController, jwtProvider)
 
 	// port:= os.Getenv("SERVER_PORT")
 

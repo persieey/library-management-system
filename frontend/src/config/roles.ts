@@ -14,6 +14,33 @@ export const CAN_MANAGE_PR: Position[] = ['librarian', 'manager']
 export const CAN_MANAGE_PERSONNEL: Position[] = ['manager']
 export const CAN_ACCESS_BACKOFFICE: Position[] = ['staff', 'librarian', 'manager']
 
+/**
+ * สิทธิ์แบบ permission string — มีไว้ให้หน้าจัดซื้อ/ตรวจนับของ B6710248 ใช้
+ *
+ * โปรเจกต์ของเจ้าของงาน fork มาตอนที่ระบบสิทธิ์ยังเป็น permission string
+ * ตอนนี้ทีมใช้ตำแหน่ง (position) แทน จึงแปลง permission -> ตำแหน่งที่ทำได้ ไว้ที่นี่
+ * หน้าเว็บของเขาจึงเรียก can(PERMISSIONS.X) ได้เหมือนเดิมโดยไม่ต้องแก้
+ *
+ * นี่เป็นแค่การตัดสินใจว่าจะโชว์เมนู/ปุ่มอะไร การกันสิทธิ์จริงอยู่ที่ backend เสมอ
+ */
+export const PERMISSIONS = {
+  PROCUREMENT_ACCESS: 'procurement:access',
+  PROCUREMENT_APPROVE: 'procurement:approve',
+  AUDIT_ACCESS: 'audit:access',
+  AUDIT_APPROVE: 'audit:approve',
+} as const
+
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
+
+/** ตำแหน่งที่ได้สิทธิ์แต่ละอัน — ต้องตรงกับที่ routes.go ฝั่ง backend กำหนด */
+export const PERMISSION_POSITIONS: Record<Permission, Position[]> = {
+  [PERMISSIONS.PROCUREMENT_ACCESS]: CAN_ACCESS_BACKOFFICE,
+  [PERMISSIONS.PROCUREMENT_APPROVE]: ['manager'],
+  [PERMISSIONS.AUDIT_ACCESS]: CAN_ACCESS_BACKOFFICE,
+  // ตรงกับ RequirePosition("manager") ที่ POST /audit/sessions/:id/review
+  [PERMISSIONS.AUDIT_APPROVE]: ['manager'],
+}
+
 /** จัดการหนังสือและ E-Book — ตรงกับ RequirePosition("librarian", "manager") ฝั่ง backend */
 export const CAN_MANAGE_BOOKS: Position[] = ['librarian', 'manager']
 
@@ -127,6 +154,33 @@ export const BACK_OFFICE_MENU: NavAction[] = [
       { icon: 'equipment', label: 'รายการอุปกรณ์', to: '/staff/equipment' },
       { icon: 'repair', label: 'แจ้งซ่อม', to: '/staff/repair-request' },
       { icon: 'repairTrack', label: 'ติดตามการซ่อม', to: '/staff/track-repair' },
+    ],
+  },
+  {
+    // ระบบจัดซื้อทรัพย์สิน เป็นของ B6710248 (สุรทิน)
+    // เมนูอนุมัติกับภาพรวมเห็นเฉพาะหัวหน้า ตรงกับ PERMISSION_POSITIONS
+    icon: 'procurement',
+    label: 'จัดซื้อทรัพย์สิน',
+    positions: CAN_ACCESS_BACKOFFICE,
+    children: [
+      { icon: 'overview', label: 'ภาพรวมระบบ', to: '/procurement' },
+      { icon: 'procurement', label: 'สร้างใบขอซื้อ', to: '/procurement/create' },
+      { icon: 'reports', label: 'รายการขอซื้อ', to: '/procurement/requests' },
+      { icon: 'audit', label: 'ลงทะเบียนทรัพย์สิน', to: '/procurement/register-asset' },
+      { icon: 'leave', label: 'อนุมัติใบขอซื้อ', to: '/procurement/approve', positions: CAN_MANAGE_PERSONNEL },
+    ],
+  },
+  {
+    // ระบบตรวจนับทรัพย์สิน เป็นของ B6710248 เช่นกัน
+    icon: 'audit',
+    label: 'ตรวจนับทรัพย์สิน',
+    positions: CAN_ACCESS_BACKOFFICE,
+    children: [
+      { icon: 'audit', label: 'รายการที่ต้องตรวจ', to: '/asset-audit' },
+      { icon: 'repairTrack', label: 'บันทึกผลตรวจนับ', to: '/asset-audit/physical' },
+      { icon: 'reports', label: 'รายการที่ไม่ตรง', to: '/asset-audit/discrepancies' },
+      { icon: 'overview', label: 'สร้างรายงาน', to: '/asset-audit/report' },
+      { icon: 'reports', label: 'อนุมัติรายงาน', to: '/asset-audit/review', positions: CAN_MANAGE_PERSONNEL },
     ],
   },
 ]

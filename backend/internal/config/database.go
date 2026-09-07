@@ -79,6 +79,25 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// ระบบจัดซื้อทรัพย์สินและตรวจนับทรัพย์สิน ยกมาจากสาขา B6710248 (สุรทิน) เจ้าของสองระบบนี้
+	// ตารางของสองระบบนี้ตั้งชื่อแบบ PascalCase ผ่าน TableName() เช่น "Asset" "Request"
+	// จึงไม่ชนกับตาราง snake_case ของระบบอื่นในโปรเจกต์
+	//
+	// Vender กับ Request ต้องมาก่อน Asset และ InspectReport ต้องมาก่อน Inspect
+	// ตามลำดับที่เจ้าของงานเรียงไว้
+	for _, m := range []interface{}{
+		&models.Vender{},
+		&models.Request{},
+		&models.Asset{},
+		&models.InspectReport{},
+		&models.Inspect{},
+		&models.Discrepancy{},
+	} {
+		if err := db.AutoMigrate(m); err != nil {
+			return nil, err
+		}
+	}
+
 	// ระบบร้องเรียนและสถิติ ยกมาจากสาขา B6707590 (ธนกร) เจ้าของสองระบบนี้
 	// ใช้ loop เพราะมีหลายตาราง และให้เตือนแทนการหยุดทำงาน
 	// เผื่อตารางไหนชนกับของเดิมจะได้ยังสตาร์ทเซิร์ฟเวอร์ได้

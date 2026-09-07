@@ -24,6 +24,9 @@ func SetupRouter(authControllers *controllers.AuthController,
 	equipmentController *controllers.EquipmentController,
 	repairController *controllers.RepairController,
 	roomBookingController *controllers.RoomBookingController,
+	requestController *controllers.RequestController,
+	assetController *controllers.AssetController,
+	auditController *controllers.AuditController,
 	jwtProvider *utils.JWTProvider) *gin.Engine {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
@@ -233,6 +236,38 @@ func SetupRouter(authControllers *controllers.AuthController,
 		roomBookings.GET("", middleware.RequireEmployee(), roomBookingController.List)
 		roomBookings.PATCH("/:id/status", middleware.RequireEmployee(), roomBookingController.UpdateStatus)
 	}
+
+
+	// ---------- จัดซื้อทรัพย์สิน / ตรวจนับทรัพย์สิน (ระบบของ B6710248) ----------
+	// ยกกลุ่ม route มาจากโปรเจกต์ของสุรทินทั้งชุด สิทธิ์เป็นไปตามที่เจ้าของเขียนไว้เดิม
+
+	// ---------- ใบขอซื้อ ----------
+	requests := api.Group("/requests")
+	requests.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	requests.GET("", requestController.GetAll)
+	requests.GET("/:id", requestController.GetByID)
+	requests.POST("", requestController.Create)
+	requests.PATCH("/:id/status", requestController.UpdateStatus)
+
+	// ---------- ทรัพย์สิน ----------
+	assets := api.Group("/assets")
+	assets.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	assets.GET("", assetController.GetAll)
+	assets.POST("", assetController.Create)
+
+	// ---------- ตรวจนับทรัพย์สิน ----------
+	audit := api.Group("/audit")
+	audit.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	audit.GET("/stats", auditController.GetStats)
+	audit.GET("/sessions", auditController.ListSessions)
+	audit.POST("/sessions", auditController.CreateSession)
+	audit.GET("/sessions/:id", auditController.GetSession)
+	audit.PUT("/sessions/:id", auditController.UpdateSession)
+	audit.POST("/sessions/:id/rows", auditController.SaveRows)
+	audit.POST("/sessions/:id/discrepancies", auditController.AddDiscrepancy)
+	audit.DELETE("/discrepancies/:disc_id", auditController.DeleteDiscrepancy)
+	audit.POST("/sessions/:id/submit", auditController.SubmitReport)
+	audit.POST("/sessions/:id/review", middleware.RequirePosition("manager"), auditController.ReviewReport)
 
 	return router
 }

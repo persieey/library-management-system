@@ -27,6 +27,22 @@ import RecordingRoomPage from '../pages/RecordingRoom/RecordingRoom'
 import RepairRequestPage from '../pages/RepairRequestUI/RepairRequestUI'
 import TrackRepairPage from '../pages/TrackRepair/TrackRepair'
 import RoomBookingPage from '../pages/RoomBookingUI/RoomBookingUI'
+// ระบบจัดซื้อทรัพย์สิน / ตรวจนับทรัพย์สิน ยกมาจากสาขา B6710248
+import RequirePermission from '../components/RequirePermission'
+import { PERMISSIONS } from '../config/roles'
+import ProcurementHome from '../pages/procurement'
+import CreatePurchaseRequest from '../pages/procurement/create'
+import RequestList from '../pages/procurement/requests'
+import CheckDetails from '../pages/procurement/details'
+import RegisterAsset from '../pages/procurement/register-asset'
+import ApproveRequests from '../pages/procurement/approve'
+import ProcurementOverview from '../pages/procurement/overview'
+import AssetsToAudit from '../pages/asset-audit'
+import PhysicalAudit from '../pages/asset-audit/physical'
+import RecordDiscrepancies from '../pages/asset-audit/discrepancies'
+import CreateAuditReport from '../pages/asset-audit/report'
+import SubmitReport from '../pages/asset-audit/submit'
+import ReviewAuditReports from '../pages/asset-audit/review'
 
 const COMING_SOON_ROUTES = [
   // หน้าที่ยังไม่ได้ทำ ต้องมีตัวรองรับไม่ให้ 404 เพราะมีเมนูชี้มา
@@ -235,6 +251,112 @@ function AppRoutes() {
           <RequireLogin>
             <RoomBookingPage />
           </RequireLogin>
+        }
+      />
+
+      {/* ระบบจัดซื้อทรัพย์สินและตรวจนับทรัพย์สิน ของ B6710248 */}
+      <Route
+        path="/procurement"
+        element={
+          <RequirePermission permission={PERMISSIONS.PROCUREMENT_ACCESS}>
+            <ProcurementHome />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/procurement/create"
+        element={
+          <RequirePermission permission={PERMISSIONS.PROCUREMENT_ACCESS}>
+            <CreatePurchaseRequest />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/procurement/requests"
+        element={
+          <RequirePermission permission={PERMISSIONS.PROCUREMENT_ACCESS}>
+            <RequestList />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/procurement/details"
+        element={
+          <RequirePermission permission={PERMISSIONS.PROCUREMENT_ACCESS}>
+            <CheckDetails />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/procurement/register-asset"
+        element={
+          <RequirePermission permission={PERMISSIONS.PROCUREMENT_ACCESS}>
+            <RegisterAsset />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/procurement/approve"
+        element={
+          <RequirePermission permission={PERMISSIONS.PROCUREMENT_APPROVE}>
+            <ApproveRequests />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/procurement/overview"
+        element={
+          <RequirePermission permission={PERMISSIONS.PROCUREMENT_APPROVE}>
+            <ProcurementOverview />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/asset-audit"
+        element={
+          <RequirePermission permission={PERMISSIONS.AUDIT_ACCESS}>
+            <AssetsToAudit />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/asset-audit/physical"
+        element={
+          <RequirePermission permission={PERMISSIONS.AUDIT_ACCESS}>
+            <PhysicalAudit />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/asset-audit/discrepancies"
+        element={
+          <RequirePermission permission={PERMISSIONS.AUDIT_ACCESS}>
+            <RecordDiscrepancies />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/asset-audit/report"
+        element={
+          <RequirePermission permission={PERMISSIONS.AUDIT_ACCESS}>
+            <CreateAuditReport />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/asset-audit/submit"
+        element={
+          <RequirePermission permission={PERMISSIONS.AUDIT_ACCESS}>
+            <SubmitReport />
+          </RequirePermission>
+        }
+      />
+      <Route
+        path="/asset-audit/review"
+        element={
+          <RequirePermission permission={PERMISSIONS.AUDIT_APPROVE}>
+            <ReviewAuditReports />
+          </RequirePermission>
         }
       />
 

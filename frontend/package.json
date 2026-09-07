@@ -17,6 +17,7 @@
     "dayjs": "^1.11.21",
     "exceljs": "^4.4.0",
     "react": "^19.2.6",
+    "react-barcode": "^1.6.1",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.16.0"
   },

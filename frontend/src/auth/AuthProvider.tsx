@@ -3,6 +3,7 @@ import * as authApi from '../services/https/auth'
 import type { LoginRequest, ProfileResponse } from '../interface/IAuthInterface'
 import type { CurrentUser, Position } from '../interface/IUserInterface'
 import { AuthContext, type AuthContextValue } from './AuthContext'
+import { PERMISSION_POSITIONS, type Permission } from '../config/roles'
 
 const TOKEN_STORAGE_KEY = 'auth_token'
 
@@ -66,9 +67,16 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     [user],
   )
 
+  // can() เป็นหน้ากากของ allows() สำหรับหน้าจัดซื้อ/ตรวจนับของ B6710248
+  // ที่เขียนไว้ตอนระบบสิทธิ์ยังเป็น permission string
+  const can = useCallback(
+    (permission: Permission) => allows(...(PERMISSION_POSITIONS[permission] ?? [])),
+    [allows],
+  )
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, isLoading, login, logout, applyProfile, allows, isEmployee: user?.role === 'employee' }),
-    [user, token, isLoading, login, logout, applyProfile, allows],
+    () => ({ user, token, isLoading, login, logout, applyProfile, allows, can, isEmployee: user?.role === 'employee' }),
+    [user, token, isLoading, login, logout, applyProfile, allows, can],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

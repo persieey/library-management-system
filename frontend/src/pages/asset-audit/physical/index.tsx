@@ -1,0 +1,308 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import dayjs, { Dayjs } from 'dayjs'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import Box from '@mui/material/Box'
+import Paper from '@mui/material/Paper'
+import Typography from '@mui/material/Typography'
+import TextField from '@mui/material/TextField'
+import MenuItem from '@mui/material/MenuItem'
+import Button from '@mui/material/Button'
+import Snackbar from '@mui/material/Snackbar'
+import Alert from '@mui/material/Alert'
+import CircularProgress from '@mui/material/CircularProgress'
+import AssetAuditLayout from '../AssetAuditLayout'
+import { auditApi, activeSession } from '../../../services/https/audit'
+import { apiFetch } from '../../../services/https'
+import { useAuth } from '../../../auth/useAuth'
+import { colors, fonts } from '../../../theme'
+
+const AUDIT_BG = '#1a3d2e'
+const CONDITIONS = ['ปกติ', 'ชำรุด', 'สูญหาย', 'ย้ายสถานที่']
+
+interface AssetRecord {
+  id: string
+  name: string
+  type: string
+  location: string
+  condition: string
+  quantity: number
+}
+
+interface AuditRow {
+  asset_id: string
+  asset_code: string
+  asset_name: string
+  expected: number
+  found: number
+  condition: string
+  note: string
+}
+
+export default function PhysicalAudit() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [location, setLocation] = useState('')
+  const [auditDate, setAuditDate] = useState<Dayjs | null>(dayjs())
+  const [rows, setRows] = useState<AuditRow[]>([])
+  const [locations, setLocations] = useState<string[]>([])
+  const [loadingAssets, setLoadingAssets] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+  const token = localStorage.getItem('auth_token')
+
+  // Load existing session if any
+  useEffect(() => {
+    const sid = activeSession.get()
+    if (sid) {
+      auditApi.getSession(sid).then((s) => {
+        setLocation(s.location)
+        setAuditDate(dayjs(s.audit_date))
+        if (s.rows && s.rows.length > 0) {
+          setRows(s.rows.map((r) => ({
+            asset_id: r.asset_id as string,
+            asset_code: r.asset_code,
+            asset_name: r.asset_name,
+            expected: r.expected,
+            found: r.found,
+            condition: r.condition,
+            note: r.note,
+          })))
+        }
+      }).catch(() => {})
+    }
+    // Load distinct locations from all assets
+    apiFetch<AssetRecord[]>('/api/v1/assets', { token }).then((assets) => {
+      const locs = [...new Set((assets ?? []).map((a) => a.location).filter(Boolean))]
+      setLocations(locs)
+    }).catch(() => {})
+  }, [])
+
+  // Load assets when location changes
+  useEffect(() => {
+    if (!location) return
+    setLoadingAssets(true)
+    apiFetch<AssetRecord[]>(`/api/v1/assets?location=${encodeURIComponent(location)}`, { token })
+      .then((assets) => {
+        if (!assets || assets.length === 0) { setRows([]); return }
+        // Group by name+type
+        const grouped = new Map<string, { items: AssetRecord[] }>()
+        for (const a of assets) {
+          const key = `${a.name}||${a.type}`
+          if (!grouped.has(key)) grouped.set(key, { items: [] })
+          grouped.get(key)!.items.push(a)
+        }
+        const existingSid = activeSession.get()
+        auditApi.getSession(existingSid ?? 0).then((s) => {
+          const existingRows = s.rows ?? []
+          const newRows: AuditRow[] = []
+          grouped.forEach(({ items }) => {
+            const first = items[0]
+            const existing = existingRows.find((r) => r.asset_id === first.id)
+            newRows.push({
+              asset_id: first.id,
+              asset_code: first.id,
+              asset_name: first.name,
+              expected: first.quantity || items.length,
+              found: existing?.found ?? 0,
+              condition: existing?.condition ?? 'ปกติ',
+              note: existing?.note ?? '',
+            })
+          })
+          setRows(newRows)
+        }).catch(() => {
+          const newRows: AuditRow[] = []
+          grouped.forEach(({ items }) => {
+            const first = items[0]
+            newRows.push({
+              asset_id: first.id,
+              asset_code: first.id,
+              asset_name: first.name,
+              expected: first.quantity || items.length,
+              found: 0,
+              condition: 'ปกติ',
+              note: '',
+            })
+          })
+          setRows(newRows)
+        })
+      })
+      .catch(() => setRows([]))
+      .finally(() => setLoadingAssets(false))
+  }, [location])
+
+  const updateRow = (idx: number, field: keyof AuditRow, value: string | number) => {
+    setRows((prev) => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r))
+  }
+
+  const handleSave = async () => {
+    if (!location) { setError('กรุณาเลือกพื้นที่ตรวจนับ'); return }
+    setSaving(true)
+    setError('')
+    try {
+      let sid = activeSession.get()
+      if (!sid) {
+        const session = await auditApi.createSession({
+          location,
+          audit_date: (auditDate ?? dayjs()).toISOString(),
+        })
+        sid = session.id
+        activeSession.set(sid)
+      }
+      await auditApi.saveRows(sid, rows)
+      setSaved(true)
+    } catch (e: any) {
+      setError(e?.message ?? 'บันทึกไม่สำเร็จ')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputSx = {
+    '& .MuiOutlinedInput-root': {
+      fontFamily: fonts.kanit, fontSize: 13, borderRadius: '6px',
+      '& fieldset': { borderColor: '#e2e7e2' },
+      '&.Mui-focused fieldset': { borderColor: AUDIT_BG },
+    },
+  }
+
+  return (
+    <AssetAuditLayout title="Physical Audit">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <Paper variant="outlined" sx={{ borderRadius: '14px', borderColor: '#e2e7e2', p: '24px', bgcolor: 'white' }}>
+          <Typography sx={{ fontFamily: fonts.kanit, fontSize: 17, fontWeight: 600, color: AUDIT_BG, mb: '16px' }}>
+            เริ่มการตรวจนับจริง
+          </Typography>
+          <Box sx={{ display: 'flex', gap: '20px' }}>
+            <Box sx={{ flex: 2 }}>
+              <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: colors.inkMuted, mb: '6px' }}>พื้นที่ตรวจนับ</Typography>
+              <TextField
+                select fullWidth size="small" value={location}
+                onChange={(e) => setLocation(e.target.value)} sx={inputSx}
+              >
+                <MenuItem value="" disabled sx={{ fontFamily: fonts.kanit }}>เลือกพื้นที่</MenuItem>
+                {locations.map((l) => <MenuItem key={l} value={l} sx={{ fontFamily: fonts.kanit }}>{l}</MenuItem>)}
+              </TextField>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: colors.inkMuted, mb: '6px' }}>วันที่ตรวจนับ</Typography>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  value={auditDate}
+                  onChange={(val) => setAuditDate(val)}
+                  slotProps={{ textField: { size: 'small', sx: inputSx, fullWidth: true } }}
+                />
+              </LocalizationProvider>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: colors.inkMuted, mb: '6px' }}>ผู้ตรวจนับ</Typography>
+              <Box sx={{ height: 40, border: '1px solid #e2e7e2', borderRadius: '6px', display: 'flex', alignItems: 'center', px: '12px', fontFamily: fonts.kanit, fontSize: 13, color: AUDIT_BG, fontWeight: 600 }}>
+                {user?.name ?? '-'}
+              </Box>
+            </Box>
+          </Box>
+        </Paper>
+
+        <Paper variant="outlined" sx={{ borderRadius: '14px', borderColor: '#e2e7e2', overflow: 'hidden', bgcolor: 'white' }}>
+          <Box sx={{ px: '20px', py: '14px', borderBottom: '1px solid #e2e7e2', bgcolor: '#f8f5ee' }}>
+            <Typography sx={{ fontFamily: fonts.kanit, fontSize: 15, fontWeight: 600, color: AUDIT_BG }}>
+              บันทึกผลการตรวจนับ
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1.2fr 2.5fr 0.8fr 1fr 1.2fr 1.5fr', px: '20px', py: '10px', bgcolor: '#fafafa', borderBottom: '1px solid #e2e7e2' }}>
+            {['รหัส', 'ชื่อสินทรัพย์', 'ควรมี', 'พบจริง', 'สภาพ', 'หมายเหตุ'].map((h) => (
+              <Typography key={h} sx={{ fontFamily: fonts.kanit, fontSize: 12, color: colors.inkMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</Typography>
+            ))}
+          </Box>
+
+          {loadingAssets ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: '32px' }}>
+              <CircularProgress sx={{ color: AUDIT_BG }} size={28} />
+            </Box>
+          ) : rows.length === 0 ? (
+            <Box sx={{ px: '20px', py: '28px', textAlign: 'center' }}>
+              <Typography sx={{ fontFamily: fonts.kanit, fontSize: 14, color: colors.inkMuted }}>
+                {location ? 'ไม่พบสินทรัพย์ในพื้นที่นี้' : 'กรุณาเลือกพื้นที่เพื่อโหลดรายการสินทรัพย์'}
+              </Typography>
+            </Box>
+          ) : (
+            rows.map((a, i) => {
+              const diff = a.found - a.expected
+              const hasDiff = a.found > 0 && diff !== 0
+              return (
+                <Box
+                  key={a.asset_id}
+                  sx={{
+                    display: 'grid', gridTemplateColumns: '1.2fr 2.5fr 0.8fr 1fr 1.2fr 1.5fr',
+                    px: '20px', py: '10px', alignItems: 'center',
+                    borderTop: i === 0 ? '1px solid #e2e7e2' : '1px solid #f0f0f0',
+                    bgcolor: hasDiff ? '#fff7ed' : 'transparent',
+                  }}
+                >
+                  <Typography sx={{ fontFamily: fonts.kanit, fontSize: 12, color: AUDIT_BG, fontWeight: 500 }}>{a.asset_code}</Typography>
+                  <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: colors.ink }}>{a.asset_name}</Typography>
+                  <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: colors.inkMuted, textAlign: 'center' }}>{a.expected}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <TextField
+                      size="small" type="number"
+                      value={a.found}
+                      onChange={(e) => updateRow(i, 'found', Number(e.target.value))}
+                      sx={{ ...inputSx, width: 70 }}
+                      slotProps={{ htmlInput: { min: 0 } }}
+                    />
+                    {hasDiff && (
+                      <Typography sx={{ fontFamily: fonts.kanit, fontSize: 11, color: diff > 0 ? '#166534' : '#b91c1c', fontWeight: 600 }}>
+                        {diff > 0 ? `+${diff}` : diff}
+                      </Typography>
+                    )}
+                  </Box>
+                  <TextField
+                    select size="small" value={a.condition}
+                    onChange={(e) => updateRow(i, 'condition', e.target.value)}
+                    sx={{ ...inputSx, '& .MuiOutlinedInput-root': { ...inputSx['& .MuiOutlinedInput-root'], fontSize: 12 } }}
+                  >
+                    {CONDITIONS.map((c) => <MenuItem key={c} value={c} sx={{ fontFamily: fonts.kanit, fontSize: 13 }}>{c}</MenuItem>)}
+                  </TextField>
+                  <TextField
+                    size="small" placeholder="หมายเหตุ" value={a.note}
+                    onChange={(e) => updateRow(i, 'note', e.target.value)}
+                    sx={{ ...inputSx, '& .MuiOutlinedInput-root': { ...inputSx['& .MuiOutlinedInput-root'], fontSize: 12 } }}
+                  />
+                </Box>
+              )
+            })
+          )}
+
+          <Box sx={{ px: '20px', py: '16px', borderTop: '1px solid #e2e7e2', display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              variant="contained"
+              sx={{ bgcolor: AUDIT_BG, fontFamily: fonts.kanit, fontSize: 14, px: '24px', borderRadius: '8px', '&:hover': { bgcolor: '#0d2318' } }}
+            >
+              {saving ? 'กำลังบันทึก...' : 'บันทึกผลการตรวจนับ'}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/asset-audit/discrepancies')}
+              sx={{ fontFamily: fonts.kanit, fontSize: 14, px: '20px', borderColor: '#e2e7e2', color: colors.inkMuted, borderRadius: '8px' }}
+            >
+              ไปบันทึกความคลาดเคลื่อน →
+            </Button>
+            {error && <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: '#b91c1c' }}>{error}</Typography>}
+          </Box>
+        </Paper>
+      </Box>
+
+      <Snackbar open={saved} autoHideDuration={2500} onClose={() => setSaved(false)}>
+        <Alert severity="success" onClose={() => setSaved(false)} sx={{ fontFamily: fonts.kanit }}>
+          บันทึกผลการตรวจนับเรียบร้อยแล้ว
+        </Alert>
+      </Snackbar>
+    </AssetAuditLayout>
+  )
+}

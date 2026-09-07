@@ -70,6 +70,15 @@ export async function apiFetch<T>(
     throw new ApiError(message, res.status)
   }
 
+  // ระบบจัดซื้อ/ตรวจนับของ B6710248 ห่อผลลัพธ์ไว้เป็น {success, data}
+  // ผ่าน utils.JSONSuccess ฝั่ง Go ส่วนระบบอื่นตอบข้อมูลตรงๆ
+  // แกะซองให้ตรงนี้ที่เดียว หน้าเว็บของเขาจึงใช้ได้โดยไม่ต้องแก้
+  //
+  // เช็คทั้ง success และ data ก่อนแกะ ระบบที่ไม่ได้ใช้ซองจะไม่โดนแตะ
+  if (payload && typeof payload === 'object' && 'success' in payload && 'data' in payload) {
+    return (payload as { data: T }).data
+  }
+
   return payload as T
 }
 

@@ -16,6 +16,8 @@ import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined'
 import AutoStoriesOutlined from '@mui/icons-material/AutoStoriesOutlined'
 import SwapHorizOutlined from '@mui/icons-material/SwapHorizOutlined'
 import MeetingRoomOutlined from '@mui/icons-material/MeetingRoomOutlined'
+import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
+import InventoryOutlined from '@mui/icons-material/InventoryOutlined'
 
 /**
  * ไอคอนของเมนู — ใช้ชุด @mui/icons-material ที่โปรเจคมีอยู่แล้ว ไม่ต้องลงอะไรเพิ่ม
@@ -47,6 +49,8 @@ const ICONS: Record<string, ReactNode> = {
   equipment: <DevicesOutlined sx={SIZE} />,
   repair: <BuildOutlined sx={SIZE} />,
   repairTrack: <FactCheckOutlined sx={SIZE} />,
+  procurement: <ShoppingCartOutlined sx={SIZE} />,
+  audit: <InventoryOutlined sx={SIZE} />,
   catalog: <AutoStoriesOutlined sx={SIZE} />,
   loans: <SwapHorizOutlined sx={SIZE} />,
 }
