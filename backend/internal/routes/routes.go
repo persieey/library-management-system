@@ -247,7 +247,10 @@ func SetupRouter(authControllers *controllers.AuthController,
 	requests.GET("", requestController.GetAll)
 	requests.GET("/:id", requestController.GetByID)
 	requests.POST("", requestController.Create)
-	requests.PATCH("/:id/status", requestController.UpdateStatus)
+	// อนุมัติ/ปฏิเสธใบขอซื้อ ต้องเป็นหัวหน้าเท่านั้น
+	// ของเดิมไม่ได้กันไว้ ทำให้ผู้ยื่นอนุมัติคำขอตัวเองผ่าน API ได้
+	// หน้าเว็บซ่อนปุ่มไว้หลัง PROCUREMENT_APPROVE อยู่แล้ว แต่การซ่อนปุ่มไม่ใช่การป้องกัน
+	requests.PATCH("/:id/status", middleware.RequirePosition("manager"), requestController.UpdateStatus)
 
 	// ---------- ทรัพย์สิน ----------
 	assets := api.Group("/assets")
