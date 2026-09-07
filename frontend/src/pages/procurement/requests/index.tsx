@@ -66,7 +66,10 @@ export default function RequestList() {
       const data = await api.requests.getAll()
       const result = can(PERMISSIONS.PROCUREMENT_APPROVE)
         ? data
-        : data.filter((r: any) => r.employee_id === user?.user_id)
+        // ใบขอซื้อผูกกับรหัสพนักงาน ไม่ใช่ user_id และ backend ส่ง employee_id มาเป็น string
+        // จึงเทียบเป็นข้อความทั้งคู่ ของเดิมเทียบ employee_id กับ user_id ซึ่งคนละตัวและคนละชนิด
+        // ทำให้รายการของตัวเองไม่ขึ้นเลย
+        : data.filter((r: any) => String(r.employee_id) === String(user?.employee_id ?? ""))
       setRequests(result ?? [])
       setLoading(false)
     }

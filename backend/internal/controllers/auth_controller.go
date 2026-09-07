@@ -80,10 +80,16 @@ func (ac *AuthController) Login(c *gin.Context) {
 	role := "none"
 	position := ""
 
+	// employee_id ส่งกลับไปให้หน้าเว็บรู้ว่าตัวเองเป็นพนักงานคนไหน
+	// ระบบจัดซื้อใช้เทียบว่าใบขอซื้อใบไหนเป็นของตัวเอง (Request.EmployeeId)
+	// เป็น null ถ้าคนนั้นไม่ใช่พนักงาน
+	var employeeID *uint
+
 	var employee models.Employee
 	if err := ac.db.Where("user_id = ?", user.UserID).First(&employee).Error; err == nil {
 		role = "employee"
 		position = employee.Position
+		employeeID = &employee.EmployeeID
 	} else {
 		var member models.Member
 		if err := ac.db.Where("user_id = ?", user.UserID).First(&member).Error; err == nil {
@@ -104,6 +110,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 		"user":    user,
 		"role":     role,
 		"position": position,
+		"employee_id": employeeID,
 	})
 	
 }

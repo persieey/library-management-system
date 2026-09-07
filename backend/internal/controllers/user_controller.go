@@ -36,7 +36,16 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	// สองค่านี้ middleware อ่านจาก token มาใส่ context ไว้แล้ว
 	role, _ := c.Get("role")
 	position, _ := c.Get("position")
-	c.JSON(http.StatusOK, gin.H{"user": user, "role": role, "position": position})
+
+	// employee_id ไม่ได้อยู่ใน token จึงต้องอ่านจากตาราง employees
+	// หน้าเว็บใช้เทียบว่าข้อมูลไหนเป็นของพนักงานคนนี้ เช่นใบขอซื้อในระบบจัดซื้อ
+	var employeeID *uint
+	var employee models.Employee
+	if err := uc.db.Where("user_id = ?", user.UserID).First(&employee).Error; err == nil {
+		employeeID = &employee.EmployeeID
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": user, "role": role, "position": position, "employee_id": employeeID})
 }
 
 func (uc *UserController) CreateMember(c *gin.Context) {

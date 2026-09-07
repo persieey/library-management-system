@@ -22,11 +22,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     const res = await authApi.login(payload)
     localStorage.setItem(TOKEN_STORAGE_KEY, res.token)
     setToken(res.token)
-    setUser({ ...res.user, role: res.role, position: res.position })
+    setUser({ ...res.user, role: res.role, position: res.position, employee_id: res.employee_id ?? null })
   }, [])
 
   const applyProfile = useCallback((res: ProfileResponse) => {
-    setUser({ ...res.user, role: res.role, position: res.position })
+    setUser({ ...res.user, role: res.role, position: res.position, employee_id: res.employee_id ?? null })
   }, [])
 
   // กู้สถานะล็อกอินคืนหลังรีเฟรช โดยเอา token ที่เก็บไว้ไปถามเซิร์ฟเวอร์
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     authApi
       .getProfile(token)
       .then((res) => {
-        if (!cancelled) setUser({ ...res.user, role: res.role, position: res.position })
+        if (!cancelled) setUser({ ...res.user, role: res.role, position: res.position, employee_id: res.employee_id ?? null })
       })
       .catch(() => {
         // token หมดอายุหรือ backend ไม่ได้รัน

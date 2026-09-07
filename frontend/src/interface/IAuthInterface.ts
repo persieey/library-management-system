@@ -12,6 +12,7 @@ export interface LoginResponse {
   token: string
   role: Role
   position: Position
+  employee_id: number | null
   user: User
 }
 
@@ -20,6 +21,7 @@ export interface ProfileResponse {
   user: User
   role: Role
   position: Position
+  employee_id: number | null
 }
 
 /** ส่งไป PUT /users/profile — ตรงกับ dto.UpdateProfileRequest ฝั่ง Go */

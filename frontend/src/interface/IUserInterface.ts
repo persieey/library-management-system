@@ -20,4 +20,11 @@ export interface User {
 export interface CurrentUser extends User {
   role: Role
   position: Position
+  /**
+   * รหัสพนักงานของคนนี้ — null ถ้าไม่ใช่พนักงาน
+   *
+   * คนละตัวกับ user_id ระบบจัดซื้อผูกใบขอซื้อไว้กับรหัสนี้
+   * หน้าเว็บจึงต้องใช้ค่านี้เทียบว่าใบไหนเป็นของตัวเอง
+   */
+  employee_id: number | null
 }
