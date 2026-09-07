@@ -17,6 +17,10 @@ func SetupRouter(authControllers *controllers.AuthController,
 	personnelController *controllers.PersonnelController,
 	leaveController *controllers.LeaveController,
 	dutyController *controllers.DutyController,
+	ebookController *controllers.EbookController,
+	bookController *controllers.BookController,
+	bookCopyController *controllers.BookCopyController,
+	inspectionController *controllers.InspectionController,
 	jwtProvider *utils.JWTProvider) *gin.Engine {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
@@ -116,6 +120,63 @@ func SetupRouter(authControllers *controllers.AuthController,
 	stats.GET("/rooms", statisticsController.GetRoomStats)
 	stats.GET("/ebooks", statisticsController.GetEbookStats)
 	stats.GET("/equipment", statisticsController.GetEquipmentStats)
+
+
+	// ---------- หนังสือ / E-Book (ระบบของ B6729615) ----------
+	// ยกกลุ่ม route มาจากโปรเจกต์ของกรทั้งชุด สิทธิ์เป็นไปตามที่เจ้าของเขียนไว้เดิม
+
+	// ── ebooks ──
+	ebooks := api.Group("/ebooks")
+
+	// สาธารณะ : ให้ <img src> โหลดรูปปกได้
+	ebooks.GET("/:id/cover", ebookController.GetCover)
+
+	ebooks.Use(middleware.JWTAuthMiddleware(jwtProvider))
+
+	ebooks.GET("", ebookController.GetAll)
+	ebooks.GET("/:id/file", ebookController.GetFile)
+
+	ebooks.POST("", middleware.RequirePosition("librarian", "manager"), ebookController.Create)
+	ebooks.PUT("/:id", middleware.RequirePosition("librarian", "manager"), ebookController.Update)
+	ebooks.DELETE("/:id", middleware.RequirePosition("librarian", "manager"), ebookController.Delete)
+	ebooks.POST("/upload", middleware.RequirePosition("librarian", "manager"), ebookController.UploadFile)
+	ebooks.POST("/upload-cover", middleware.RequirePosition("librarian", "manager"), ebookController.UploadCover)
+
+	// ── books ──
+	books := api.Group("/books")
+
+	// สาธารณะ : หน้าแรกกับหน้า /books ให้คนที่ยังไม่ล็อกอินดูรายการหนังสือได้
+	// วางไว้ก่อน books.Use(JWT) เหมือนที่เจ้าของทำกับ /books/:id/cover
+	books.GET("", bookController.GetAll)
+	books.GET("/:id/cover", bookController.GetCover)
+
+	books.Use(middleware.JWTAuthMiddleware(jwtProvider))
+
+	books.POST("", middleware.RequirePosition("librarian", "manager"), bookController.Create)
+	books.PUT("/:id", middleware.RequirePosition("librarian", "manager"), bookController.Update)
+	books.DELETE("/:id", middleware.RequirePosition("librarian", "manager"), bookController.Delete)
+	books.POST("/upload-cover", middleware.RequirePosition("librarian", "manager"), bookController.UploadCover)
+
+	// ── book copies ──
+	copies := api.Group("/book-copies")
+	copies.Use(middleware.JWTAuthMiddleware(jwtProvider))
+
+	copies.GET("", bookCopyController.GetAll)
+	copies.GET("/:id/inspections", inspectionController.GetByCopy)
+
+	copies.POST("", middleware.RequirePosition("librarian", "manager"), bookCopyController.Create)
+	copies.PUT("/:id", middleware.RequirePosition("librarian", "manager"), bookCopyController.Update)
+	copies.DELETE("/:id", middleware.RequirePosition("librarian", "manager"), bookCopyController.Delete)
+
+	// ── inspections ──
+	inspections := api.Group("/inspections")
+	inspections.Use(middleware.JWTAuthMiddleware(jwtProvider))
+
+	inspections.GET("", inspectionController.GetAll)
+
+	inspections.POST("", middleware.RequirePosition("librarian", "manager"), inspectionController.Create)
+	inspections.PUT("/:id", middleware.RequirePosition("librarian", "manager"), inspectionController.Update)
+	inspections.DELETE("/:id", middleware.RequirePosition("manager"), inspectionController.Delete)
 
 	return router
 }

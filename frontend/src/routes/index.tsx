@@ -12,12 +12,14 @@ import PersonnelPage from '../pages/employees/personnel'
 import ComingSoon from '../pages/employees/ComingSoon'
 import NotFound from '../pages/not-found'
 import RequirePosition, { RequireLogin } from '../components/RequirePosition'
-import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../config/roles'
+import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_BOOKS, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../config/roles'
 import ManagerDashboard from '../pages/manager'
 import ManagerLeave from '../pages/manager/leave'
 import ProfilePage from '../pages/employees/profile'
 import MyLeavePage from '../pages/employees/leave'
 import SchedulesPage from '../pages/employees/schedules'
+import ManageBooks from '../pages/employees/books'
+import ManageEbooks from '../pages/employees/ebooks'
 
 const COMING_SOON_ROUTES = [
   // หน้าที่ยังไม่ได้ทำ ต้องมีตัวรองรับไม่ให้ 404 เพราะมีเมนูชี้มา
@@ -125,6 +127,35 @@ function AppRoutes() {
         element={
           <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
             <StatisticsPage />
+          </RequirePosition>
+        }
+      />
+
+      {/* ระบบจัดการหนังสือและ E-Book ของ B6729615 */}
+      <Route
+        path="/employees/books"
+        element={
+          <RequirePosition positions={CAN_MANAGE_BOOKS}>
+            <ManageBooks />
+          </RequirePosition>
+        }
+      />
+
+      {/* :tab คือ catalog / inspections หน้าเดียวกันสลับแท็บด้วย URL */}
+      <Route
+        path="/employees/books/:tab"
+        element={
+          <RequirePosition positions={CAN_MANAGE_BOOKS}>
+            <ManageBooks />
+          </RequirePosition>
+        }
+      />
+
+      <Route
+        path="/employees/ebooks"
+        element={
+          <RequirePosition positions={CAN_MANAGE_BOOKS}>
+            <ManageEbooks />
           </RequirePosition>
         }
       />

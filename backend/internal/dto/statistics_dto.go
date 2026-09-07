@@ -13,7 +13,7 @@ type SummaryStatsResponse struct {
 }
 
 type BookStatResponse struct {
-	BookID      string `json:"book_id"`
+	BookID      uint   `json:"book_id"`
 	Title       string `json:"title"`
 	Category    string `json:"category"`
 	BorrowCount int64  `json:"borrow_count"`

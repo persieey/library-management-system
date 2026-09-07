@@ -45,6 +45,21 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// ระบบจัดการหนังสือและ E-Book ยกมาจากสาขา B6729615 (กร) เจ้าของสองระบบนี้
+	// ต้องมาก่อน BorrowTransaction ในลูปข้างล่าง เพราะตารางนั้นอ้าง books.book_id เป็น foreign key
+	if err = db.AutoMigrate(&models.Book{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.BookCopy{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.BookInspection{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.Ebook{}); err != nil {
+		return nil, err
+	}
+
 	// ระบบร้องเรียนและสถิติ ยกมาจากสาขา B6707590 (ธนกร) เจ้าของสองระบบนี้
 	// ใช้ loop เพราะมีหลายตาราง และให้เตือนแทนการหยุดทำงาน
 	// เผื่อตารางไหนชนกับของเดิมจะได้ยังสตาร์ทเซิร์ฟเวอร์ได้
@@ -54,7 +69,6 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		&models.InspectionRecord{},
 		&models.Room{},
 		&models.RoomBooking{},
-		&models.Book{},
 		&models.BorrowTransaction{},
 		&models.ReturnTransaction{},
 		&models.Fine{},

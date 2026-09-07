@@ -72,3 +72,49 @@ export async function apiFetch<T>(
 
   return payload as T
 }
+
+/**
+ * อัปโหลดไฟล์ด้วย multipart/form-data
+ *
+ * แยกจาก apiFetch เพราะตัวนั้นแปลง body เป็น JSON เสมอ ส่งไฟล์ไม่ได้
+ * และห้ามตั้ง Content-Type เอง เบราว์เซอร์ต้องเป็นคนใส่ boundary ให้
+ *
+ * @param field ชื่อ field ที่ backend รอรับ เช่น 'cover' หรือ 'file'
+ */
+export async function apiUpload<T>(
+  path: string,
+  field: string,
+  file: File,
+  token: string,
+): Promise<T> {
+  const form = new FormData()
+  form.append(field, file)
+
+  let res: Response
+  try {
+    res = await fetch(buildUrl(path), {
+      method: 'POST',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      body: form,
+    })
+  } catch {
+    throw new ApiError('ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจว่ารัน backend อยู่หรือไม่', 0)
+  }
+
+  let payload: unknown
+  try {
+    payload = await res.json()
+  } catch {
+    // ตอบกลับไม่ใช่ JSON
+  }
+
+  if (!res.ok) {
+    const message =
+      payload && typeof payload === 'object' && 'error' in payload
+        ? String((payload as { error: unknown }).error)
+        : `อัปโหลดไม่สำเร็จ (${res.status})`
+    throw new ApiError(message, res.status)
+  }
+
+  return payload as T
+}

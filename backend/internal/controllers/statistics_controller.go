@@ -110,7 +110,7 @@ func (sc *StatisticsController) GetBookStats(c *gin.Context) {
 	from, to, hasFilter := utils.ParseDateRange(c)
 
 	type Result struct {
-		BookID      string
+		BookID      uint
 		Title       string
 		Category    string
 		BorrowCount int64

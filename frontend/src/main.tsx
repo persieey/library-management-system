@@ -8,6 +8,8 @@ import theme from './theme'
 import { AuthProvider } from './auth/AuthProvider'
 import { PRProvider } from './context/PRContext'
 import { EventProvider } from './context/EventContext'
+import { BookProvider } from './context/BookContext'
+import { EbookProvider } from './context/EbookContext'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -17,9 +19,13 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <PRProvider>
           <EventProvider>
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
+            <BookProvider>
+              <EbookProvider>
+                <BrowserRouter>
+                  <App />
+                </BrowserRouter>
+              </EbookProvider>
+            </BookProvider>
           </EventProvider>
         </PRProvider>
       </AuthProvider>

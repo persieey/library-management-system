@@ -14,6 +14,9 @@ export const CAN_MANAGE_PR: Position[] = ['librarian', 'manager']
 export const CAN_MANAGE_PERSONNEL: Position[] = ['manager']
 export const CAN_ACCESS_BACKOFFICE: Position[] = ['staff', 'librarian', 'manager']
 
+/** จัดการหนังสือและ E-Book — ตรงกับ RequirePosition("librarian", "manager") ฝั่ง backend */
+export const CAN_MANAGE_BOOKS: Position[] = ['librarian', 'manager']
+
 // ชื่อที่โชว์บนปุ่ม dropdown ของ header — ใช้ตำแหน่งของผู้ใช้แทนคำว่า Employees
 // เช่น librarian -> "Librarian" อยากได้ภาษาไทยให้เปลี่ยนไปคืน POSITION_LABELS[position] แทน
 export function positionDisplayName(position: Position): string {
@@ -90,6 +93,23 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     label: 'รายงานสถิติ',
     to: '/employees/statistics',
     positions: CAN_ACCESS_BACKOFFICE,
+  },
+  {
+    // ระบบจัดการหนังสือ เป็นของ B6729615 (กร) บรรณารักษ์ขึ้นไปเท่านั้น
+    icon: 'reports',
+    label: 'จัดการหนังสือ',
+    positions: CAN_MANAGE_BOOKS,
+    children: [
+      { icon: 'overview', label: 'ภาพรวม', to: '/employees/books' },
+      { icon: 'reports', label: 'รายการหนังสือ', to: '/employees/books/catalog' },
+      { icon: 'complaints', label: 'การตรวจสอบ', to: '/employees/books/inspections' },
+    ],
+  },
+  {
+    icon: 'reports',
+    label: 'E-Book',
+    to: '/employees/ebooks',
+    positions: CAN_MANAGE_BOOKS,
   },
 ]
 

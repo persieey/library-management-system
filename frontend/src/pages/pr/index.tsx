@@ -14,7 +14,7 @@ import EventAnnouncementCard from '../../components/EventAnnouncementCard'
 import BookCard from '../../components/BookCard'
 import { colors, fonts } from '../../theme'
 import { useEvents } from '../../context/EventContext'
-import { BOOKS } from '../../data/books'
+import { usePublicBooks } from '../../hooks/usePublicBooks'
 
 import imgBg from '../../assets/hero-bg.jpg'
 
@@ -296,6 +296,13 @@ function EventSection() {
 }
 
 function RecommendedBooks() {
+  // เอาหนังสือจริงจากระบบจัดการหนังสือมาโชว์ 5 เล่มล่าสุด (backend เรียงใหม่สุดมาก่อนอยู่แล้ว)
+  const { books } = usePublicBooks()
+  const featured = books.slice(0, 5)
+
+  // ยังไม่มีหนังสือในระบบก็ไม่ต้องโชว์หัวข้อว่างๆ
+  if (featured.length === 0) return null
+
   return (
     <Box component="section" sx={{ width: '100%', bgcolor: 'white' }}>
       <Box sx={{ mx: 'auto', maxWidth: 1440, display: 'flex', flexDirection: 'column', gap: '40px', px: '64px', py: '80px' }}>
@@ -320,8 +327,8 @@ function RecommendedBooks() {
         </Reveal>
 
         <Box sx={{ display: 'flex', gap: '24px' }}>
-          {BOOKS.map((book, i) => (
-            <Box key={book.id} sx={{ flex: 1 }}>
+          {featured.map((book, i) => (
+            <Box key={book.book_id} sx={{ flex: 1 }}>
               <Reveal delay={i * 70}>
                 <BookCard book={book} />
               </Reveal>

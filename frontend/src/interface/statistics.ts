@@ -11,7 +11,7 @@ export interface SummaryStats {
 }
 
 export interface BookStat {
-  book_id: string;
+  book_id: number;
   title: string;
   category: string;
   borrow_count: number;

@@ -62,22 +62,14 @@ func (RecordCenter) TableName() string {
 	return "record_centers"
 }
 
-// Book รายการหนังสือ
-type Book struct {
-	BookID   string `gorm:"primaryKey;column:book_id;size:50" json:"book_id"`
-	Title    string `gorm:"column:title;size:255;not null" json:"title"`
-	Category string `gorm:"column:category;size:100" json:"category"`
-	Author   string `gorm:"column:author;size:100" json:"author"`
-}
-
-func (Book) TableName() string {
-	return "books"
-}
+// Book ของระบบสถิติเดิมเป็นตารางจำลอง มีแค่ 4 คอลัมน์ และ book_id เป็น string
+// ตอนนี้ระบบจัดการหนังสือของ B6729615 เข้ามาแล้ว จึงใช้ models.Book ตัวจริงใน book.go แทน
+// (ตาราง books เดียวกัน แต่ book_id เป็น uint)
 
 // BorrowTransaction การยืมหนังสือ
 type BorrowTransaction struct {
 	BorrowID   string    `gorm:"primaryKey;column:borrow_id;size:50" json:"borrow_id"`
-	BookID     string    `gorm:"column:book_id;size:50;not null" json:"book_id"`
+	BookID     uint      `gorm:"column:book_id;not null" json:"book_id"`
 	MemberID   *uint     `gorm:"column:member_id" json:"member_id"`
 	BorrowDate time.Time `gorm:"column:borrow_date;default:CURRENT_DATE" json:"borrow_date"`
 	DueDate    time.Time `gorm:"column:due_date" json:"due_date"`
