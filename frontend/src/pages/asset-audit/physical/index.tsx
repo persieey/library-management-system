@@ -9,6 +9,7 @@ import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
+import Autocomplete from '@mui/material/Autocomplete'
 import Button from '@mui/material/Button'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
@@ -18,9 +19,30 @@ import { auditApi, activeSession } from '../../../services/https/audit'
 import { apiFetch } from '../../../services/https'
 import { useAuth } from '../../../auth/useAuth'
 import { colors, fonts } from '../../../theme'
+import type { Equipment } from '../../../types'
 
 const AUDIT_BG = '#1a3d2e'
 const CONDITIONS = ['ปกติ', 'ชำรุด', 'สูญหาย', 'ย้ายสถานที่']
+
+// อุปกรณ์จากระบบแจ้งซ่อม (B6715588) ใช้รหัส "available"/"maintenance"
+// ส่วนตรวจนับใช้ CONDITIONS ข้างบน — แปลงให้ตรงกันตอนดึงเข้ามาเป็นแถวตรวจนับ
+const EQUIPMENT_STATUS_TO_CONDITION: Record<string, string> = {
+  available: 'ปกติ',
+  maintenance: 'ชำรุด',
+}
+// คำนำหน้ารหัสของอุปกรณ์ กันชนกับรหัสสินทรัพย์ AST-xxxx เดิม
+const EQUIPMENT_CODE_PREFIX = 'EQ-'
+
+// เล่มหนังสือจากระบบจัดการหนังสือ (B6729615) ใช้ condition_status: good/damaged/repairing/lost
+// ("repairing" ไม่มีในชุดสภาพของหน้าตรวจนับ ใกล้เคียงที่สุดคือ "ชำรุด")
+const BOOK_CONDITION_TO_AUDIT: Record<string, string> = {
+  good: 'ปกติ',
+  damaged: 'ชำรุด',
+  repairing: 'ชำรุด',
+  lost: 'สูญหาย',
+}
+// คำนำหน้ารหัสของเล่มหนังสือ กันชนกับรหัสอื่น
+const BOOK_CODE_PREFIX = 'BK-'
 
 interface AssetRecord {
   id: string
@@ -29,6 +51,24 @@ interface AssetRecord {
   location: string
   condition: string
   quantity: number
+}
+
+interface BookCopyRecord {
+  copy_id: number
+  book_id: number
+  copy_number: number
+  building: string
+  slot: string
+  availability_status: string
+  condition_status: string
+  book?: { title: string }
+}
+
+// อาคาร/ชั้น-ช่องวาง ของเล่มหนังสือ ไม่ได้เป็นฟิลด์ location เดียวแบบสินทรัพย์/อุปกรณ์
+// ต้องประกอบเป็นข้อความเดียวกันก่อน จะได้ใช้เป็นตัวกรอง "พื้นที่ตรวจนับ" ร่วมกันได้
+function bookCopyLocation(c: BookCopyRecord): string {
+  const parts = [c.building && `อาคาร ${c.building}`, c.slot].filter(Boolean)
+  return parts.join(' — ')
 }
 
 interface AuditRow {
@@ -74,64 +114,99 @@ export default function PhysicalAudit() {
         }
       }).catch(() => {})
     }
-    // Load distinct locations from all assets
-    apiFetch<AssetRecord[]>('/api/v1/assets', { token }).then((assets) => {
-      const locs = [...new Set((assets ?? []).map((a) => a.location).filter(Boolean))]
+    // Load distinct locations from all assets + equipment (ระบบแจ้งซ่อม) + เล่มหนังสือ (ระบบจัดการหนังสือ)
+    // /api/v1/equipment และ /api/v1/book-copies ห่อผลลัพธ์ไว้ใน object ไม่ใช่ array ตรง ๆ แบบ /api/v1/assets
+    Promise.all([
+      apiFetch<AssetRecord[]>('/api/v1/assets', { token }).catch(() => []),
+      apiFetch<{ equipment: Equipment[] }>('/api/v1/equipment', { token }).catch(() => ({ equipment: [] })),
+      apiFetch<{ copies: BookCopyRecord[] }>('/api/v1/book-copies', { token }).catch(() => ({ copies: [] })),
+    ]).then(([assets, equipmentRes, copiesRes]) => {
+      const locs = [
+        ...new Set([
+          ...(assets ?? []).map((a) => a.location),
+          ...(equipmentRes.equipment ?? []).map((e) => e.location),
+          ...(copiesRes.copies ?? []).map(bookCopyLocation),
+        ].filter(Boolean)),
+      ]
       setLocations(locs)
-    }).catch(() => {})
+    })
   }, [])
 
-  // Load assets when location changes
+  // Load assets + equipment when location changes
   useEffect(() => {
     if (!location) return
     setLoadingAssets(true)
-    apiFetch<AssetRecord[]>(`/api/v1/assets?location=${encodeURIComponent(location)}`, { token })
-      .then((assets) => {
-        if (!assets || assets.length === 0) { setRows([]); return }
-        // Group by name+type
-        const grouped = new Map<string, { items: AssetRecord[] }>()
-        for (const a of assets) {
-          const key = `${a.name}||${a.type}`
-          if (!grouped.has(key)) grouped.set(key, { items: [] })
-          grouped.get(key)!.items.push(a)
-        }
-        const existingSid = activeSession.get()
-        auditApi.getSession(existingSid ?? 0).then((s) => {
-          const existingRows = s.rows ?? []
-          const newRows: AuditRow[] = []
-          grouped.forEach(({ items }) => {
-            const first = items[0]
-            const existing = existingRows.find((r) => r.asset_id === first.id)
-            newRows.push({
-              asset_id: first.id,
-              asset_code: first.id,
-              asset_name: first.name,
-              expected: first.quantity || items.length,
-              found: existing?.found ?? 0,
-              condition: existing?.condition ?? 'ปกติ',
-              note: existing?.note ?? '',
-            })
-          })
-          setRows(newRows)
-        }).catch(() => {
-          const newRows: AuditRow[] = []
-          grouped.forEach(({ items }) => {
-            const first = items[0]
-            newRows.push({
-              asset_id: first.id,
-              asset_code: first.id,
-              asset_name: first.name,
-              expected: first.quantity || items.length,
-              found: 0,
-              condition: 'ปกติ',
-              note: '',
-            })
-          })
-          setRows(newRows)
+
+    Promise.all([
+      apiFetch<AssetRecord[]>(`/api/v1/assets?location=${encodeURIComponent(location)}`, { token }).catch(() => []),
+      // /api/v1/equipment และ /api/v1/book-copies ไม่รองรับ filter ตามพื้นที่ ต้องกรองเองฝั่งหน้าเว็บ
+      apiFetch<{ equipment: Equipment[] }>('/api/v1/equipment', { token }).catch(() => ({ equipment: [] })),
+      apiFetch<{ copies: BookCopyRecord[] }>('/api/v1/book-copies', { token }).catch(() => ({ copies: [] })),
+      auditApi.getSession(activeSession.get() ?? 0).catch(() => null),
+    ]).then(([assets, equipmentRes, copiesRes, session]) => {
+      const equipment = equipmentRes.equipment
+      const copies = copiesRes.copies
+      const existingRows = session?.rows ?? []
+      const findExisting = (assetId: string) => existingRows.find((r) => r.asset_id === assetId)
+
+      // สินทรัพย์จากระบบจัดซื้อ — จัดกลุ่มตามชื่อ+ประเภท เหมือนเดิม
+      const grouped = new Map<string, { items: AssetRecord[] }>()
+      for (const a of assets ?? []) {
+        const key = `${a.name}||${a.type}`
+        if (!grouped.has(key)) grouped.set(key, { items: [] })
+        grouped.get(key)!.items.push(a)
+      }
+      const assetRows: AuditRow[] = []
+      grouped.forEach(({ items }) => {
+        const first = items[0]
+        const existing = findExisting(first.id)
+        assetRows.push({
+          asset_id: first.id,
+          asset_code: first.id,
+          asset_name: first.name,
+          expected: first.quantity || items.length,
+          found: existing?.found ?? 0,
+          condition: existing?.condition ?? 'ปกติ',
+          note: existing?.note ?? '',
         })
       })
-      .catch(() => setRows([]))
-      .finally(() => setLoadingAssets(false))
+
+      // อุปกรณ์จากระบบแจ้งซ่อม — หนึ่งชิ้นต่อหนึ่งแถว (ไม่มี quantity แบบสินทรัพย์)
+      const equipmentRows: AuditRow[] = (equipment ?? [])
+        .filter((e) => e.location === location)
+        .map((e) => {
+          const assetId = `${EQUIPMENT_CODE_PREFIX}${e.equipment_id}`
+          const existing = findExisting(assetId)
+          return {
+            asset_id: assetId,
+            asset_code: assetId,
+            asset_name: e.name,
+            expected: 1,
+            found: existing?.found ?? 0,
+            condition: existing?.condition ?? EQUIPMENT_STATUS_TO_CONDITION[e.status] ?? 'ปกติ',
+            note: existing?.note ?? '',
+          }
+        })
+
+      // เล่มหนังสือจากระบบจัดการหนังสือ — หนึ่งเล่มต่อหนึ่งแถวเหมือนอุปกรณ์
+      const bookRows: AuditRow[] = (copies ?? [])
+        .filter((c) => bookCopyLocation(c) === location)
+        .map((c) => {
+          const assetId = `${BOOK_CODE_PREFIX}${c.copy_id}`
+          const existing = findExisting(assetId)
+          return {
+            asset_id: assetId,
+            asset_code: assetId,
+            asset_name: `${c.book?.title ?? 'ไม่ทราบชื่อ'} (เล่มที่ ${c.copy_number})`,
+            expected: 1,
+            found: existing?.found ?? 0,
+            condition: existing?.condition ?? BOOK_CONDITION_TO_AUDIT[c.condition_status] ?? 'ปกติ',
+            note: existing?.note ?? '',
+          }
+        })
+
+      setRows([...assetRows, ...equipmentRows, ...bookRows])
+    }).finally(() => setLoadingAssets(false))
   }, [location])
 
   const updateRow = (idx: number, field: keyof AuditRow, value: string | number) => {
@@ -179,13 +254,21 @@ export default function PhysicalAudit() {
           <Box sx={{ display: 'flex', gap: '20px' }}>
             <Box sx={{ flex: 2 }}>
               <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: colors.inkMuted, mb: '6px' }}>พื้นที่ตรวจนับ</Typography>
-              <TextField
-                select fullWidth size="small" value={location}
-                onChange={(e) => setLocation(e.target.value)} sx={inputSx}
-              >
-                <MenuItem value="" disabled sx={{ fontFamily: fonts.kanit }}>เลือกพื้นที่</MenuItem>
-                {locations.map((l) => <MenuItem key={l} value={l} sx={{ fontFamily: fonts.kanit }}>{l}</MenuItem>)}
-              </TextField>
+              {/* พื้นที่รวมมาจาก 3 ระบบ (สินทรัพย์/อุปกรณ์/หนังสือ) อาจมีเป็นร้อยรายการ
+                  ใช้ Autocomplete แทน select ธรรมดา จะได้พิมพ์ค้นหาแทนไล่สกรอลดูทีละบรรทัด */}
+              <Autocomplete
+                fullWidth size="small"
+                options={locations}
+                value={location || null}
+                onChange={(_, val) => setLocation(val ?? '')}
+                noOptionsText="ไม่พบพื้นที่ที่ค้นหา"
+                renderInput={(params) => (
+                  <TextField {...params} placeholder="พิมพ์เพื่อค้นหาพื้นที่..." sx={inputSx} />
+                )}
+                slotProps={{
+                  listbox: { sx: { fontFamily: fonts.kanit, fontSize: 14 } },
+                }}
+              />
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: colors.inkMuted, mb: '6px' }}>วันที่ตรวจนับ</Typography>
