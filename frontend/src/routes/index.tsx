@@ -27,6 +27,9 @@ import RecordingRoomPage from '../pages/RecordingRoom/RecordingRoom'
 import RepairRequestPage from '../pages/RepairRequestUI/RepairRequestUI'
 import TrackRepairPage from '../pages/TrackRepair/TrackRepair'
 import RoomBookingPage from '../pages/RoomBookingUI/RoomBookingUI'
+// ยืม-คืนหนังสือและอุปกรณ์ ยกตรรกะมาจากสาขา B6731915
+import BorrowPage from '../pages/borrow'
+import BorrowServicePage from '../pages/employees/borrow-service'
 // ระบบจัดซื้อทรัพย์สิน / ตรวจนับทรัพย์สิน ยกมาจากสาขา B6710248
 import RequirePermission from '../components/RequirePermission'
 import { PERMISSIONS } from '../config/roles'
@@ -244,12 +247,30 @@ function AppRoutes() {
         }
       />
 
+      {/* ยืม-คืนหนังสือ/อุปกรณ์ ฝั่งเจ้าหน้าที่ — ระบบของ B6731915 */}
+      <Route
+        path="/employees/borrow-service"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <BorrowServicePage />
+          </RequirePosition>
+        }
+      />
+
       {/* หน้าจองห้องสำหรับผู้ใช้ที่ล็อกอินแล้ว (สมาชิกหรือเจ้าหน้าที่) */}
       <Route
         path="/booking"
         element={
           <RequireLogin>
             <RoomBookingPage />
+          </RequireLogin>
+        }
+      />
+      <Route
+        path="/borrow"
+        element={
+          <RequireLogin>
+            <BorrowPage />
           </RequireLogin>
         }
       />

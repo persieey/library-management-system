@@ -146,6 +146,13 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     positions: CAN_ACCESS_BACKOFFICE,
   },
   {
+    // ยืม-คืนหนังสือและอุปกรณ์ เป็นของ B6731915 (สุชาดา) เจ้าหน้าที่ทุกตำแหน่งดูได้
+    icon: 'books',
+    label: 'ยืม-คืนหนังสือ/อุปกรณ์',
+    to: '/employees/borrow-service',
+    positions: CAN_ACCESS_BACKOFFICE,
+  },
+  {
     // ระบบอุปกรณ์และแจ้งซ่อม เป็นของ B6715588 เจ้าหน้าที่ทุกตำแหน่งดูได้
     icon: 'equipment',
     label: 'อุปกรณ์',

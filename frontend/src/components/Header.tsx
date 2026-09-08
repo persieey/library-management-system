@@ -117,6 +117,7 @@ function ResourcesMenu() {
     { label: 'Theses', to: '/theses' },
     { label: 'Online Resource', to: '/online-resource' },
     { label: 'Room Booking', onSelect: () => requireLogin('/booking') },
+    { label: 'Borrow', onSelect: () => requireLogin('/borrow') },
   ]
 
   return (
