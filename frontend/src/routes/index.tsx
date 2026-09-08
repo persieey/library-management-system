@@ -145,8 +145,26 @@ function AppRoutes() {
           </RequirePosition>
         }
       />
+      {/* :tab คือ box / pending / verify — ให้กดจาก sidebar เข้าแท็บที่ต้องการได้ตรง ๆ */}
+      <Route
+        path="/employees/complaints/:tab"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <ComplaintsPage />
+          </RequirePosition>
+        }
+      />
       <Route
         path="/employees/statistics"
+        element={
+          <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
+            <StatisticsPage />
+          </RequirePosition>
+        }
+      />
+      {/* :tab คือหมวดรายงาน เช่น overview / top-books / returns — ดู STATS_TAB_TO_MENU ใน Statistics.tsx */}
+      <Route
+        path="/employees/statistics/:tab"
         element={
           <RequirePosition positions={CAN_ACCESS_BACKOFFICE}>
             <StatisticsPage />

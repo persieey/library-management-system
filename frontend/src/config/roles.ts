@@ -109,31 +109,46 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     positions: CAN_ACCESS_BACKOFFICE,
   },
   {
-    // ระบบร้องเรียนและสถิติ เป็นของ B6707590 (ธนกร) เจ้าหน้าที่ทุกตำแหน่งดูได้
+    // ระบบร้องเรียน เป็นของ B6707590 (ธนกร) เจ้าหน้าที่ทุกตำแหน่งดูได้
+    // เมนูย่อยเดิมอยู่เป็นแผงแยกในตัวหน้า (EmployeeSidebar) ย้ายมาไว้เป็นกลุ่มย่อยในแถบเมนูรวมแทน
+    // ใช้ /:tab จริงแบบเดียวกับ books/pr เพื่อให้กดจากที่ไหนก็เข้าแท็บที่ต้องการได้ตรง ๆ
     icon: 'complaints',
     label: 'เรื่องร้องเรียน',
-    to: '/employees/complaints',
     positions: CAN_ACCESS_BACKOFFICE,
+    children: [
+      { icon: 'complaints', label: 'กล่องงาน', to: '/employees/complaints/box', positions: ['staff', 'librarian'] },
+      { icon: 'complaints', label: 'รออนุมัติ (หัวหน้า)', to: '/employees/complaints/pending', positions: CAN_MANAGE_PERSONNEL },
+      { icon: 'complaints', label: 'ตรวจรับงาน', to: '/employees/complaints/verify', positions: CAN_ACCESS_BACKOFFICE },
+    ],
   },
   {
+    // ระบบรายงานสถิติ ของ B6707590 เช่นกัน — ย้ายเมนูย่อยจาก StatsSidebar มาไว้ที่นี่เหมือนกัน
     icon: 'reports',
     label: 'รายงานสถิติ',
-    to: '/employees/statistics',
     positions: CAN_ACCESS_BACKOFFICE,
+    children: [
+      { icon: 'reports', label: 'ภาพรวม', to: '/employees/statistics/overview', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'หนังสือยอดนิยม 10 อันดับ', to: '/employees/statistics/top-books', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'สถิติการคืนหนังสือ', to: '/employees/statistics/returns', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'การใช้ห้องค้นคว้า', to: '/employees/statistics/rooms', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'สถิติการค้นหา e-book', to: '/employees/statistics/ebook-search', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'สถิติการยืมอุปกรณ์', to: '/employees/statistics/equipment', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'สถิติเรื่องร้องเรียน', to: '/employees/statistics/complaint-stats', positions: CAN_ACCESS_BACKOFFICE },
+    ],
   },
   {
     // ระบบจัดการหนังสือ เป็นของ B6729615 (กร) บรรณารักษ์ขึ้นไปเท่านั้น
-    icon: 'reports',
+    icon: 'book',
     label: 'จัดการหนังสือ',
     positions: CAN_MANAGE_BOOKS,
     children: [
       { icon: 'overview', label: 'ภาพรวม', to: '/employees/books' },
-      { icon: 'reports', label: 'รายการหนังสือ', to: '/employees/books/catalog' },
+      { icon: 'book', label: 'รายการหนังสือ', to: '/employees/books/catalog' },
       { icon: 'complaints', label: 'การตรวจสอบ', to: '/employees/books/inspections' },
     ],
   },
   {
-    icon: 'reports',
+    icon: 'ebook',
     label: 'E-Book',
     to: '/employees/ebooks',
     positions: CAN_MANAGE_BOOKS,

@@ -1,23 +1,34 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { complaintService } from '../../../services/complaintService';
 import type { DisplayComplaint } from '../../../interface/complaint';
 import { COMPLAINT_STATUS, STATUS_MAP } from '../../../constants/complaintConstants';
 import { generateComplaintPDF } from '../../../utils/pdfGenerator';
 import { ComplaintTable } from '../../../components/employee/ComplaintTable';
 import { ComplaintDetailCard } from '../../../components/employee/ComplaintDetailCard';
-import { EmployeeSidebar } from '../../../components/employee/EmployeeSidebar';
 import { ImagePreviewModal } from '../../../components/common/ImagePreviewModal';
 import { useAuth } from '../../../auth/teammateAuth';
 import './Employee.css';
 import BackOfficeLayout from '../../../components/BackOfficeLayout';
 
+const COMPLAINT_TABS = ['box', 'pending', 'verify'] as const;
+type ComplaintTab = (typeof COMPLAINT_TABS)[number];
+
 export default function Employee(): React.JSX.Element {
   const { user, isManager, isEmployee, switchToRole } = useAuth();
+  const { tab: tabParam } = useParams<{ tab?: string }>();
+  const navigate = useNavigate();
   const [complaints, setComplaints] = useState<DisplayComplaint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const [activeTab, setActiveTab] = useState<'box' | 'pending' | 'verify'>('box');
+  // แท็บตอนนี้มาจาก URL (/employees/complaints/:tab) แทน state ล้วน ๆ
+  // จะได้ตรงกับเมนูซ้ายเสมอ ไม่ว่าจะกดจากไหนเข้ามา — ไม่มี :tab ที่ถูกต้องให้ตกไปค่าเริ่มต้นตามสิทธิ์
+  const activeTab: ComplaintTab = COMPLAINT_TABS.includes(tabParam as ComplaintTab)
+    ? (tabParam as ComplaintTab)
+    : isManager
+      ? 'pending'
+      : 'box';
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>('All');
@@ -46,7 +57,9 @@ export default function Employee(): React.JSX.Element {
         rejectReason: item.reject_reason || '',
         resolutionSummary: item.resolution_summary || '',
         resolutionImage: item.resolution_image || '',
-        externalUnit: item.department_name || (item.department_id ? 'กองอาคารสถานที่' : '-'),
+        // เดิม fallback เดาชื่อหน่วยงานเป็น "กองอาคารสถานที่" ทุกครั้งที่มี department_id แต่ไม่มี department_name มาด้วย
+        // ทำให้ต่อให้เลือกหน่วยงานอื่น (เช่นศูนย์คอมพิวเตอร์) หน้าจอก็ยังขึ้นชื่อหน่วยงานแรกในดรอปดาวน์อยู่ดี
+        externalUnit: item.department_name || '-',
       }));
 
       setComplaints(normalizedData);
@@ -69,22 +82,23 @@ export default function Employee(): React.JSX.Element {
 
   // พาผู้ใช้ไปแท็บที่ตัวเองมีสิทธิ์เสมอ ทั้งตอนเปิดหน้าและตอนสิทธิ์เปลี่ยน
   useEffect(() => {
-    if (!isManager && activeTab === 'pending') {
-      setActiveTab('box');
+    if (!isManager && tabParam === 'pending') {
+      navigate('/employees/complaints/box', { replace: true });
     }
     // หัวหน้าไม่มีแท็บ Inbox แล้ว เปิดมาให้อยู่กล่องที่รอเขาพิจารณาเลย
-    if (isManager && activeTab === 'box') {
-      setActiveTab('pending');
+    if (isManager && tabParam === 'box') {
+      navigate('/employees/complaints/pending', { replace: true });
     }
-  }, [isManager, activeTab]);
+  }, [isManager, tabParam, navigate]);
 
-  const handleTabChange = (tab: 'box' | 'pending' | 'verify') => {
-    setActiveTab(tab);
+  // สลับแท็บตอนนี้คือกดลิงก์ในเมนูซ้าย (เปลี่ยน URL) ไม่ใช่ setState ตรง ๆ แล้ว
+  // เลยรีเซ็ตตัวกรอง/รายการที่เลือกไว้ด้วย useEffect แทน ให้พฤติกรรมเหมือนเดิม
+  useEffect(() => {
     setActiveFilter('All');
     setSearchQuery('');
     setFilterMonth('All');
     setSelectedItem(null);
-  };
+  }, [activeTab]);
 
   const handleFilterChange = (filter: string) => {
     setActiveFilter(filter);
@@ -181,30 +195,10 @@ export default function Employee(): React.JSX.Element {
     }
   };
 
-  const countBox = complaints.filter(
-    (c) => c.status === COMPLAINT_STATUS.PENDING_INSPECTION
-  ).length;
-  const countPending = complaints.filter(
-    (c) => c.status === COMPLAINT_STATUS.AWAITING_SUPERVISOR
-  ).length;
-  const countVerify = complaints.filter((c) =>
-    [COMPLAINT_STATUS.IN_PROGRESS, COMPLAINT_STATUS.COORDINATING].includes(c.status as any)
-  ).length;
-
   return (
     <BackOfficeLayout title="เรื่องร้องเรียน">
       <div className="employee-content-wrapper">
-        {/* 1. Left Sidebar Navigation */}
-        <EmployeeSidebar
-          activeTab={activeTab}
-          countBox={countBox}
-          countPending={countPending}
-          countVerify={countVerify}
-          isManager={isManager}
-          onTabChange={handleTabChange}
-        />
-
-        {/* 2. Main Dashboard Area */}
+        {/* เมนูแท็บ (กล่องงาน/รออนุมัติ/ตรวจรับงาน) ย้ายไปเป็นเมนูย่อยใต้ "เรื่องร้องเรียน" ในแถบซ้ายรวมแล้ว */}
         <main className="dashboard-container">
           {!isEmployee && (
             <div
@@ -236,7 +230,7 @@ export default function Employee(): React.JSX.Element {
                   fontSize: '0.85rem',
                 }}
               >
-                สลับเป็นหัวหน้า (Manager)
+                สลับเป็นหัวหน้า
               </button>
             </div>
           )}

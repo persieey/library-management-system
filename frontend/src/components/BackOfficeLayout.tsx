@@ -47,7 +47,7 @@ function BackOfficeLayout({ title, children, trail }: Props) {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'white' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', bgcolor: 'white' }}>
       <Box
         component="header"
         sx={{
@@ -98,7 +98,7 @@ function BackOfficeLayout({ title, children, trail }: Props) {
 
         <Box
           component="main"
-          sx={{ flex: 1, minWidth: 0, bgcolor: pageBg, px: '32px', py: '28px' }}
+          sx={{ flex: 1, minWidth: 0, overflowY: 'auto', bgcolor: pageBg, px: '32px', py: '28px' }}
         >
           <PageHeader title={title} trail={trail} />
           {children}

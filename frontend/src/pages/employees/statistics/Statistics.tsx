@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { statisticsService } from '../../../services/statisticsService';
 import { complaintService } from '../../../services/complaintService';
 import { StatCard } from '../../../components/statistics/StatCard';
-import { StatsSidebar, type StatsMenuItem } from '../../../components/statistics/StatsSidebar';
+import { type StatsMenuItem } from '../../../components/statistics/StatsSidebar';
 import { exportStatsToExcel, downloadStatsPDF } from '../../../utils/statsExporter';
 import type { Complaint } from '../../../interface/complaint';
 import type {
@@ -16,8 +17,22 @@ import type {
 import './Statistics.css';
 import BackOfficeLayout from '../../../components/BackOfficeLayout';
 
+// เมนูย่อยเดิมอยู่เป็นแผงแยกในตัวหน้า (StatsSidebar) ย้ายมาไว้เป็นกลุ่มย่อยในแถบเมนูรวมแทน
+// ใช้ /:tab จริงแบบเดียวกับ books/pr จึงต้องมี slug คู่กับชื่อหมวดเดิม (StatsMenuItem)
+const STATS_TAB_TO_MENU: Record<string, StatsMenuItem> = {
+  overview: 'Overview',
+  'top-books': 'Top 10 Popular Books',
+  returns: 'Book Return Statistics',
+  rooms: 'Study Room Usage',
+  'ebook-search': 'E-Book Search Statistics',
+  equipment: 'Equipment Rental Stats',
+  'complaint-stats': 'Complaint Statistics',
+};
+
 export default function Statistics(): React.JSX.Element {
-  const [activeMenu, setActiveMenu] = useState<string>('Overview');
+  const { tab: tabParam } = useParams<{ tab?: string }>();
+  // ไม่มี :tab หรือค่าไม่ตรงกับที่รู้จัก แปลว่าเข้ามาที่ /employees/statistics ตรงๆ ให้แสดงภาพรวม
+  const activeMenu: StatsMenuItem = (tabParam && STATS_TAB_TO_MENU[tabParam]) || 'Overview';
   const [timeFilter, setTimeFilter] = useState<string>('This Month (Aug 2026)');
   const [customStartDate, setCustomStartDate] = useState<string>('2026-08-01');
   const [customEndDate, setCustomEndDate] = useState<string>('2026-08-31');
@@ -69,10 +84,10 @@ export default function Statistics(): React.JSX.Element {
     fetchAllStats();
   }, [timeFilter, customStartDate, customEndDate]);
 
-  const handleSelectMenu = (menu: StatsMenuItem) => {
-    setActiveMenu(menu);
+  // สลับหมวดตอนนี้คือกดลิงก์ในเมนูซ้าย (เปลี่ยน URL) แล้ว กลับขึ้นบนสุดให้เหมือนพฤติกรรมเดิม
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [activeMenu]);
 
   // Accurate Thai date parser
   const parseThaiDate = (dateStr: string): Date | null => {
@@ -264,8 +279,7 @@ export default function Statistics(): React.JSX.Element {
   return (
     <BackOfficeLayout title="รายงานสถิติ">
       <div className="stats-content-wrapper">
-        <StatsSidebar activeMenu={activeMenu} onSelectMenu={handleSelectMenu} />
-
+        {/* เมนูหมวดรายงาน (ภาพรวม/หนังสือยอดนิยม/...) ย้ายไปเป็นเมนูย่อยใต้ "รายงานสถิติ" ในแถบซ้ายรวมแล้ว */}
         <main className="stats-main-container">
           
           {/* --- Header Controls (Filter & Export) --- */}
@@ -381,7 +395,7 @@ export default function Statistics(): React.JSX.Element {
                               {chartData.map((bar, idx) => {
                                 const barPct = Math.min(88, Math.max(4, Math.round((bar.visitors / ceiling) * 85)));
                                 return (
-                                  <div key={idx} className="bar-group" title={`${bar.range}: ${bar.visitors.toLocaleString()} visits`}>
+                                  <div key={idx} className="bar-group" title={`${bar.range}: ${bar.visitors.toLocaleString()} ครั้ง`}>
                                     <span 
                                       className="bar-value" 
                                       style={{ bottom: `calc(${barPct}% + 8px)` }}

@@ -1,0 +1,10 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="quick-calendar-click" transform="translate(-4.565,-4.565) scale(1.314)">
+<rect id="tab-left" x="10" y="5" width="3.5" height="7" rx="1.75" fill="white"/>
+<rect id="tab-right" x="21.5" y="5" width="3.5" height="7" rx="1.75" fill="white"/>
+<rect id="calendar-body" x="5" y="9" width="25" height="25" rx="3" fill="white"/>
+<rect id="header-line" x="5" y="15" width="25" height="1.8" fill="#12372F"/>
+<path id="cursor-halo" d="M24.7 24.7L31.06 39.97L33.32 33.32L39.97 31.06Z" fill="#12372F" stroke="#12372F" stroke-width="3" stroke-linejoin="round"/>
+<path id="cursor" d="M24.7 24.7L31.06 39.97L33.32 33.32L39.97 31.06Z" fill="white"/>
+</g>
+</svg>

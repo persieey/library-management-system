@@ -22,6 +22,7 @@ import imgBg from '../../assets/hero-bg.jpg'
 import iconSearch from '../../assets/icons/search.svg'
 import iconBook from '../../assets/icons/quick-book.svg'
 import iconBookFill from '../../assets/icons/quick-book-fill.svg'
+import iconRoom from '../../assets/icons/quick-room.svg'
 
 import iconFiction from '../../assets/icons/cat-fiction.svg'
 import iconNonFiction from '../../assets/icons/cat-nonfiction.svg'
@@ -37,7 +38,7 @@ import iconBiography from '../../assets/icons/cat-biography.svg'
 const quickLinks = [
   { icon: iconBook, label: 'Books', to: '/books', left: 112 },
   { icon: iconBookFill, label: 'eBooks', to: '/ebooks', left: 351 },
-  { icon: iconBook, label: 'Recording Room', to: '/booking', left: 601, guard: true },
+  { icon: iconRoom, label: 'Recording Room', to: '/booking', left: 601, guard: true },
   { icon: iconBookFill, label: 'borrow', to: '/borrow', left: 856 },
 ]
 

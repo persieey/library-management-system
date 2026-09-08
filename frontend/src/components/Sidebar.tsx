@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -239,6 +239,11 @@ function SidebarGroup({
   )
 }
 
+// ทุกหน้าห่อ <BackOfficeLayout> ของตัวเอง เปลี่ยนหน้า = mount <Sidebar> ใหม่ทุกครั้ง
+// (ไม่ได้ใช้ layout เดียวถาวรผ่าน <Outlet>) ตำแหน่งเลื่อนของ DOM เดิมเลยหายไปตามไปด้วย
+// เก็บตำแหน่งไว้ในตัวแปรนอก React (อยู่รอดข้าม mount/unmount ในเซสชันเดียวกัน) แล้วค่อยเซ็ตกลับตอน mount ใหม่
+let lastScrollTop = 0
+
 export default function Sidebar({
   items,
   bottomItems = [],
@@ -248,6 +253,11 @@ export default function Sidebar({
 }: SidebarProps) {
   const { pathname } = useLocation()
   const resolvedActive = activeId ?? activeFromPath(items, pathname)
+  const navRef = useRef<HTMLElement>(null)
+
+  useLayoutEffect(() => {
+    if (navRef.current) navRef.current.scrollTop = lastScrollTop
+  }, [])
 
   const render = (item: SidebarItem) =>
     item.children?.length ? (
@@ -264,9 +274,14 @@ export default function Sidebar({
   return (
     <Box
       component="nav"
+      ref={navRef}
+      onScroll={(e) => {
+        lastScrollTop = e.currentTarget.scrollTop
+      }}
       sx={{
         width,
         flexShrink: 0,
+        overflowY: 'auto',
         bgcolor: s.surface,
         borderRight: `1px solid ${s.border}`,
         display: 'flex',

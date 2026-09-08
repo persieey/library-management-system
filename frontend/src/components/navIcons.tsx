@@ -18,6 +18,8 @@ import SwapHorizOutlined from '@mui/icons-material/SwapHorizOutlined'
 import MeetingRoomOutlined from '@mui/icons-material/MeetingRoomOutlined'
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
 import InventoryOutlined from '@mui/icons-material/InventoryOutlined'
+import BookIcon from '@mui/icons-material/Book'
+import BookOnlineIcon from '@mui/icons-material/BookOnline'
 
 /**
  * ไอคอนของเมนู — ใช้ชุด @mui/icons-material ที่โปรเจคมีอยู่แล้ว ไม่ต้องลงอะไรเพิ่ม
@@ -52,6 +54,8 @@ const ICONS: Record<string, ReactNode> = {
   procurement: <ShoppingCartOutlined sx={SIZE} />,
   audit: <InventoryOutlined sx={SIZE} />,
   catalog: <AutoStoriesOutlined sx={SIZE} />,
+  book: <BookIcon sx={SIZE} />,
+  ebook: <BookOnlineIcon sx={SIZE} />,
   loans: <SwapHorizOutlined sx={SIZE} />,
 }
 
