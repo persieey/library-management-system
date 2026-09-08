@@ -27,6 +27,8 @@ func SetupRouter(authControllers *controllers.AuthController,
 	requestController *controllers.RequestController,
 	assetController *controllers.AssetController,
 	auditController *controllers.AuditController,
+	libraryController *controllers.LibraryController,
+	problemController *controllers.ProblemController,
 	jwtProvider *utils.JWTProvider) *gin.Engine {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
@@ -166,6 +168,10 @@ func SetupRouter(authControllers *controllers.AuthController,
 	books.GET("", bookController.GetAll)
 	books.GET("/:id/cover", bookController.GetCover)
 
+	// /catalog มาจาก B6731915 (สุชาดา) — เหมือน GetAll แต่ตอบสถานะว่าง/ไม่ว่าง
+	// ของแต่ละเล่มตามวันที่จะยืม (query reserved_for, days) คนละอันกับ GetAll ข้างบน
+	books.GET("/catalog", libraryController.Resources)
+
 	books.Use(middleware.JWTAuthMiddleware(jwtProvider))
 
 	books.POST("", middleware.RequirePosition("librarian", "manager"), bookController.Create)
@@ -194,6 +200,56 @@ func SetupRouter(authControllers *controllers.AuthController,
 	inspections.PUT("/:id", middleware.RequirePosition("librarian", "manager"), inspectionController.Update)
 	inspections.DELETE("/:id", middleware.RequirePosition("manager"), inspectionController.Delete)
 
+
+	// ---------- ยืม-คืนหนังสือและอุปกรณ์ พร้อมค่าปรับ (ระบบของ B6731915) ----------
+	// ยกตรรกะ LibraryController มาจากโปรเจกต์ของสุชาดาทั้งชุด ไม่ได้แก้โครงสร้างโค้ดเธอ
+	// เขียน route ขึ้นใหม่เองให้ใช้ middleware ของทีม (RequirePosition) แทน
+	// RequireRoles("librarian") เดิมของเธอ เพราะระบบสิทธิ์ของทีมแยก role/position
+	// ส่วนเช็ค role=="member" ในตัว controller ใช้ได้ตรงอยู่แล้วไม่ต้องแก้
+
+	// ── การยืม-คืนหนังสือ ── (ต่อจากกลุ่ม books ด้านบน ซึ่ง .Use(JWT) ไปแล้ว)
+	books.GET("/reservations", libraryController.MyLoans)
+	books.POST("/reservations", libraryController.BorrowSelf)
+	books.POST("/reservations/:id/cancel", libraryController.CancelLoanSelf)
+
+	booksLibrarian := middleware.RequirePosition("librarian", "manager")
+	books.GET("/librarian/reservations", booksLibrarian, libraryController.Loans)
+	books.POST("/librarian/reservations/:id/checkout", booksLibrarian, libraryController.Checkout)
+	books.POST("/librarian/reservations/:id/return", booksLibrarian, libraryController.Return)
+	books.POST("/librarian/reservations/:id/pay-fine", booksLibrarian, libraryController.PayLoanFine)
+	books.GET("/librarian/problems", booksLibrarian, problemController.BookProblems)
+	books.POST("/librarian/reservations/:id/no-show", booksLibrarian, func(c *gin.Context) {
+		c.Params = append(c.Params, gin.Param{Key: "kind", Value: "loans"})
+		libraryController.NoShow(c)
+	})
+
+	// ── การยืม-คืนอุปกรณ์ ── กลุ่มใหม่บนพาธ /equipment เดิม
+	// ต้องแยกกลุ่มจาก equipment ด้านล่าง เพราะกลุ่มนั้น RequireEmployee() ทั้งกลุ่ม
+	// แต่ /equipment/catalog ต้องเปิดสาธารณะ และ /equipment/reservations ต้องให้
+	// สมาชิก (ไม่ใช่พนักงาน) ใช้ได้ด้วย — Gin ให้สร้างหลายกลุ่มพาธเดียวกันได้
+	// (ทดสอบแล้วไม่ panic) แต่ละกลุ่มมี middleware ของตัวเองแยกกัน
+	equipmentReservations := api.Group("/equipment")
+	equipmentReservations.GET("/catalog", libraryController.Equipment)
+	equipmentReservations.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	equipmentReservations.GET("/reservations", libraryController.MyEquipmentLoans)
+	equipmentReservations.POST("/reservations", libraryController.BorrowEquipmentSelf)
+	equipmentReservations.POST("/reservations/:id/cancel", libraryController.CancelEquipmentLoanSelf)
+	equipmentReservations.GET("/librarian/reservations", booksLibrarian, libraryController.EquipmentLoans)
+	equipmentReservations.POST("/librarian/reservations/:id/checkout", booksLibrarian, libraryController.CheckoutEquipment)
+	equipmentReservations.POST("/librarian/reservations/:id/return", booksLibrarian, libraryController.ReturnEquipment)
+	equipmentReservations.POST("/librarian/reservations/:id/pay-fine", booksLibrarian, libraryController.PayEquipmentFine)
+	equipmentReservations.GET("/librarian/problems", booksLibrarian, problemController.EquipmentProblems)
+	equipmentReservations.POST("/librarian/reservations/:id/no-show", booksLibrarian, func(c *gin.Context) {
+		c.Params = append(c.Params, gin.Param{Key: "kind", Value: "equipment-loans"})
+		libraryController.NoShow(c)
+	})
+
+	// ── ต่อคิวรอ (ใช้ร่วมกันทั้งหนังสือและอุปกรณ์) ──
+	myQueue := api.Group("/my-queue")
+	myQueue.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	myQueue.GET("", libraryController.MyQueue)
+	myQueue.POST("", libraryController.JoinQueue)
+	myQueue.POST("/:id/cancel", libraryController.CancelQueue)
 
 	// ---------- อุปกรณ์ / แจ้งซ่อม / จองห้อง (ระบบของ B6715588) ----------
 	// ยกกลุ่ม route มาจากโปรเจกต์ของบรรพตทั้งชุด สิทธิ์เป็นไปตามที่เจ้าของเขียนไว้เดิม

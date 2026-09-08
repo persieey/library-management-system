@@ -19,7 +19,22 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		cfg.DBName,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// ปิดการสร้าง FOREIGN KEY constraint อัตโนมัติตอน AutoMigrate
+	//
+	// หลายโมเดลในโปรเจกต์ผูก *Employee/*User ด้วยแท็ก foreignKey/references ที่ชื่อ
+	// ฟิลด์ตรงกับ primary key ของอีกฝั่งเป๊ะ (เช่น foreignKey:EmployeeID;references:EmployeeID)
+	// ซึ่งเป็นแบบแผนที่หลายคนเขียนตามกันมา แต่ GORM เวอร์ชันนี้เจอรูปแบบนี้ในโมเดล
+	// หลายตัวพร้อมกันแล้วตีความทิศทางความสัมพันธ์กลับด้าน พยายามสร้าง constraint บน
+	// ตารางแม่ (users/employees) ให้อ้างอิงตารางลูกแทน ซึ่งผิดทิศและ crash ทันทีที่
+	// คอลัมน์อ้างอิงไม่ unique — เจอกับ Personnel, BookInspection, Ebook, Complaint,
+	// RoomBooking พร้อมกันหมด ไม่ใช่ปัญหาของโมเดลตัวใดตัวหนึ่ง
+	//
+	// ปิดไว้ทั้งระบบแทนการไล่แก้ทีละไฟล์ ความสัมพันธ์และ Preload ในโค้ด Go ทำงาน
+	// เหมือนเดิมทุกอย่าง กระทบแค่ว่า Postgres จะไม่บังคับ referential integrity เอง
+	// (โปรเจกต์นี้ไม่มีจุดไหนพึ่ง ON DELETE CASCADE ของ DB อยู่แล้ว)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +113,40 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		}
 	}
 
+	// ระบบยืม-คืนหนังสือและอุปกรณ์ พร้อมค่าปรับ ยกมาจากสาขา B6731915 (สุชาดา)
+	// เจ้าของงานออกแบบให้ยืมได้ทั้งหนังสือและอุปกรณ์ผ่านการจอง (Reservation) ร่วมกัน
+	// Equipmentborrow ต้องมาก่อน Reservation เพราะ Reservation อ้าง equipment_items
+	// เป็น foreign key (ตารางเปลี่ยนชื่อเป็น equipment_items ตามมติทีม ไม่ชนกับ
+	// equipment ของ B6715588) ส่วน BorrowTransaction/ReturnTransaction/Fine
+	// ต้องมาหลัง Reservation ตามลำดับที่มันอ้างอิงกัน
+	if err = db.AutoMigrate(&models.Equipmentborrow{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.Reservation{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.BorrowTransaction{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.ReturnTransaction{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.Fine{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.DamageReport{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.BookProblem{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.EquipmentProblem{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(&models.ReservationQueue{}); err != nil {
+		return nil, err
+	}
+
 	// ระบบร้องเรียนและสถิติ ยกมาจากสาขา B6707590 (ธนกร) เจ้าของสองระบบนี้
 	// ใช้ loop เพราะมีหลายตาราง และให้เตือนแทนการหยุดทำงาน
 	// เผื่อตารางไหนชนกับของเดิมจะได้ยังสตาร์ทเซิร์ฟเวอร์ได้
@@ -107,9 +156,6 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		&models.InspectionRecord{},
 		&models.StatRoom{},
 		&models.StatRoomBooking{},
-		&models.BorrowTransaction{},
-		&models.ReturnTransaction{},
-		&models.Fine{},
 		&models.EbookSearchLog{},
 		&models.RecordCenter{},
 		&models.StatEquipment{},

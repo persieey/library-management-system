@@ -66,52 +66,13 @@ func (RecordCenter) TableName() string {
 // ตอนนี้ระบบจัดการหนังสือของ B6729615 เข้ามาแล้ว จึงใช้ models.Book ตัวจริงใน book.go แทน
 // (ตาราง books เดียวกัน แต่ book_id เป็น uint)
 
-// BorrowTransaction การยืมหนังสือ
-type BorrowTransaction struct {
-	BorrowID   string    `gorm:"primaryKey;column:borrow_id;size:50" json:"borrow_id"`
-	BookID     uint      `gorm:"column:book_id;not null" json:"book_id"`
-	MemberID   *uint     `gorm:"column:member_id" json:"member_id"`
-	BorrowDate time.Time `gorm:"column:borrow_date;default:CURRENT_DATE" json:"borrow_date"`
-	DueDate    time.Time `gorm:"column:due_date" json:"due_date"`
-	Status     string    `gorm:"column:status;size:50;default:'Borrowed'" json:"status"`
-
-	Book   *Book   `gorm:"foreignKey:BookID;references:BookID" json:"book,omitempty"`
-	Member *Member `gorm:"foreignKey:MemberID;references:MemberID" json:"member,omitempty"`
-}
-
-func (BorrowTransaction) TableName() string {
-	return "borrow_transactions"
-}
-
-// ReturnTransaction การคืนหนังสือ
-type ReturnTransaction struct {
-	ReturnID      string    `gorm:"primaryKey;column:return_id;size:50" json:"return_id"`
-	BorrowID      string    `gorm:"column:borrow_id;size:50;not null" json:"borrow_id"`
-	ReturnDate    time.Time `gorm:"column:return_date;default:CURRENT_DATE" json:"return_date"`
-	BookCondition string    `gorm:"column:book_condition;size:50;default:'สมบูรณ์'" json:"book_condition"`
-
-	Borrow *BorrowTransaction `gorm:"foreignKey:BorrowID;references:BorrowID" json:"borrow,omitempty"`
-}
-
-func (ReturnTransaction) TableName() string {
-	return "return_transactions"
-}
-
-// Fine ค่าปรับ
-type Fine struct {
-	FineID      string     `gorm:"primaryKey;column:fine_id;size:50" json:"fine_id"`
-	ReturnID    string     `gorm:"column:return_id;size:50;not null" json:"return_id"`
-	OverdueDays int        `gorm:"column:overdue_days;default:0" json:"overdue_days"`
-	Amount      float64    `gorm:"column:amount;type:decimal(10,2);default:0.00" json:"amount"`
-	PaidStatus  string     `gorm:"column:paid_status;size:50;default:'ค้างชำระ'" json:"paid_status"`
-	PaidDate    *time.Time `gorm:"column:paid_date" json:"paid_date"`
-
-	Return *ReturnTransaction `gorm:"foreignKey:ReturnID;references:ReturnID" json:"return,omitempty"`
-}
-
-func (Fine) TableName() string {
-	return "fines"
-}
+// BorrowTransaction / ReturnTransaction / Fine ของระบบสถิติเดิมเป็นตารางจำลอง
+// ผูกกับหนังสือตรง ๆ (book_id, member_id) ไม่มีเรื่องการจอง
+// ตอนนี้ระบบยืม-คืนจริงของ B6731915 (สุชาดา) เข้ามาแล้ว จึงใช้ของจริงใน
+// borrow_transaction.go / return_transaction.go / fine.go แทน
+// สายข้อมูลเปลี่ยนจาก "หนังสือ -> ยืม" ตรง ๆ เป็น "หนังสือ -> เล่ม -> การจอง -> ยืม"
+// เพราะยืมได้ทั้งหนังสือและอุปกรณ์ผ่านการจองร่วมกัน — ดู statistics_controller.go
+// ที่ join ผ่าน book_copies + reservations แทนที่จะ join borrow_transactions ตรง ๆ
 
 // StatEquipment แคตตาล็อกอุปกรณ์ (โดเมนสถิติ — คนละตารางกับระบบอุปกรณ์ของ B6715588)
 type StatEquipment struct {

@@ -31,9 +31,11 @@ func (sc *StatisticsController) GetSummaryStats(c *gin.Context) {
 	var rcCount int64
 	rcQuery.Count(&rcCount)
 
+	// Fine ของ B6731915 ผูกกับ borrow_id ไม่ใช่ return_id (ต่างจากตารางจำลองเดิม)
+	// join ผ่าน borrow_id เดียวกันแทน ใช้ return_date ของ return_transactions กรองช่วงเวลาเหมือนเดิม
 	fineQuery := sc.DB.Model(&models.Fine{})
 	if hasFilter {
-		fineQuery = fineQuery.Joins("JOIN return_transactions ON fines.return_id = return_transactions.return_id").
+		fineQuery = fineQuery.Joins("JOIN return_transactions ON fines.borrow_id = return_transactions.borrow_id").
 			Where("return_transactions.return_date >= ? AND return_transactions.return_date <= ?", from, to)
 	}
 	var totalFines float64
@@ -116,14 +118,19 @@ func (sc *StatisticsController) GetBookStats(c *gin.Context) {
 		BorrowCount int64
 	}
 
+	// borrow_transactions ของ B6731915 ผูกกับ reservation_id ไม่ใช่ book_id ตรง ๆ
+	// ต้องไล่ผ่านสาย books -> book_copies -> reservations -> borrow_transactions
+	// เพราะการยืมเล่มหนึ่งผูกกับ "เล่ม" (copy) ไม่ใช่ "ชื่อเรื่อง" (book) ตรง ๆ
 	var dbResults []Result
 	query := sc.DB.Table("books").
-		Select("books.book_id, books.title, books.category, COUNT(borrow_transactions.borrow_id) as borrow_count")
+		Select("books.book_id, books.title, books.category, COUNT(borrow_transactions.borrow_id) as borrow_count").
+		Joins("LEFT JOIN book_copies ON book_copies.book_id = books.book_id").
+		Joins("LEFT JOIN reservations ON reservations.copy_id = book_copies.copy_id")
 
 	if hasFilter {
-		query = query.Joins("LEFT JOIN borrow_transactions ON books.book_id = borrow_transactions.book_id AND borrow_transactions.borrow_date >= ? AND borrow_transactions.borrow_date <= ?", from, to)
+		query = query.Joins("LEFT JOIN borrow_transactions ON borrow_transactions.reservation_id = reservations.reservation_id AND borrow_transactions.borrow_date >= ? AND borrow_transactions.borrow_date <= ?", from, to)
 	} else {
-		query = query.Joins("LEFT JOIN borrow_transactions ON books.book_id = borrow_transactions.book_id")
+		query = query.Joins("LEFT JOIN borrow_transactions ON borrow_transactions.reservation_id = reservations.reservation_id")
 	}
 
 	query.Group("books.book_id, books.title, books.category").
@@ -157,7 +164,7 @@ func (sc *StatisticsController) GetReturnStats(c *gin.Context) {
 	retQuery.Count(&totalReturns)
 
 	fineQuery1 := sc.DB.Model(&models.Fine{}).
-		Joins("JOIN return_transactions ON fines.return_id = return_transactions.return_id")
+		Joins("JOIN return_transactions ON fines.borrow_id = return_transactions.borrow_id")
 	if hasFilter {
 		fineQuery1 = fineQuery1.Where("return_transactions.return_date >= ? AND return_transactions.return_date <= ?", from, to)
 	}
@@ -165,7 +172,7 @@ func (sc *StatisticsController) GetReturnStats(c *gin.Context) {
 	fineQuery1.Where("overdue_days >= 1 AND overdue_days <= 3").Count(&overdue1to3)
 
 	fineQuery2 := sc.DB.Model(&models.Fine{}).
-		Joins("JOIN return_transactions ON fines.return_id = return_transactions.return_id")
+		Joins("JOIN return_transactions ON fines.borrow_id = return_transactions.borrow_id")
 	if hasFilter {
 		fineQuery2 = fineQuery2.Where("return_transactions.return_date >= ? AND return_transactions.return_date <= ?", from, to)
 	}
@@ -173,7 +180,7 @@ func (sc *StatisticsController) GetReturnStats(c *gin.Context) {
 	fineQuery2.Where("overdue_days > 3").Count(&overdueGt3)
 
 	fineQuery3 := sc.DB.Model(&models.Fine{}).
-		Joins("JOIN return_transactions ON fines.return_id = return_transactions.return_id")
+		Joins("JOIN return_transactions ON fines.borrow_id = return_transactions.borrow_id")
 	if hasFilter {
 		fineQuery3 = fineQuery3.Where("return_transactions.return_date >= ? AND return_transactions.return_date <= ?", from, to)
 	}
