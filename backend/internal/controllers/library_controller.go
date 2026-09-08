@@ -288,9 +288,11 @@ func (h *LibraryController) list(c *gin.Context, equipment, own bool) {
 	var rs []models.Reservation
 	q := h.db.Preload("User").Preload("Copy.Book").Preload("Equipment")
 	if equipment {
-		q = q.Where("equipment_id IS NOT NULL")
+		// equipment_id ถูกล้างเป็น NULL ตอนคืนแบบชำรุด/หาย (ของถูกย้ายไป equipment_problems)
+		// ต้องรวมรายการนั้นด้วย ไม่งั้นค่าปรับที่ค้างของของชำรุด/หายจะหายไปจากหน้านี้
+		q = q.Where("equipment_id IS NOT NULL OR reservation_id IN (SELECT reservation_id FROM equipment_problems)")
 	} else {
-		q = q.Where("copy_id IS NOT NULL")
+		q = q.Where("copy_id IS NOT NULL OR reservation_id IN (SELECT reservation_id FROM book_problems)")
 	}
 	if own {
 		q = q.Where("user_id = ?", c.GetUint("user_id"))
@@ -313,6 +315,14 @@ func (h *LibraryController) list(c *gin.Context, equipment, own bool) {
 			}
 			row["resource"] = b
 			row["resource_id"] = r.Copy.BookID
+		} else if !equipment {
+			// copy_id ถูกล้างแล้ว (ของชำรุด/หาย) — ดึงชื่อหนังสือจาก book_problems แทน
+			// จะได้ยังเห็นว่ารายการนี้คือเล่มไหนตอนอยู่แท็บค่าปรับค้างชำระ
+			var bp models.BookProblem
+			if err := h.db.Where("reservation_id = ?", r.ReservationId).First(&bp).Error; err == nil {
+				row["resource"] = gin.H{"title": bp.Title, "isbn": bp.ISBN, "call_number": bp.CallNumber}
+				row["resource_id"] = bp.BookID
+			}
 		}
 		if r.Equipment != nil {
 			e, err := equipmentDTO(h.db, *r.Equipment, r.PickupDate, r.ExpireDate)
@@ -322,6 +332,12 @@ func (h *LibraryController) list(c *gin.Context, equipment, own bool) {
 			}
 			row["equipment"] = e
 			row["equipment_id"] = r.Equipment.EquipmentId
+		} else if equipment {
+			var ep models.EquipmentProblem
+			if err := h.db.Where("reservation_id = ?", r.ReservationId).First(&ep).Error; err == nil {
+				row["equipment"] = gin.H{"name": ep.EquipmentName, "asset_code": ep.AssetNumber, "category": ep.Category}
+				row["equipment_id"] = ep.OriginalEquipmentID
+			}
 		}
 		var b models.BorrowTransaction
 		err := h.db.Where("reservation_id = ?", r.ReservationId).First(&b).Error
