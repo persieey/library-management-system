@@ -41,10 +41,10 @@ export function getStatusClass(status: string): string {
 
 export function getPriorityInfo(priority?: string): { label: string; className: string } {
   if (priority === 'ด่วนที่สุด') {
-    return { label: '🔴 Critical', className: 'priority-critical' };
+    return { label: '🔴 ด่วนที่สุด', className: 'priority-critical' };
   }
   if (priority === 'ด่วน') {
-    return { label: '🟠 Urgent', className: 'priority-high' };
+    return { label: '🟠 ด่วน', className: 'priority-high' };
   }
-  return { label: '🟢 Normal', className: 'priority-normal' };
+  return { label: '🟢 ปกติ', className: 'priority-normal' };
 }

@@ -106,11 +106,11 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
               onClick={() =>
                 onOpenImagePreview(
                   selectedItem.attached_image || '',
-                  `Problem Photo Evidence (${selectedItem.id})`
+                  `รูปหลักฐานปัญหา (${selectedItem.id})`
                 )
               }
             >
-              📷 View Attached Photo Evidence
+              📷 ดูรูปหลักฐานที่แนบมา
             </button>
           ) : (
             <button
@@ -118,7 +118,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
               className="img-btn"
               style={{ opacity: 0.6, cursor: 'default' }}
             >
-              📷 No Photo Evidence Attached
+              📷 ไม่มีรูปหลักฐานแนบมา
             </button>
           )}
 
@@ -130,11 +130,11 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
               onClick={() =>
                 onOpenImagePreview(
                   selectedItem.resolution_image || '',
-                  `Resolution Photo Evidence (${selectedItem.id})`
+                  `รูปหลักฐานหลังแก้ไข (${selectedItem.id})`
                 )
               }
             >
-              ✓ View Resolution Photo
+              ✓ ดูรูปหลังแก้ไข
             </button>
           )}
         </div>
@@ -163,7 +163,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                 marginBottom: '0.8rem',
               }}
             >
-              <span style={{ fontSize: '1.4rem' }}>✓</span> Issue Completed & Resolved (Case Closed)
+              <span style={{ fontSize: '1.4rem' }}>✓</span> ดำเนินการเสร็จสิ้นและปิดเคสแล้ว
             </div>
             <div style={{ marginBottom: '0.6rem', color: '#334155', fontSize: '0.95rem' }}>
               <strong>หน่วยงานที่รับผิดชอบ:</strong> {selectedItem.externalUnit || 'ดำเนินการภายใน'}
@@ -209,7 +209,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                 marginBottom: '0.8rem',
               }}
             >
-              <span style={{ fontSize: '1.4rem' }}>✕</span> This complaint has been cancelled / rejected
+              <span style={{ fontSize: '1.4rem' }}>✕</span> เรื่องร้องเรียนนี้ถูกยกเลิก / ปฏิเสธแล้ว
             </div>
             <div style={{ color: '#334155', fontSize: '0.95rem' }}>
               <strong>เหตุผลที่ยกเลิก:</strong>
@@ -270,7 +270,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                             })
                           }
                         >
-                          ✕ Reject Complaint
+                          ✕ ปฏิเสธเรื่องร้องเรียน
                         </button>
                         <button
                           className="submit-action-btn"
@@ -306,7 +306,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                           marginBottom: '0.8rem',
                         }}
                       >
-                        <span style={{ fontSize: '1.2rem' }}>🕒</span> Forwarded to Supervisor (Pending Approval)
+                        <span style={{ fontSize: '1.2rem' }}>🕒</span> ส่งต่อให้หัวหน้าแล้ว (รอพิจารณา)
                       </div>
                       <div style={{ color: '#334155', fontSize: '0.95rem' }}>
                         <strong>บันทึกผลตรวจหน้างาน:</strong>
@@ -383,7 +383,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                               })
                             }
                           >
-                            ✕ Reject Complaint
+                            ✕ ปฏิเสธเรื่องร้องเรียน
                           </button>
                           <button
                             className="submit-action-btn"
@@ -413,7 +413,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                             fontSize: '0.95rem',
                           }}
                         >
-                          <strong>🔒 สิทธิ์พนักงานทั่วไป (Staff / Librarian):</strong> คำร้องนี้ส่งต่อถึงหัวหน้างานแล้ว เฉพาะผู้มีตำแหน่ง <strong>หัวหน้าเจ้าหน้าที่ (Manager)</strong> เท่านั้นที่สามารถกดอนุมัติหรือสั่งการเริ่มงานได้
+                          <strong>🔒 สิทธิ์พนักงานทั่วไป (เจ้าหน้าที่ / บรรณารักษ์):</strong> คำร้องนี้ส่งต่อถึงหัวหน้างานแล้ว เฉพาะผู้มีตำแหน่ง <strong>หัวหน้าเจ้าหน้าที่</strong> เท่านั้นที่สามารถกดอนุมัติหรือสั่งการเริ่มงานได้
                         </div>
                       )}
                     </>
@@ -438,7 +438,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                           marginBottom: '0.8rem',
                         }}
                       >
-                        <span style={{ fontSize: '1.2rem' }}>✓</span> Approved and Forwarded to External Department
+                        <span style={{ fontSize: '1.2rem' }}>✓</span> อนุมัติและส่งต่อหน่วยงานภายนอกแล้ว
                       </div>
                       <div style={{ color: '#334155', fontSize: '0.95rem' }}>
                         <strong>หน่วยงานที่ประสาน:</strong> {selectedItem.externalUnit || 'ดำเนินการภายใน'}
@@ -457,7 +457,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                             <line x1="8" y1="17" x2="16" y2="17"></line>
                             <polyline points="10 9 9 9 8 9"></polyline>
                           </svg>
-                          Download Official Memorandum (PDF)
+                          ดาวน์โหลดบันทึกข้อความทางการ (PDF)
                         </button>
                       </div>
                     </div>
@@ -483,7 +483,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                           style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
                           onClick={() => onDownloadPDF(selectedItem)}
                         >
-                          📄 Print Official Memorandum (PDF)
+                          📄 พิมพ์บันทึกข้อความทางการ (PDF)
                         </button>
                       )}
                     </div>
@@ -530,7 +530,7 @@ export const ComplaintDetailCard: React.FC<ComplaintDetailCardProps> = ({
                             }}
                           />
                           <span style={{ fontSize: '0.85rem', color: '#16a34a', fontWeight: 600 }}>
-                            Photo Attached
+                            แนบรูปแล้ว
                           </span>
                         </div>
                       )}

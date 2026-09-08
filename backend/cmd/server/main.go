@@ -38,6 +38,9 @@ func main() {
 	if err := config.SeedEquipment(db); err != nil {
 		log.Fatalf("seed equipment ไม่สำเร็จ: %v", err)
 	}
+	if err := config.SeedExternalDepartments(db); err != nil {
+		log.Fatalf("seed external departments ไม่สำเร็จ: %v", err)
+	}
 
 	jwtProvider := utils.NewJWTProvider(cfg.JWTSecret, cfg.JWTExpiresIn)
 	authController := controllers.NewAuthController(db, jwtProvider)

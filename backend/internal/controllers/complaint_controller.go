@@ -197,7 +197,11 @@ func (cc *ComplaintController) UpdateComplaint(c *gin.Context) {
 		updates["department_id"] = input.DepartmentID
 	} else if input.ExternalUnit != "" && input.ExternalUnit != "-" {
 		var dept models.ExternalDepartment
-		if err := cc.DB.Where("department_name = ?", input.ExternalUnit).First(&dept).Error; err == nil {
+		if err := cc.DB.Where("department_name = ?", input.ExternalUnit).First(&dept).Error; err != nil {
+			// เดิมเงียบไปเฉย ๆ ถ้าหาไม่เจอ ทำให้หน่วยงานที่เลือกไว้หายไปโดยไม่มีใครรู้
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบหน่วยงาน: " + input.ExternalUnit})
+			return
+		} else {
 			updates["department_id"] = dept.DepartmentID
 		}
 	}
