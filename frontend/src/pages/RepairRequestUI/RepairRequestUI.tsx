@@ -22,6 +22,20 @@ const INITIAL_FORM = {
   problemDetails: "",
 };
 
+// ค่าที่เก็บ/ส่งให้ backend ยังเป็นภาษาอังกฤษเหมือนเดิม (Low/Medium/High/Critical)
+// อันนี้ไว้แปลแค่ตัวที่โชว์บนจอเท่านั้น
+const URGENCY_LABEL: Record<string, string> = {
+  Low: "ต่ำ",
+  Medium: "ปานกลาง",
+  High: "สูง",
+  Critical: "วิกฤต",
+};
+
+const EQUIPMENT_STATUS_LABEL: Record<string, string> = {
+  available: "พร้อมใช้งาน",
+  maintenance: "ซ่อมบำรุง",
+};
+
 type Notice = { type: "error" | "success"; text: string };
 
 export default function RepairRequestUI() {
@@ -162,7 +176,7 @@ export default function RepairRequestUI() {
 
       // ชิ้นที่เพิ่งแจ้ง กันไม่ให้เลือกซ้ำทันที
       setOpenEquipIds((prev) => new Set(prev).add(Number(form.equipmentId)));
-      setNotice({ type: "success", text: `ส่งคำแจ้งซ่อมเรียบร้อยแล้ว (Request #${data.request_id})` });
+      setNotice({ type: "success", text: `ส่งคำแจ้งซ่อมเรียบร้อยแล้ว (คำขอ #${data.request_id})` });
       handleCancel();
     } catch (err) {
       setNotice({ type: "error", text: errorMessage(err, "ส่งคำแจ้งซ่อมไม่สำเร็จ") });
@@ -176,33 +190,33 @@ export default function RepairRequestUI() {
   );
 
   return (
-    <BackOfficeLayout title="Repair Request Form">
+    <BackOfficeLayout title="แบบฟอร์มแจ้งซ่อม">
           <div className="rf-page">
-            <h2 className="rf-title">Repair Request Form</h2>
+            <h2 className="rf-title">แบบฟอร์มแจ้งซ่อม</h2>
 
             <form className="rf-card" onSubmit={handleSubmit}>
               <div className="rf-form-grid">
                 {/* Left column */}
                 <div className="rf-column">
                   <div className="rf-section">
-                    <h3 className="rf-section-title">1. Requester Information</h3>
+                    <h3 className="rf-section-title">1. ข้อมูลผู้แจ้ง</h3>
 
                     <div className="rf-field">
-                      <label className="rf-label">Requester Name</label>
+                      <label className="rf-label">ชื่อผู้แจ้ง</label>
                       <input type="text" className="rf-input" value={user?.name || ""} readOnly />
                     </div>
 
                     <div className="rf-field">
-                      <label className="rf-label">Report Date</label>
+                      <label className="rf-label">วันที่แจ้ง</label>
                       <input type="text" className="rf-input" value={todayFormatted()} readOnly />
                     </div>
                   </div>
 
                   <div className="rf-section">
-                    <h3 className="rf-section-title">2. Equipment Details</h3>
+                    <h3 className="rf-section-title">2. รายละเอียดอุปกรณ์</h3>
 
                     <div className="rf-field">
-                      <label className="rf-label">Equipment</label>
+                      <label className="rf-label">อุปกรณ์</label>
                       <EquipmentCombobox
                         items={availableEquipment}
                         value={form.equipmentId}
@@ -215,7 +229,7 @@ export default function RepairRequestUI() {
                     </div>
 
                     <div className="rf-field">
-                      <label className="rf-label">Category</label>
+                      <label className="rf-label">หมวดหมู่</label>
                       <input
                         type="text"
                         className="rf-input"
@@ -225,11 +239,15 @@ export default function RepairRequestUI() {
                     </div>
 
                     <div className="rf-field">
-                      <label className="rf-label">Current Status</label>
+                      <label className="rf-label">สถานะปัจจุบัน</label>
                       <input
                         type="text"
                         className="rf-input"
-                        value={selectedEquipment?.status || ""}
+                        value={
+                          selectedEquipment?.status
+                            ? EQUIPMENT_STATUS_LABEL[selectedEquipment.status] || selectedEquipment.status
+                            : ""
+                        }
                         readOnly
                       />
                     </div>
@@ -239,10 +257,10 @@ export default function RepairRequestUI() {
                 {/* Right column */}
                 <div className="rf-column">
                   <div className="rf-section">
-                    <h3 className="rf-section-title">3. Problem Description</h3>
+                    <h3 className="rf-section-title">3. รายละเอียดปัญหา</h3>
 
                     <div className="rf-field">
-                      <label className="rf-label">Urgency Level</label>
+                      <label className="rf-label">ระดับความเร่งด่วน</label>
                       <div className="rf-radio-group">
                         {["Low", "Medium", "High", "Critical"].map((level) => (
                           <label className="rf-radio" key={level}>
@@ -253,24 +271,24 @@ export default function RepairRequestUI() {
                               checked={form.urgency === level}
                               onChange={(e) => updateField("urgency", e.target.value)}
                             />
-                            {level}
+                            {URGENCY_LABEL[level]}
                           </label>
                         ))}
                       </div>
                     </div>
 
                     <div className="rf-field">
-                      <label className="rf-label">Problem Details</label>
+                      <label className="rf-label">รายละเอียดปัญหา</label>
                       <textarea
                         className="rf-input rf-textarea"
-                        placeholder="Describe the problem and the repair you need in detail, including any error codes or unusual behavior."
+                        placeholder="อธิบายปัญหาและสิ่งที่ต้องซ่อมอย่างละเอียด รวมถึงรหัสข้อผิดพลาดหรือความผิดปกติที่พบ (ถ้ามี)"
                         value={form.problemDetails}
                         onChange={(e) => updateField("problemDetails", e.target.value)}
                       />
                     </div>
 
                     <div className="rf-field">
-                      <label className="rf-label">Attach Supporting Photo</label>
+                      <label className="rf-label">แนบรูปประกอบ</label>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -294,10 +312,10 @@ export default function RepairRequestUI() {
                               className="rf-photo-link"
                               onClick={() => fileInputRef.current?.click()}
                             >
-                              Replace
+                              เปลี่ยนรูป
                             </button>
                             <button type="button" className="rf-photo-link danger" onClick={clearPhoto}>
-                              Remove
+                              ลบรูป
                             </button>
                           </div>
                         </div>
@@ -313,8 +331,8 @@ export default function RepairRequestUI() {
                               <path d="M4.5 14v3.5A2.5 2.5 0 0 0 7 20h10a2.5 2.5 0 0 0 2.5-2.5V14" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
                             </svg>
                           </span>
-                          <span className="rf-dropzone-title">Click to upload a photo</span>
-                          <span className="rf-dropzone-hint">PNG, JPG or WEBP · up to 5 MB</span>
+                          <span className="rf-dropzone-title">คลิกเพื่ออัปโหลดรูป</span>
+                          <span className="rf-dropzone-hint">PNG, JPG หรือ WEBP · ไม่เกิน 5 MB</span>
                         </button>
                       )}
                     </div>
@@ -335,10 +353,10 @@ export default function RepairRequestUI() {
 
               <div className="rf-actions">
                 <button type="submit" className="rf-btn rf-btn-submit" disabled={submitting}>
-                  {submitting ? "Submitting..." : "Submit Request"}
+                  {submitting ? "กำลังส่ง..." : "ส่งคำแจ้งซ่อม"}
                 </button>
                 <button type="button" className="rf-btn rf-btn-cancel" onClick={handleCancel}>
-                  Cancel
+                  ยกเลิก
                 </button>
               </div>
             </form>
@@ -402,7 +420,7 @@ function EquipmentCombobox({
       <input
         type="text"
         className="rf-input rf-combo-input"
-        placeholder={disabled ? "Loading..." : "Search equipment…"}
+        placeholder={disabled ? "กำลังโหลด..." : "ค้นหาอุปกรณ์..."}
         value={display}
         disabled={disabled}
         autoComplete="off"

@@ -8,8 +8,8 @@ import type { Equipment as EquipmentItem } from "../../types";
 import "./Equipment.css";
 
 const STATUS_LABEL: Record<string, string> = {
-  available: "Available",
-  maintenance: "Maintenance",
+  available: "พร้อมใช้งาน",
+  maintenance: "ซ่อมบำรุง",
 };
 
 export default function Equipment() {
@@ -35,7 +35,7 @@ export default function Equipment() {
         const data = await res.json();
         if (!cancelled) setEquipment(data.equipment || []);
       } catch {
-        if (!cancelled) setError("Could not load equipment. Please try again.");
+        if (!cancelled) setError("โหลดข้อมูลอุปกรณ์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -86,17 +86,17 @@ export default function Equipment() {
   }
 
   const share = (n: number) =>
-    counts.total > 0 ? `${Math.round((n / counts.total) * 100)}% of stock` : "No items yet";
+    counts.total > 0 ? `${Math.round((n / counts.total) * 100)}% ของทั้งหมด` : "ยังไม่มีรายการ";
   const stats = [
-    { key: "available", title: "Available Equipment", value: counts.available, note: share(counts.available), accent: true },
-    { key: "maintenance", title: "In Maintenance", value: counts.maintenance, note: share(counts.maintenance) },
-    { key: "total", title: "Total Equipment", value: counts.total, note: "Items tracked" },
+    { key: "available", title: "อุปกรณ์พร้อมใช้งาน", value: counts.available, note: share(counts.available), accent: true },
+    { key: "maintenance", title: "อยู่ระหว่างซ่อมบำรุง", value: counts.maintenance, note: share(counts.maintenance) },
+    { key: "total", title: "อุปกรณ์ทั้งหมด", value: counts.total, note: "รายการที่ติดตาม" },
   ];
 
   return (
-    <BackOfficeLayout title="Equipment">
+    <BackOfficeLayout title="อุปกรณ์">
           <div className="eq-page">
-            <h2 className="eq-title">Equipment Summary Dashboard</h2>
+            <h2 className="eq-title">แดชบอร์ดสรุปอุปกรณ์</h2>
 
             <div className="staff-stats cols-3">
               {stats.map((s) => (
@@ -111,7 +111,7 @@ export default function Equipment() {
             <input
               type="text"
               className="staff-search eq-search"
-              placeholder="Search by id, name, category, location…"
+              placeholder="ค้นหาจาก ID ชื่อ หมวดหมู่ หรือตำแหน่ง..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -123,16 +123,16 @@ export default function Equipment() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Location</th>
-                    <th>Status</th>
+                    <th>ชื่อ</th>
+                    <th>หมวดหมู่</th>
+                    <th>ตำแหน่ง</th>
+                    <th>สถานะ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={5} className="eq-empty">Loading...</td>
+                      <td colSpan={5} className="eq-empty">กำลังโหลด...</td>
                     </tr>
                   ) : (
                     <>
@@ -156,7 +156,7 @@ export default function Equipment() {
                       ))}
                       {filtered.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="eq-empty">No equipment matches your search.</td>
+                          <td colSpan={5} className="eq-empty">ไม่พบอุปกรณ์ที่ตรงกับคำค้นหา</td>
                         </tr>
                       )}
                     </>
@@ -168,7 +168,7 @@ export default function Equipment() {
             {!loading && filtered.length > 0 && (
               <div className="staff-table-foot">
                 <span className="staff-table-count">
-                  {filtered.length} item{filtered.length === 1 ? "" : "s"}
+                  {filtered.length} รายการ
                 </span>
                 <Pagination page={page} pageCount={pageCount} onPage={setPage} />
               </div>

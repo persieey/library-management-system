@@ -8,10 +8,18 @@ import { assetUrl, type RepairRequest } from "../../types";
 import "./TrackRepair.css";
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending",
-  in_progress: "In Progress",
-  completed: "Completed",
-  cancelled: "Cancelled",
+  pending: "รอดำเนินการ",
+  in_progress: "กำลังดำเนินการ",
+  completed: "เสร็จสิ้น",
+  cancelled: "ยกเลิก",
+};
+
+// ค่าที่เก็บจริงจากฟอร์มแจ้งซ่อมยังเป็นภาษาอังกฤษ (Low/Medium/High/Critical) — แปลแค่ตอนแสดงผล
+const URGENCY_LABEL: Record<string, string> = {
+  Low: "ต่ำ",
+  Medium: "ปานกลาง",
+  High: "สูง",
+  Critical: "วิกฤต",
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
@@ -56,7 +64,7 @@ export default function TrackRepairUI() {
       if (!res.ok) throw new Error(data.error || "Failed to load repairs");
       setRepairs(data.repair_requests || []);
     } catch {
-      setError("Could not load repair requests. Please try again.");
+      setError("โหลดรายการแจ้งซ่อมไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setLoading(false);
     }
@@ -87,7 +95,7 @@ export default function TrackRepairUI() {
         throw new Error(data.error || "Update failed");
       }
     } catch {
-      setError("Could not update status. Please try again.");
+      setError("อัปเดตสถานะไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
       loadRepairs(); // roll back to server truth
     } finally {
       setUpdatingId(null);
@@ -133,18 +141,18 @@ export default function TrackRepairUI() {
   }
 
   const share = (n: number) =>
-    counts.total > 0 ? `${Math.round((n / counts.total) * 100)}% of all jobs` : "No jobs yet";
+    counts.total > 0 ? `${Math.round((n / counts.total) * 100)}% ของงานทั้งหมด` : "ยังไม่มีงาน";
   const stats = [
-    { key: "pending", title: "Pending Approval", value: counts.pending, note: share(counts.pending), accent: true },
-    { key: "progress", title: "In Progress", value: counts.inProgress, note: share(counts.inProgress) },
-    { key: "completed", title: "Completed", value: counts.completed, note: share(counts.completed) },
-    { key: "total", title: "Total Requests", value: counts.total, note: "All time" },
+    { key: "pending", title: "รออนุมัติ", value: counts.pending, note: share(counts.pending), accent: true },
+    { key: "progress", title: "กำลังดำเนินการ", value: counts.inProgress, note: share(counts.inProgress) },
+    { key: "completed", title: "เสร็จสิ้น", value: counts.completed, note: share(counts.completed) },
+    { key: "total", title: "คำขอทั้งหมด", value: counts.total, note: "ทั้งหมด" },
   ];
 
   return (
-    <BackOfficeLayout title="Repair Tracking">
+    <BackOfficeLayout title="ติดตามการซ่อม">
           <div className="tr-page">
-            <h2 className="tr-title">Repair Summary Dashboard</h2>
+            <h2 className="tr-title">แดชบอร์ดสรุปการซ่อม</h2>
 
             <div className="staff-stats">
               {stats.map((s) => (
@@ -159,7 +167,7 @@ export default function TrackRepairUI() {
             <input
               type="text"
               className="staff-search tr-search"
-              placeholder="Search by job, equipment, requester…"
+              placeholder="ค้นหาจากเลขที่งาน อุปกรณ์ หรือผู้แจ้ง..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -170,20 +178,20 @@ export default function TrackRepairUI() {
               <table className="tr-table">
                 <thead>
                   <tr>
-                    <th aria-label="View" />
-                    <th>Job number</th>
-                    <th>Equipment</th>
-                    <th>Requested by</th>
-                    <th>Details</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th aria-label="ดู" />
+                    <th>เลขที่งาน</th>
+                    <th>อุปกรณ์</th>
+                    <th>ผู้แจ้ง</th>
+                    <th>รายละเอียด</th>
+                    <th>วันที่</th>
+                    <th>สถานะ</th>
+                    <th>การดำเนินการ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="tr-empty">Loading...</td>
+                      <td colSpan={8} className="tr-empty">กำลังโหลด...</td>
                     </tr>
                   ) : (
                     <>
@@ -194,8 +202,8 @@ export default function TrackRepairUI() {
                               type="button"
                               className="staff-icon-action"
                               onClick={() => setDetail(r)}
-                              aria-label={`View details for REP-${r.request_id}`}
-                              title="View details"
+                              aria-label={`ดูรายละเอียด REP-${r.request_id}`}
+                              title="ดูรายละเอียด"
                             >
                               <EyeIcon />
                             </button>
@@ -223,7 +231,7 @@ export default function TrackRepairUI() {
                                 disabled={updatingId === r.request_id}
                                 onClick={() => advanceStatus(r.request_id, r.status)}
                               >
-                                Start
+                                เริ่มซ่อม
                               </button>
                             )}
                             {r.status === "in_progress" && (
@@ -233,7 +241,7 @@ export default function TrackRepairUI() {
                                 disabled={updatingId === r.request_id}
                                 onClick={() => advanceStatus(r.request_id, r.status)}
                               >
-                                Complete
+                                ซ่อมเสร็จ
                               </button>
                             )}
                             {(r.status === "completed" || r.status === "cancelled") && (
@@ -244,7 +252,7 @@ export default function TrackRepairUI() {
                       ))}
                       {filtered.length === 0 && (
                         <tr>
-                          <td colSpan={8} className="tr-empty">No repair jobs match your search.</td>
+                          <td colSpan={8} className="tr-empty">ไม่พบงานซ่อมที่ตรงกับคำค้นหา</td>
                         </tr>
                       )}
                     </>
@@ -256,7 +264,7 @@ export default function TrackRepairUI() {
             {!loading && filtered.length > 0 && (
               <div className="staff-table-foot">
                 <span className="staff-table-count">
-                  {filtered.length} request{filtered.length === 1 ? "" : "s"}
+                  {filtered.length} รายการ
                 </span>
                 <Pagination page={page} pageCount={pageCount} onPage={setPage} />
               </div>
@@ -288,53 +296,55 @@ function RepairDetailModal({
               {STATUS_LABEL[repair.status] || repair.status}
             </div>
           </div>
-          <button type="button" className="staff-modal-close" onClick={onClose} aria-label="Close">
+          <button type="button" className="staff-modal-close" onClick={onClose} aria-label="ปิด">
             ×
           </button>
         </div>
 
         <div className="staff-modal-body">
           <div className="staff-modal-row">
-            <span className="staff-modal-key">Equipment</span>
+            <span className="staff-modal-key">อุปกรณ์</span>
             <span className="staff-modal-value">{repair.equipment?.name || "—"}</span>
           </div>
           {repair.equipment?.category && (
             <div className="staff-modal-row">
-              <span className="staff-modal-key">Category</span>
+              <span className="staff-modal-key">หมวดหมู่</span>
               <span className="staff-modal-value">{repair.equipment.category}</span>
             </div>
           )}
           {repair.equipment?.location && (
             <div className="staff-modal-row">
-              <span className="staff-modal-key">Location</span>
+              <span className="staff-modal-key">ตำแหน่ง</span>
               <span className="staff-modal-value">{repair.equipment.location}</span>
             </div>
           )}
           <div className="staff-modal-row">
-            <span className="staff-modal-key">Requested by</span>
+            <span className="staff-modal-key">ผู้แจ้ง</span>
             <span className="staff-modal-value">{repair.user?.name || "—"}</span>
           </div>
           <div className="staff-modal-row">
-            <span className="staff-modal-key">Urgency</span>
-            <span className="staff-modal-value">{repair.urgency || "—"}</span>
+            <span className="staff-modal-key">ความเร่งด่วน</span>
+            <span className="staff-modal-value">
+              {repair.urgency ? URGENCY_LABEL[repair.urgency] || repair.urgency : "—"}
+            </span>
           </div>
           <div className="staff-modal-row">
-            <span className="staff-modal-key">Reported</span>
+            <span className="staff-modal-key">วันที่แจ้ง</span>
             <span className="staff-modal-value">{formatDate(repair.created_at)}</span>
           </div>
           <div className="staff-modal-row">
-            <span className="staff-modal-key">Problem</span>
+            <span className="staff-modal-key">รายละเอียดปัญหา</span>
             <span className="staff-modal-value">{repair.description || "—"}</span>
           </div>
 
           {photo ? (
             <div className="staff-modal-photo">
               <a href={photo} target="_blank" rel="noreferrer">
-                <img src={photo} alt={`Attachment for REP-${repair.request_id}`} />
+                <img src={photo} alt={`รูปแนบของ REP-${repair.request_id}`} />
               </a>
             </div>
           ) : (
-            <div className="staff-modal-photo-empty">No photo attached</div>
+            <div className="staff-modal-photo-empty">ไม่มีรูปแนบ</div>
           )}
         </div>
       </div>
