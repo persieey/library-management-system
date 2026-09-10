@@ -527,6 +527,11 @@ body:has(.staff-page) {
   color: #6b7280;
 }
 
+.staff-badge-overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 .staff-badge-available {
   background: #dcfce7;
   color: #166534;

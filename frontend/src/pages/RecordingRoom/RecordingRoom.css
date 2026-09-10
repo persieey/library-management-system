@@ -135,8 +135,160 @@
   cursor: default;
 }
 
+.rr-btn-return--overdue {
+  background: #ea580c;
+}
+
+.rr-btn-return--overdue:hover {
+  background: #c2410c;
+}
+
 .rr-action-none {
   color: #9ca3af;
+}
+
+/* ------------------------------------------------------------------ */
+/* Daily room-usage schedule grid                                      */
+/* ------------------------------------------------------------------ */
+
+.rr-schedule-wrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+
+.rr-schedule-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.rr-schedule-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #12372f;
+  margin: 0;
+}
+
+.rr-schedule-date {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1f2937;
+}
+
+.rr-schedule-empty {
+  color: #9ca3af;
+  font-size: 14px;
+  padding: 12px 0;
+  margin: 0;
+}
+
+.rr-schedule-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.rr-schedule-grid {
+  display: grid;
+  grid-auto-rows: 34px;
+  gap: 3px;
+  width: 100%;
+  min-width: 760px;
+}
+
+.rr-schedule-corner {
+  height: 24px;
+}
+
+.rr-schedule-hour {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rr-schedule-row {
+  display: contents;
+}
+
+.rr-schedule-room {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  padding-right: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rr-schedule-cell {
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.rr-schedule-cell--free {
+  background: #f3f4f6;
+}
+
+.rr-schedule-cell--pending {
+  background: #f59e0b;
+}
+
+.rr-schedule-cell--confirmed {
+  background: #2563eb;
+}
+
+.rr-schedule-cell--overdue {
+  background: #dc2626;
+}
+
+.rr-schedule-cell--completed {
+  background: #9ca3af;
+}
+
+.rr-schedule-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.rr-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rr-legend-item i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
 }
 
 @media (max-width: 640px) {

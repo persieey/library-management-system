@@ -14,14 +14,17 @@ export interface UserRef {
 }
 
 export interface RoomRef {
+  room_id?: number;
   room_name: string;
 }
 
 export interface RoomBooking {
   room_booking_id: number;
   status: string; // "pending" | "confirmed" | "completed" | "cancelled"
+  room_id: number;
   start_datetime: string;
   end_datetime: string;
+  returned_at?: string | null;
   room?: RoomRef;
   user?: UserRef;
 }
@@ -42,6 +45,9 @@ export interface Room {
   room_id: number;
   room_name: string;
   room_type: string; // "individual" | "group"
+  building?: string;
+  floor?: string;
+  capacity?: number;
 }
 
 export interface BookedSlot {
