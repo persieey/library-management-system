@@ -24,7 +24,9 @@ func NewStatisticsController(db *gorm.DB) *StatisticsController {
 func (sc *StatisticsController) GetSummaryStats(c *gin.Context) {
 	from, to, hasFilter := utils.ParseDateRange(c)
 
-	rcQuery := sc.DB.Model(&models.RecordCenter{})
+	// นับเฉพาะ login ไม่รวม logout กัน 1 ครั้งที่มาใช้งานถูกนับซ้ำเป็น 2
+	// (login กับ logout ต่างก็ถูกบันทึกไว้ใน record_centers ตอน AuthController.Login/Logout จริง)
+	rcQuery := sc.DB.Model(&models.RecordCenter{}).Where("log_type = ?", "login")
 	if hasFilter {
 		rcQuery = rcQuery.Where("date >= ? AND date <= ?", from, to)
 	}
@@ -48,8 +50,8 @@ func (sc *StatisticsController) GetSummaryStats(c *gin.Context) {
 	}
 
 	slotQuery := `
-		SELECT 
-			CASE 
+		SELECT
+			CASE
 				WHEN EXTRACT(HOUR FROM date) >= 8 AND EXTRACT(HOUR FROM date) < 10 THEN '08.00-10.00'
 				WHEN EXTRACT(HOUR FROM date) >= 10 AND EXTRACT(HOUR FROM date) < 12 THEN '10.00-12.00'
 				WHEN EXTRACT(HOUR FROM date) >= 12 AND EXTRACT(HOUR FROM date) < 14 THEN '12.00-14.00'
@@ -58,10 +60,11 @@ func (sc *StatisticsController) GetSummaryStats(c *gin.Context) {
 			END AS slot,
 			COUNT(*) AS count
 		FROM record_centers
+		WHERE log_type = 'login'
 	`
 	var slotStats []SlotStat
 	if hasFilter {
-		sc.DB.Raw(slotQuery+" WHERE date >= ? AND date <= ? GROUP BY slot", from, to).Scan(&slotStats)
+		sc.DB.Raw(slotQuery+" AND date >= ? AND date <= ? GROUP BY slot", from, to).Scan(&slotStats)
 	} else {
 		sc.DB.Raw(slotQuery+" GROUP BY slot").Scan(&slotStats)
 	}
@@ -121,16 +124,28 @@ func (sc *StatisticsController) GetBookStats(c *gin.Context) {
 	// borrow_transactions ของ B6731915 ผูกกับ reservation_id ไม่ใช่ book_id ตรง ๆ
 	// ต้องไล่ผ่านสาย books -> book_copies -> reservations -> borrow_transactions
 	// เพราะการยืมเล่มหนึ่งผูกกับ "เล่ม" (copy) ไม่ใช่ "ชื่อเรื่อง" (book) ตรง ๆ
+	//
+	// แต่พอคืนเล่มแบบชำรุด/หาย copy นั้นจะถูกลบออกจาก book_copies จริง ๆ (ย้ายไป book_problems
+	// แทน — ดู library_controller.go transition()) การ join ผ่าน book_copies ตรง ๆ แบบเดิมเลย
+	// หา reservation ของเล่มที่เพิ่งชำรุด/หายไม่เจอ ยอดยืมของเล่มนั้นเลยหายไปจากอันดับทันทีที่คืน
+	// แก้โดยรวม mapping reservation -> book_id จากทั้งสองแหล่ง (book_copies ที่ยังอยู่ +
+	// book_problems ที่ถูกย้ายไปแล้ว) เข้าด้วยกันก่อน แล้วค่อย join ต่อ
 	var dbResults []Result
 	query := sc.DB.Table("books").
 		Select("books.book_id, books.title, books.category, COUNT(borrow_transactions.borrow_id) as borrow_count").
-		Joins("LEFT JOIN book_copies ON book_copies.book_id = books.book_id").
-		Joins("LEFT JOIN reservations ON reservations.copy_id = book_copies.copy_id")
+		Joins(`LEFT JOIN (
+			SELECT book_copies.book_id AS book_id, reservations.reservation_id AS reservation_id
+			FROM book_copies
+			JOIN reservations ON reservations.copy_id = book_copies.copy_id
+			UNION ALL
+			SELECT book_problems.book_id AS book_id, book_problems.reservation_id AS reservation_id
+			FROM book_problems
+		) reservation_book ON reservation_book.book_id = books.book_id`)
 
 	if hasFilter {
-		query = query.Joins("LEFT JOIN borrow_transactions ON borrow_transactions.reservation_id = reservations.reservation_id AND borrow_transactions.borrow_date >= ? AND borrow_transactions.borrow_date <= ?", from, to)
+		query = query.Joins("LEFT JOIN borrow_transactions ON borrow_transactions.reservation_id = reservation_book.reservation_id AND borrow_transactions.borrow_date >= ? AND borrow_transactions.borrow_date <= ?", from, to)
 	} else {
-		query = query.Joins("LEFT JOIN borrow_transactions ON borrow_transactions.reservation_id = reservations.reservation_id")
+		query = query.Joins("LEFT JOIN borrow_transactions ON borrow_transactions.reservation_id = reservation_book.reservation_id")
 	}
 
 	query.Group("books.book_id, books.title, books.category").
@@ -214,24 +229,28 @@ func (sc *StatisticsController) GetReturnStats(c *gin.Context) {
 }
 
 // GetRoomStats สถิติห้องศึกษา
+//
+// เดิมอ่านจาก stat_room_bookings/stat_rooms ซึ่งเป็นตารางจำลองแยกต่างหาก ไม่มีใครเขียนข้อมูลจริงลงไปเลย
+// เปลี่ยนมาอ่านจาก room_bookings/rooms จริงของระบบจองห้องของ B6715588 แทน
+// "Check-in" เดิม เทียบเท่าสถานะ confirmed/completed จริง (แปลว่าการจองไปถึงจริง ไม่ได้ถูกยกเลิก)
 func (sc *StatisticsController) GetRoomStats(c *gin.Context) {
 	from, to, hasFilter := utils.ParseDateRange(c)
 
-	rbQuery := sc.DB.Model(&models.StatRoomBooking{})
+	rbQuery := sc.DB.Model(&models.RoomBooking{})
 	if hasFilter {
 		rbQuery = rbQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 	}
 	var totalBookings int64
 	rbQuery.Count(&totalBookings)
 
-	checkinQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("status = ?", "Check-in")
+	checkinQuery := sc.DB.Model(&models.RoomBooking{}).Where("status IN ?", []string{"confirmed", "completed"})
 	if hasFilter {
 		checkinQuery = checkinQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 	}
 	var checkinCount int64
 	checkinQuery.Count(&checkinCount)
 
-	cancelQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("status = ?", "Cancelled")
+	cancelQuery := sc.DB.Model(&models.RoomBooking{}).Where("status = ?", "cancelled")
 	if hasFilter {
 		cancelQuery = cancelQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 	}
@@ -244,31 +263,39 @@ func (sc *StatisticsController) GetRoomStats(c *gin.Context) {
 		cancellationRate = utils.Round(float64(cancelCount)/float64(totalBookings)*100.0, 1)
 	}
 
-	var rooms []models.StatRoom
+	var rooms []models.Room
 	sc.DB.Order("room_id ASC").Find(&rooms)
 
 	roomList := make([]dto.RoomRow, 0)
 	for _, r := range rooms {
-		rQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("room_id = ?", r.RoomID)
+		rQuery := sc.DB.Model(&models.RoomBooking{}).Where("room_id = ?", r.RoomID)
 		if hasFilter {
 			rQuery = rQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 		}
 		var rTotal int64
 		rQuery.Count(&rTotal)
 
-		rCheckQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("room_id = ? AND status = ?", r.RoomID, "Check-in")
+		rCheckQuery := sc.DB.Model(&models.RoomBooking{}).Where("room_id = ? AND status IN ?", r.RoomID, []string{"confirmed", "completed"})
 		if hasFilter {
 			rCheckQuery = rCheckQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 		}
 		var rCheckin int64
 		rCheckQuery.Count(&rCheckin)
 
-		rCancelQuery := sc.DB.Model(&models.StatRoomBooking{}).Where("room_id = ? AND status = ?", r.RoomID, "Cancelled")
+		rCancelQuery := sc.DB.Model(&models.RoomBooking{}).Where("room_id = ? AND status = ?", r.RoomID, "cancelled")
 		if hasFilter {
 			rCancelQuery = rCancelQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
 		}
 		var rCancel int64
 		rCancelQuery.Count(&rCancel)
+
+		// ชั่วโมงรวมจริงจากผลต่างเวลาเริ่ม/สิ้นสุดของแต่ละการจอง แทนการคูณ 2 ชม.ต่อครั้งแบบเดิม
+		var rHours float64
+		hQuery := sc.DB.Model(&models.RoomBooking{}).Where("room_id = ?", r.RoomID)
+		if hasFilter {
+			hQuery = hQuery.Where("start_date_time >= ? AND start_date_time <= ?", from, to)
+		}
+		hQuery.Select("COALESCE(SUM(EXTRACT(EPOCH FROM (end_date_time - start_date_time)) / 3600.0), 0)").Scan(&rHours)
 
 		rCheckRate := 0.0
 		rCancelRate := 0.0
@@ -279,9 +306,9 @@ func (sc *StatisticsController) GetRoomStats(c *gin.Context) {
 
 		roomList = append(roomList, dto.RoomRow{
 			RoomNumber:       r.RoomName,
-			RoomType:         r.Capacity,
+			RoomType:         r.RoomType,
 			TotalBookings:    rTotal,
-			TotalHours:       rTotal * 2,
+			TotalHours:       int64(rHours),
 			CheckInRate:      rCheckRate,
 			CancellationRate: rCancelRate,
 		})
@@ -351,22 +378,32 @@ func (sc *StatisticsController) GetEbookStats(c *gin.Context) {
 }
 
 // GetEquipmentStats สถิติการยืม-คืนอุปกรณ์
+//
+// เดิมอ่านจาก equipment_rentals/stat_equipment ซึ่งเป็นตารางจำลองแยกต่างหาก ไม่มีใครเขียนข้อมูลจริงลงไปเลย
+// เปลี่ยนมาอ่านจากการจอง-ยืมอุปกรณ์จริงของระบบยืม-คืนของ B6731915 แทน (reservations + borrow_transactions)
+// ระบุว่า reservation ไหนเป็น "อุปกรณ์" ด้วย copy_id IS NULL แทนที่จะเช็ค equipment_id ตรง ๆ เพราะ
+// equipment_id ของ reservation จะถูกเคลียร์เป็น NULL ตอนคืนแบบชำรุด/หาย (ของถูกย้ายไป equipment_problems)
+// แต่ copy_id ไม่เคยถูกตั้งค่าตั้งแต่แรกสำหรับอุปกรณ์อยู่แล้ว จึงใช้แยกประเภทได้แน่นอนกว่า
 func (sc *StatisticsController) GetEquipmentStats(c *gin.Context) {
 	from, to, hasFilter := utils.ParseDateRange(c)
 
-	eqQuery := sc.DB.Model(&models.EquipmentRental{})
-	if hasFilter {
-		eqQuery = eqQuery.Where("rent_date >= ? AND rent_date <= ?", from, to)
-	}
-	var totalRentals int64
-	eqQuery.Count(&totalRentals)
+	fromBase := `FROM borrow_transactions bt JOIN reservations r ON r.reservation_id = bt.reservation_id AND r.copy_id IS NULL`
 
-	dmgQuery := sc.DB.Model(&models.EquipmentRental{}).Where("return_status = ? OR return_status = ?", "ชำรุด", "Damaged")
+	var totalRentals int64
 	if hasFilter {
-		dmgQuery = dmgQuery.Where("rent_date >= ? AND rent_date <= ?", from, to)
+		sc.DB.Raw("SELECT COUNT(*) "+fromBase+" WHERE bt.borrow_date >= ? AND bt.borrow_date <= ?", from, to).Scan(&totalRentals)
+	} else {
+		sc.DB.Raw("SELECT COUNT(*) " + fromBase).Scan(&totalRentals)
 	}
+
+	// สภาพตอนคืนเก็บในคอลัมน์เดียวกับหนังสือ (book_condition) เพราะ endpoint คืนของใช้ร่วมกันทั้งสองประเภท
+	dmgFrom := fromBase + ` JOIN return_transactions rt ON rt.borrow_id = bt.borrow_id AND rt.book_condition IN ('damaged', 'lost')`
 	var damagedCount int64
-	dmgQuery.Count(&damagedCount)
+	if hasFilter {
+		sc.DB.Raw("SELECT COUNT(*) "+dmgFrom+" WHERE bt.borrow_date >= ? AND bt.borrow_date <= ?", from, to).Scan(&damagedCount)
+	} else {
+		sc.DB.Raw("SELECT COUNT(*) " + dmgFrom).Scan(&damagedCount)
+	}
 
 	var intactRate, damagedRate float64
 	if totalRentals > 0 {
@@ -376,16 +413,18 @@ func (sc *StatisticsController) GetEquipmentStats(c *gin.Context) {
 		intactRate = 100.0
 	}
 
+	// ชื่ออุปกรณ์ดึงจาก equipment_items ก่อน ถ้าไม่เจอ (ถูกย้ายไปเพราะชำรุด/หาย) ไปเอาจาก equipment_problems แทน
+	devSelect := `SELECT COALESCE(ei.equipment_name, ep.equipment_name, 'ไม่ทราบชื่อ') AS name, COUNT(*) AS count `
+	devFrom := fromBase + `
+		LEFT JOIN equipment_items ei ON ei.equipment_id = r.equipment_id
+		LEFT JOIN equipment_problems ep ON ep.reservation_id = r.reservation_id
+	`
 	var dbDevices []dto.DeviceRow
-	devQuery := sc.DB.Table("equipment_rentals").
-		Select("COALESCE(stat_equipment.equipment_name, equipment_rentals.equipment_id) as name, COUNT(equipment_rentals.rental_id) as count").
-		Joins("LEFT JOIN stat_equipment ON equipment_rentals.equipment_id = stat_equipment.equipment_id")
 	if hasFilter {
-		devQuery = devQuery.Where("equipment_rentals.rent_date >= ? AND equipment_rentals.rent_date <= ?", from, to)
+		sc.DB.Raw(devSelect+devFrom+" WHERE bt.borrow_date >= ? AND bt.borrow_date <= ? GROUP BY name ORDER BY count DESC", from, to).Scan(&dbDevices)
+	} else {
+		sc.DB.Raw(devSelect + devFrom + " GROUP BY name ORDER BY count DESC").Scan(&dbDevices)
 	}
-	devQuery.Group("COALESCE(stat_equipment.equipment_name, equipment_rentals.equipment_id)").
-		Order("count DESC").
-		Scan(&dbDevices)
 
 	c.JSON(http.StatusOK, dto.EquipmentStatsResponse{
 		TotalRentals: totalRentals,

@@ -117,35 +117,45 @@ export default function Statistics(): React.JSX.Element {
   };
 
   // Filter complaints by matching backend period ranges accurately
+  //
+  // เดิมทุกช่วงเวลาผูกกับวันที่ตายตัว (ส.ค. 2569) พอเวลาผ่านไปจริง (ตอนนี้เป็น ก.ย. 2569 แล้ว)
+  // ตัวกรอง "เดือนนี้"/"สัปดาห์นี้" ยังคงไปกรองเฉพาะเดือนสิงหาคมอยู่ดี ข้อมูลเดือนปัจจุบันเลยหาย
+  // เปลี่ยนให้คำนวณจากวันที่ปัจจุบันจริง (new Date()) แทนค่าตายตัว ตรงกับที่แก้ฝั่ง backend
+  // (utils.ParseDateRange) ไว้แล้ว
+  // ป้ายตัวเลือก "เดือนนี้/เดือนที่แล้ว" เดิมเขียนเป็น "(ส.ค. 2569)" ตายตัว ทั้งที่ตอนนี้ไม่ใช่เดือน
+  // สิงหาคมแล้ว ทำให้ป้ายไม่ตรงกับเดือนที่กรองจริง คำนวณชื่อเดือนไทยจากวันที่ปัจจุบันแทน
+  const now = new Date();
+  const thaiMonthName = (offset: number) => {
+    const names = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    return `${names[d.getMonth()]} ${d.getFullYear() + 543}`;
+  };
+
   const filteredComplaints = complaintsData.filter((item) => {
     const d = parseThaiDate(item.submit_date || '');
     if (!d) return true;
 
     if (timeFilter === 'This Week') {
-      // 24 Aug 2026 - 31 Aug 2026
-      const from = new Date(2026, 7, 24);
-      const to = new Date(2026, 7, 31, 23, 59, 59);
+      const to = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
       return d >= from && d <= to;
     }
 
-    if (timeFilter.includes('This Month') || timeFilter.includes('Aug') || timeFilter.includes('ส.ค')) {
-      // 1 Aug 2026 - 31 Aug 2026
-      const from = new Date(2026, 7, 1);
-      const to = new Date(2026, 7, 31, 23, 59, 59);
+    if (timeFilter.includes('This Month')) {
+      const from = new Date(now.getFullYear(), now.getMonth(), 1);
+      const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       return d >= from && d <= to;
     }
 
-    if (timeFilter.includes('Last Month') || timeFilter.includes('Jul') || timeFilter.includes('ก.ค')) {
-      // 1 Jul 2026 - 31 Jul 2026
-      const from = new Date(2026, 6, 1);
-      const to = new Date(2026, 6, 31, 23, 59, 59);
+    if (timeFilter.includes('Last Month')) {
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
       return d >= from && d <= to;
     }
 
     if (timeFilter.includes('Semester')) {
-      // 1 Jun 2026 - 31 Oct 2026
-      const from = new Date(2026, 5, 1);
-      const to = new Date(2026, 9, 31, 23, 59, 59);
+      const from = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const to = new Date(now.getFullYear(), now.getMonth() + 3, 0, 23, 59, 59);
       return d >= from && d <= to;
     }
 
@@ -292,9 +302,9 @@ export default function Statistics(): React.JSX.Element {
                 onChange={(e) => setTimeFilter(e.target.value)}
               >
                 <option value="This Week">สัปดาห์นี้</option>
-                <option value="This Month (Aug 2026)">เดือนนี้ (ส.ค. 2569)</option>
-                <option value="Last Month (Jul 2026)">เดือนที่แล้ว (ก.ค. 2569)</option>
-                <option value="Semester 1/2026">ภาคเรียนที่ 1/2569</option>
+                <option value="This Month (Aug 2026)">เดือนนี้ ({thaiMonthName(0)})</option>
+                <option value="Last Month (Jul 2026)">เดือนที่แล้ว ({thaiMonthName(-1)})</option>
+                <option value="Semester 1/2026">ภาคเรียนที่ 1/{now.getFullYear() + 543}</option>
                 <option value="custom">กำหนดช่วงเองที่ต้องการ...</option>
               </select>
               {timeFilter === 'custom' && (
@@ -578,9 +588,9 @@ export default function Statistics(): React.JSX.Element {
                       bgType="gray" 
                     />
                     <StatCard 
-                      title="ดาวน์โหลดไฟล์ (PDF/EPUB)" 
+                      title="จำนวนการเข้าอ่าน" 
                       value={ebooksData?.total_downloads?.toLocaleString() || 0} 
-                      unit="ไฟล์" 
+                      unit="ครั้ง" 
                       bgType="green" 
                     />
                     <StatCard 

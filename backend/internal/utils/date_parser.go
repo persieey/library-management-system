@@ -21,27 +21,33 @@ func ParseDateRange(c *gin.Context) (time.Time, time.Time, bool) {
 	}
 
 	p := strings.ToLower(period)
+	now := time.Now()
 
+	// เดิมทุกช่วงเวลาผูกกับวันที่ตายตัว (ส.ค. 2569) ไว้ตอนสร้างข้อมูลสาธิต พอเวลาผ่านไป
+	// (เช่นตอนนี้เป็น ก.ย. 2569 แล้ว) ตัวกรอง "เดือนนี้"/"สัปดาห์นี้" ยังคงไปดึงข้อมูลของเดือนสิงหาคม
+	// อยู่ดี ข้อมูลจริงที่เพิ่งเกิดขึ้นเดือนปัจจุบันเลยไม่โผล่ในหน้าเว็บ เปลี่ยนให้คำนวณจาก
+	// เวลาปัจจุบันจริง (time.Now()) แทนค่าตายตัว
 	if strings.Contains(period, "สัปดาห์") || strings.Contains(p, "week") {
-		from := time.Date(2026, 8, 24, 0, 0, 0, 0, time.Local)
-		to := time.Date(2026, 8, 31, 23, 59, 59, 0, time.Local)
+		to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)
+		from := time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, time.Local).AddDate(0, 0, -6)
 		return from, to, true
-	} else if strings.Contains(period, "เดือนนี้") || strings.Contains(period, "ส.ค.") || strings.Contains(p, "aug") || strings.Contains(p, "this month") {
-		from := time.Date(2026, 8, 1, 0, 0, 0, 0, time.Local)
-		to := time.Date(2026, 8, 31, 23, 59, 59, 0, time.Local)
+	} else if strings.Contains(period, "เดือนนี้") || strings.Contains(p, "this month") {
+		from := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+		to := from.AddDate(0, 1, 0).Add(-time.Second)
 		return from, to, true
-	} else if strings.Contains(period, "เดือนที่แล้ว") || strings.Contains(period, "ก.ค.") || strings.Contains(p, "jul") || strings.Contains(p, "last month") {
-		from := time.Date(2026, 7, 1, 0, 0, 0, 0, time.Local)
-		to := time.Date(2026, 7, 31, 23, 59, 59, 0, time.Local)
+	} else if strings.Contains(period, "เดือนที่แล้ว") || strings.Contains(p, "last month") {
+		firstOfThisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+		to := firstOfThisMonth.Add(-time.Second)
+		from := time.Date(to.Year(), to.Month(), 1, 0, 0, 0, 0, time.Local)
 		return from, to, true
 	} else if strings.Contains(period, "ภาคการศึกษา") || strings.Contains(period, "เทอม") || strings.Contains(p, "semester") {
-		from := time.Date(2026, 6, 1, 0, 0, 0, 0, time.Local)
-		to := time.Date(2026, 10, 31, 23, 59, 59, 0, time.Local)
+		from := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local).AddDate(0, -2, 0)
+		to := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local).AddDate(0, 3, 0).Add(-time.Second)
 		return from, to, true
 	}
 
-	// Default: Full year / no restrictive filter
-	from := time.Date(2026, 1, 1, 0, 0, 0, 0, time.Local)
-	to := time.Date(2026, 12, 31, 23, 59, 59, 0, time.Local)
+	// Default: Full ปีปัจจุบัน / ไม่มีตัวกรอง
+	from := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.Local)
+	to := time.Date(now.Year(), 12, 31, 23, 59, 59, 0, time.Local)
 	return from, to, false
 }
