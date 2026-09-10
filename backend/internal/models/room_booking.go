@@ -22,6 +22,10 @@ type RoomBooking struct {
 	StartDateTime time.Time `json:"start_datetime"`
 	EndDateTime   time.Time `json:"end_datetime"`
 	Status        string    `gorm:"default:pending" json:"status"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	// เวลาที่คืนห้องจริง — ตั้งตอน status เปลี่ยนเป็น completed เท่านั้น (ครั้งแรกครั้งเดียว)
+	// ใช้แยก "คืนก่อนเวลา" (ReturnedAt < EndDateTime ปลดล็อกเวลาที่เหลือให้จองใหม่ได้)
+	// กับ "คืนหลังเวลา" (ReturnedAt > EndDateTime กันไม่ให้คนอื่นจองทับช่วงที่เกินมา)
+	ReturnedAt *time.Time `json:"returned_at"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }

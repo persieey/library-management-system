@@ -19,6 +19,21 @@ const (
 	maxBookingMinutesPerDay = maxBookingHoursPerDay * 60
 )
 
+// "เวลาสิ้นสุดจริง" ของการจอง — ถ้าคืนห้องแล้ว (completed) ใช้เวลาที่คืนจริง (ReturnedAt)
+// แทน EndDateTime เดิม เพราะคืนก่อนเวลาต้องปลดล็อกเวลาที่เหลือให้จองใหม่ได้ และคืนหลังเวลา
+// ก็ต้องกันไม่ให้คนอื่นจองทับช่วงที่เกินมาด้วย ส่วนการจองที่ยังไม่คืน (pending/confirmed)
+// ยังไม่รู้ว่าจะจบเมื่อไหร่ จึงใช้ EndDateTime เดิมไปก่อน
+const effectiveEndExpr = "(CASE WHEN status = 'completed' THEN COALESCE(returned_at, end_date_time) ELSE end_date_time END)"
+
+// เคลียร์การจองที่ยัง "pending" (ไม่มีใครมารับห้อง) แต่ช่วงเวลาที่จองผ่านไปแล้ว ให้กลาย
+// เป็น cancelled อัตโนมัติ (ถือว่าไม่มาใช้ตามนัด) ไม่งั้นห้องจะถูกจองค้างไว้ตลอดไปทั้งที่
+// ไม่มีใครมาเช็คอินจริง เรียกก่อนทุก endpoint ที่อ่าน/เช็คสถานะการจอง
+func (rb *RoomBookingController) expireStalePending() {
+	rb.db.Model(&models.RoomBooking{}).
+		Where("status = ? AND end_date_time < ?", "pending", time.Now()).
+		Update("status", "cancelled")
+}
+
 type RoomBookingController struct {
 	db *gorm.DB
 }
@@ -39,6 +54,7 @@ func (rb *RoomBookingController) ListRooms(c *gin.Context) {
 
 // GET /api/v1/room-bookings — staff เห็นทุกการจองห้อง
 func (rb *RoomBookingController) List(c *gin.Context) {
+	rb.expireStalePending()
 	var items []models.RoomBooking
 	if err := rb.db.Preload("User").Preload("Room").
 		Order("room_booking_id desc").Find(&items).Error; err != nil {
@@ -55,6 +71,8 @@ func (rb *RoomBookingController) Create(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "กรุณาเข้าสู่ระบบก่อน"})
 		return
 	}
+
+	rb.expireStalePending()
 
 	var req dto.CreateRoomBookingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -130,10 +148,11 @@ func (rb *RoomBookingController) Create(c *gin.Context) {
 	//
 	// สองช่วงเวลาทับกันเมื่อ ของเดิมเริ่มก่อนของใหม่จบ และของเดิมจบหลังของใหม่เริ่ม
 	// ใช้เงื่อนไขเดียวกับ Availability จะได้ตรงกับช่องที่หน้าเว็บปิดไว้
-	// การจองที่ถูกยกเลิกแล้วไม่นับ เพราะห้องว่างกลับมาแล้ว
+	// การจองที่ถูกยกเลิกแล้วไม่นับ เพราะห้องว่างกลับมาแล้ว และใช้ effectiveEndExpr แทน
+	// end_date_time ตรง ๆ เพื่อให้ห้องที่คืนก่อนเวลาแล้วกลับมาว่างให้จองใหม่ได้ทันที
 	var clash int64
 	if err := rb.db.Model(&models.RoomBooking{}).
-		Where("room_id = ? AND status <> ? AND start_date_time < ? AND end_date_time > ?",
+		Where("room_id = ? AND status <> ? AND start_date_time < ? AND "+effectiveEndExpr+" > ?",
 			req.RoomID, "cancelled", end, start).
 		Count(&clash).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ตรวจสอบช่วงเวลาไม่สำเร็จ"})
@@ -141,6 +160,22 @@ func (rb *RoomBookingController) Create(c *gin.Context) {
 	}
 	if clash > 0 {
 		c.JSON(http.StatusConflict, gin.H{"error": "ช่วงเวลานี้มีคนจองห้องนี้ไว้แล้ว กรุณาเลือกช่วงเวลาอื่น"})
+		return
+	}
+
+	// กันคนคนเดียวกันจองห้องซ้อนเวลาเดียวกัน ถึงจะเป็นคนละห้องก็ตาม (เช่นจองห้อง A
+	// 10:00-11:00 แล้วมาจองห้อง B 10:00-11:00 ซ้อนอีกใบ) ใช้เงื่อนไขทับเวลาแบบเดียวกับ
+	// ด้านบน แต่เช็คที่ user_id แทน room_id
+	var selfClash int64
+	if err := rb.db.Model(&models.RoomBooking{}).
+		Where("user_id = ? AND status <> ? AND start_date_time < ? AND "+effectiveEndExpr+" > ?",
+			userID, "cancelled", end, start).
+		Count(&selfClash).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ตรวจสอบช่วงเวลาไม่สำเร็จ"})
+		return
+	}
+	if selfClash > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "คุณมีการจองห้องอื่นในช่วงเวลานี้อยู่แล้ว กรุณาเลือกช่วงเวลาอื่น"})
 		return
 	}
 
@@ -177,6 +212,12 @@ func (rb *RoomBookingController) UpdateStatus(c *gin.Context) {
 	}
 
 	item.Status = req.Status
+	// บันทึกเวลาคืนจริงตอนกด "คืนห้อง" ครั้งแรกเท่านั้น (เผื่อมีใครยิงซ้ำ ไม่ให้เวลาคืน
+	// ขยับ) ใช้ค่านี้คำนวณว่าคืนก่อน/หลังเวลาจอง แล้วปลดล็อก/กันเวลาที่เหลือให้ถูกต้อง
+	if req.Status == "completed" && item.ReturnedAt == nil {
+		now := time.Now()
+		item.ReturnedAt = &now
+	}
 	if err := rb.db.Save(&item).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตสถานะไม่สำเร็จ"})
 		return
@@ -187,6 +228,8 @@ func (rb *RoomBookingController) UpdateStatus(c *gin.Context) {
 // GET /api/v1/room-bookings/availability?room_id=1&date=2026-09-02
 // ทุกคน login แล้วดูได้ — คืนแค่ช่วงเวลาที่ถูกจอง ไม่โชว์ว่าใครจอง (ป้องกันความเป็นส่วนตัว)
 func (rb *RoomBookingController) Availability(c *gin.Context) {
+	rb.expireStalePending()
+
 	roomID := c.Query("room_id")
 	dateStr := c.Query("date") // YYYY-MM-DD
 
@@ -200,8 +243,8 @@ func (rb *RoomBookingController) Availability(c *gin.Context) {
 
 	var items []models.RoomBooking
 	if err := rb.db.
-		Where("room_id = ? AND status != ? AND start_date_time < ? AND end_date_time > ?",
-    		roomID, "cancelled", dayEnd, dayStart).
+		Where("room_id = ? AND status != ? AND start_date_time < ? AND "+effectiveEndExpr+" > ?",
+			roomID, "cancelled", dayEnd, dayStart).
 		Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "โหลดข้อมูลไม่สำเร็จ"})
 		return
@@ -209,9 +252,15 @@ func (rb *RoomBookingController) Availability(c *gin.Context) {
 
 	slots := make([]gin.H, 0, len(items))
 	for _, b := range items {
+		// คืนก่อนเวลาไปแล้ว (completed + ReturnedAt เร็วกว่า EndDateTime เดิม) ก็ตัดช่อง
+		// ที่บล็อกให้สั้นลงตามจริง ช่วงที่เหลือจะได้ว่างให้จองใหม่ได้ทันที
+		endTime := b.EndDateTime
+		if b.Status == "completed" && b.ReturnedAt != nil {
+			endTime = *b.ReturnedAt
+		}
 		slots = append(slots, gin.H{
 			"start_datetime": b.StartDateTime,
-			"end_datetime":   b.EndDateTime,
+			"end_datetime":   endTime,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"booked_slots": slots})
@@ -219,6 +268,7 @@ func (rb *RoomBookingController) Availability(c *gin.Context) {
 
 // GET /api/v1/room-bookings/mine — เห็นแค่การจองของตัวเอง (ไม่ต้องเป็น employee)
 func (rb *RoomBookingController) MyBookings(c *gin.Context) {
+	rb.expireStalePending()
 	userID, _ := c.Get("user_id")
 
 	var items []models.RoomBooking
