@@ -41,6 +41,15 @@ func main() {
 	if err := config.SeedExternalDepartments(db); err != nil {
 		log.Fatalf("seed external departments ไม่สำเร็จ: %v", err)
 	}
+	if err := config.SeedMembers(db, cfg); err != nil {
+		log.Fatalf("seed members ไม่สำเร็จ: %v", err)
+	}
+	if err := config.SeedEbooks(db); err != nil {
+		log.Fatalf("seed ebooks ไม่สำเร็จ: %v", err)
+	}
+	if err := config.SeedBooks(db); err != nil {
+		log.Fatalf("seed books ไม่สำเร็จ: %v", err)
+	}
 
 	jwtProvider := utils.NewJWTProvider(cfg.JWTSecret, cfg.JWTExpiresIn)
 	authController := controllers.NewAuthController(db, jwtProvider)
