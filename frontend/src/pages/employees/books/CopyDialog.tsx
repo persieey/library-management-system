@@ -94,14 +94,14 @@ function CopyDialog({ book, onClose }: Props) {
             mb: '20px',
           }}
         >
-          <TextField
+          {/* <TextField
             label="เล่มที่"
             type="number"
             value={copyNumber}
             onChange={(e) => setCopyNumber(Number(e.target.value))}
             size="small"
-            sx={{ width: 100, bgcolor: 'white' }}
-          />
+            sx={{ width: 200, bgcolor: 'white' }}
+          /> */}
           <TextField
             label="อาคาร"
             value={building}
@@ -120,9 +120,10 @@ function CopyDialog({ book, onClose }: Props) {
           />
           <Button
             onClick={handleAdd}
-            startIcon={<AddRoundedIcon />}
+            // startIcon={<AddRoundedIcon />}
             variant="contained"
-            sx={{ fontFamily: fonts.thai, bgcolor: colors.brandGreen, whiteSpace: 'nowrap' }}
+            size="small"
+            sx={{ height: 38, fontFamily: fonts.thai, bgcolor: colors.brandGreen, whiteSpace: 'nowrap' }}
           >
             เพิ่มเล่ม
           </Button>

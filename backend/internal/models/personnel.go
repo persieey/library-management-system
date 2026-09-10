@@ -24,7 +24,7 @@ type Personnel struct {
 
 	// EmployeeID ผูกกับบัญชีพนักงานถ้าคนนี้มีบัญชีเข้าระบบ ว่างได้
 	EmployeeID *uint     `gorm:"uniqueIndex" json:"employee_id,omitempty"`
-	Employee   *Employee `gorm:"foreignKey:EmployeeID" json:"employee,omitempty"`
+	Employee *Employee `gorm:"foreignKey:EmployeeID;references:EmployeeID" json:"employee,omitempty"`
 
 	StaffID    string `gorm:"size:30;uniqueIndex;not null" json:"staff_id"`
 	FirstName  string `gorm:"size:100;not null" json:"first_name"`
