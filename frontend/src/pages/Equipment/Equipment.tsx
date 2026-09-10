@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import BackOfficeLayout from "../../components/BackOfficeLayout";
@@ -20,32 +20,33 @@ export default function Equipment() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
+  const [showAdd, setShowAdd] = useState(false);
+
+  const loadEquipment = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await authFetch("/api/v1/equipment");
+      if (!res.ok) throw new Error("Failed to load equipment");
+      const data = await res.json();
+      setEquipment(data.equipment || []);
+    } catch {
+      setError("โหลดข้อมูลอุปกรณ์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isEmployee) return; // guard below handles the redirect
+    loadEquipment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmployee]);
 
-    let cancelled = false;
-
-    const load = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await authFetch("/api/v1/equipment");
-        if (!res.ok) throw new Error("Failed to load equipment");
-        const data = await res.json();
-        if (!cancelled) setEquipment(data.equipment || []);
-      } catch {
-        if (!cancelled) setError("โหลดข้อมูลอุปกรณ์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [isEmployee, authFetch]);
+  const handleCreated = (item: EquipmentItem) => {
+    setEquipment((prev) => [...prev, item]);
+    setShowAdd(false);
+  };
 
   const counts = useMemo(() => {
     const available = equipment.filter((e) => e.status === "available").length;
@@ -108,13 +109,18 @@ export default function Equipment() {
               ))}
             </div>
 
-            <input
-              type="text"
-              className="staff-search eq-search"
-              placeholder="ค้นหาจาก ID ชื่อ หมวดหมู่ หรือตำแหน่ง..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="eq-toolbar">
+              <input
+                type="text"
+                className="staff-search eq-search"
+                placeholder="ค้นหาจาก ID ชื่อ หมวดหมู่ หรือตำแหน่ง..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button type="button" className="eq-btn-add" onClick={() => setShowAdd(true)}>
+                + เพิ่มอุปกรณ์ครุภัณฑ์
+              </button>
+            </div>
 
             {error && <p className="eq-error">{error}</p>}
 
@@ -174,6 +180,112 @@ export default function Equipment() {
               </div>
             )}
           </div>
+
+      {showAdd && (
+        <AddEquipmentModal
+          authFetch={authFetch}
+          onClose={() => setShowAdd(false)}
+          onCreated={handleCreated}
+        />
+      )}
     </BackOfficeLayout>
+  );
+}
+
+function AddEquipmentModal({
+  authFetch,
+  onClose,
+  onCreated,
+}: {
+  authFetch: (path: string, options?: RequestInit) => Promise<Response>;
+  onClose: () => void;
+  onCreated: (item: EquipmentItem) => void;
+}) {
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
+  const [location, setLocation] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setFormError("กรุณากรอกชื่ออุปกรณ์");
+      return;
+    }
+    setSubmitting(true);
+    setFormError("");
+    try {
+      const res = await authFetch("/api/v1/equipment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), category: category.trim(), location: location.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "เพิ่มอุปกรณ์ไม่สำเร็จ");
+      onCreated(data);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "เพิ่มอุปกรณ์ไม่สำเร็จ");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="staff-modal-overlay" onClick={onClose}>
+      <div className="staff-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="staff-modal-head">
+          <div>
+            <h3 className="staff-modal-title">เพิ่มอุปกรณ์ครุภัณฑ์</h3>
+            <div className="staff-modal-sub">กรอกข้อมูลอุปกรณ์ชิ้นใหม่ที่จะเพิ่มเข้าระบบ</div>
+          </div>
+          <button type="button" className="staff-modal-close" onClick={onClose} aria-label="ปิด">
+            ×
+          </button>
+        </div>
+
+        <form className="staff-modal-body" onSubmit={handleSubmit}>
+          <label className="eq-form-field">
+            <span>ชื่ออุปกรณ์ *</span>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="เช่น โปรเจคเตอร์ Epson EB-X06"
+              autoFocus
+            />
+          </label>
+          <label className="eq-form-field">
+            <span>หมวดหมู่</span>
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="เช่น อุปกรณ์ IT"
+            />
+          </label>
+          <label className="eq-form-field">
+            <span>ตำแหน่งที่เก็บ</span>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="เช่น ชั้น 2 ห้องควบคุม"
+            />
+          </label>
+
+          {formError && <p className="eq-error eq-form-error">{formError}</p>}
+
+          <div className="eq-form-actions">
+            <button type="button" className="eq-btn-cancel" onClick={onClose} disabled={submitting}>
+              ยกเลิก
+            </button>
+            <button type="submit" className="eq-btn-add" disabled={submitting}>
+              {submitting ? "กำลังบันทึก..." : "บันทึก"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
