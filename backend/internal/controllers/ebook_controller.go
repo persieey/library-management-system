@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"github.com/SA-1-69/T09/backend/internal/dto"
@@ -32,6 +33,38 @@ func (ec *EbookController) GetAll(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"ebooks": ebooks})
+}
+
+// LogSearch บันทึกคำค้นหา E-Book จริง ให้หน้ารายงานสถิติ "สถิติการค้นหา e-book" มีข้อมูลจริง
+// การค้นหาจริงกรองฝั่งหน้าเว็บล้วน ๆ (ไม่ได้ยิง query มาที่ /ebooks ทุกครั้งที่พิมพ์)
+// จึงต้องมี endpoint แยกให้หน้าเว็บยิง log มาเก็บแบบ debounce เอง คนไม่ล็อกอินก็ค้นหาได้
+// (หน้า /ebooks เปิดสาธารณะ) เลยใช้ OptionalAuth ไม่บังคับ login แต่เก็บ member_id ถ้ามี
+func (ec *EbookController) LogSearch(c *gin.Context) {
+	var req dto.LogEbookSearchRequest
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.Keyword) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ต้องระบุคำค้นหา"})
+		return
+	}
+
+	var memberID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		var member models.Member
+		if err := ec.db.Where("user_id = ?", uid).First(&member).Error; err == nil {
+			memberID = &member.MemberID
+		}
+	}
+
+	log := models.EbookSearchLog{
+		SearchLogID:     uuid.NewString(),
+		MemberID:        memberID,
+		SearchKeyword:   strings.TrimSpace(req.Keyword),
+		SearchTimestamp: time.Now(),
+	}
+	if err := ec.db.Create(&log).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "บันทึกคำค้นหาไม่สำเร็จ"})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"message": "บันทึกแล้ว"})
 }
 
 func (ec *EbookController) Create(c *gin.Context) {

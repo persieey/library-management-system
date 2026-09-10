@@ -51,6 +51,7 @@ func SetupRouter(authControllers *controllers.AuthController,
 	auth := api.Group("/auth")
 	auth.POST("/register", authControllers.Register)
 	auth.POST("/login", authControllers.Login)
+	auth.POST("/logout", middleware.JWTAuthMiddleware(jwtProvider), authControllers.Logout)
 	users := api.Group("/users")
 	users.Use(middleware.JWTAuthMiddleware(jwtProvider))
 	users.GET("/profile", userController.GetProfile)
@@ -149,6 +150,9 @@ func SetupRouter(authControllers *controllers.AuthController,
 	// ส่วนตัวไฟล์ยังต้องล็อกอิน อยู่ใต้ JWT ตามเดิม
 	ebooks.GET("", ebookController.GetAll)
 	ebooks.GET("/:id/cover", ebookController.GetCover)
+	// ค้นหาจริงกรองฝั่งหน้าเว็บล้วน ๆ ไม่ได้ยิง query ทุกครั้งที่พิมพ์ จึงมี endpoint แยกไว้เก็บ log
+	// อย่างเดียว ใช้ OptionalAuth เพราะหน้า /ebooks เปิดสาธารณะ ไม่บังคับ login ก่อนค้นหา
+	ebooks.POST("/search-log", middleware.OptionalAuth(jwtProvider), ebookController.LogSearch)
 
 	ebooks.Use(middleware.JWTAuthMiddleware(jwtProvider))
 

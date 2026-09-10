@@ -2,14 +2,39 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"github.com/SA-1-69/T09/backend/internal/dto"
 	"github.com/SA-1-69/T09/backend/internal/models"
 	"github.com/SA-1-69/T09/backend/internal/utils"
 )
+
+// บันทึกลง record_centers ให้หน้ารายงานสถิติ "ผู้เข้าใช้หอสมุด" มีข้อมูลจริงให้อ่าน
+// เดิมตารางนี้ไม่มีใครเขียนเลย (ไว้ดูสถิติภาพรวมล้วน ๆ แต่ไม่เคยต่อกับพฤติกรรมจริง)
+// login/logout ของทุก role นับหมด ไม่ใช่แค่สมาชิก เพราะพนักงานก็ถือเป็นคนที่ "เข้าใช้งาน" เช่นกัน
+func recordVisit(db *gorm.DB, userID uint, logType string) {
+	var memberID *uint
+	var member models.Member
+	if err := db.Where("user_id = ?", userID).First(&member).Error; err == nil {
+		memberID = &member.MemberID
+	}
+	desc := "เข้าสู่ระบบ"
+	if logType == "logout" {
+		desc = "ออกจากระบบ"
+	}
+	db.Create(&models.RecordCenter{
+		RecordCenterID: uuid.NewString(),
+		MemberID:       memberID,
+		Description:    desc,
+		Date:           time.Now(),
+		LogType:        logType,
+		Status:         "Normal",
+	})
+}
 
 type AuthController struct {
 	db *gorm.DB
@@ -103,6 +128,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 		return
 	}
 
+	recordVisit(ac.db, user.UserID, "login")
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "เข้าสู่ระบบสำเร็จ",
@@ -112,5 +138,13 @@ func (ac *AuthController) Login(c *gin.Context) {
 		"position": position,
 		"employee_id": employeeID,
 	})
-	
+
+}
+
+// Logout แค่บันทึกว่าออกจากระบบแล้ว — JWT ไม่มี state ฝั่งเซิร์ฟเวอร์ให้เพิกถอน
+// ฝั่งหน้าเว็บเป็นคนลบ token ออกจาก localStorage เอง endpoint นี้มีไว้เก็บสถิติอย่างเดียว
+func (ac *AuthController) Logout(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	recordVisit(ac.db, userID, "logout")
+	c.JSON(http.StatusOK, gin.H{"message": "ออกจากระบบสำเร็จ"})
 }

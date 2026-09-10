@@ -13,10 +13,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
   const logout = useCallback(() => {
+    // ยิง log ออกจากระบบแบบ fire-and-forget ไม่ต้องรอ ไม่งั้นเครื่องช้า/ออฟไลน์แล้วออกจากระบบไม่ได้
+    // ต้องเรียกก่อนลบ token ออกจาก state เพราะ endpoint ต้องใช้ token เดิมยืนยันตัวตน
+    if (token) authApi.logout(token).catch(() => {})
     localStorage.removeItem(TOKEN_STORAGE_KEY)
     setToken(null)
     setUser(null)
-  }, [])
+  }, [token])
 
   const login = useCallback(async (payload: LoginRequest) => {
     const res = await authApi.login(payload)

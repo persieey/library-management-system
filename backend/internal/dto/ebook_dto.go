@@ -13,6 +13,10 @@ type CreateEbookRequest struct {
 	Description string `json:"description"`
 }
 
+type LogEbookSearchRequest struct {
+	Keyword string `json:"keyword" binding:"required"`
+}
+
 type UpdateEbookRequest struct {
 	ISBN        *string `json:"isbn"`
 	Title       *string `json:"title"`

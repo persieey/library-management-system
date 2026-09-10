@@ -14,11 +14,13 @@ interface CatalogHeroProps {
   placeholder: string
   query: string
   onQueryChange: (value: string) => void
+  /** เรียกตอนออกจากช่องค้นหา (blur) — ใช้กับหน้าที่อยากรู้ "คำค้นหาสุดท้าย" เช่นหน้า E-Book ที่เก็บ log จริง */
+  onQueryBlur?: () => void
 }
 
 // แถบหัวหน้ารายการหนังสือ/E-Book — พื้นเขียวเข้มกับช่องค้นหาทรงแคปซูล
 // ใช้ภาษาออกแบบเดียวกับ hero บนหน้าแรก จะได้รู้สึกเป็นเว็บเดียวกัน
-function CatalogHero({ title, subtitle, placeholder, query, onQueryChange }: CatalogHeroProps) {
+function CatalogHero({ title, subtitle, placeholder, query, onQueryChange, onQueryBlur }: CatalogHeroProps) {
   return (
     <Box component="section" sx={{ width: '100%', bgcolor: colors.brandGreen }}>
       <Box
@@ -89,6 +91,7 @@ function CatalogHero({ title, subtitle, placeholder, query, onQueryChange }: Cat
           <InputBase
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
+            onBlur={onQueryBlur}
             placeholder={placeholder}
             // ค้นหาทันทีที่พิมพ์ ไม่มีปุ่มค้นหาและไม่ต้องกด Enter
             inputProps={{ 'aria-label': placeholder }}
