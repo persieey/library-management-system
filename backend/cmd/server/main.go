@@ -50,6 +50,9 @@ func main() {
 	if err := config.SeedBooks(db); err != nil {
 		log.Fatalf("seed books ไม่สำเร็จ: %v", err)
 	}
+	if err := config.SeedBookCopies(db); err != nil {
+		log.Fatalf("seed book copies ไม่สำเร็จ: %v", err)
+	}
 
 	jwtProvider := utils.NewJWTProvider(cfg.JWTSecret, cfg.JWTExpiresIn)
 	authController := controllers.NewAuthController(db, jwtProvider)

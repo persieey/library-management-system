@@ -12,5 +12,5 @@ type BookInspection struct {
 	Description    string    `json:"description"`
 	Resolved       bool      `gorm:"default:false" json:"resolved"`
 	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	UpdatedAt	      time.Time `json:"updated_at"`
 }

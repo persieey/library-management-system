@@ -186,7 +186,7 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     positions: CAN_ACCESS_BACKOFFICE,
     children: [
       { icon: 'overview', label: 'ภาพรวมระบบ', to: '/procurement' },
-      { icon: 'procurement', label: 'สร้างใบขอซื้อ', to: '/procurement/create' },
+      { icon: 'procurement', label: 'สร้างคำขอซื้อ', to: '/procurement/create' },
       { icon: 'reports', label: 'รายการขอซื้อ', to: '/procurement/requests' },
       { icon: 'complaints', label: 'ตรวจสอบรายละเอียด', to: '/procurement/details' },
       { icon: 'audit', label: 'ลงทะเบียนทรัพย์สิน', to: '/procurement/register-asset' },
