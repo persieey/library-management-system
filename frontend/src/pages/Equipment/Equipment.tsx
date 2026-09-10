@@ -94,9 +94,9 @@ export default function Equipment() {
   ];
 
   return (
-    <BackOfficeLayout title="อุปกรณ์">
+    <BackOfficeLayout title="อุปกรณ์ครุภัณฑ์">
           <div className="eq-page">
-            <h2 className="eq-title">แดชบอร์ดสรุปอุปกรณ์</h2>
+            <h2 className="eq-title">แดชบอร์ดสรุปอุปกรณ์ครุภัณฑ์</h2>
 
             <div className="staff-stats cols-3">
               {stats.map((s) => (

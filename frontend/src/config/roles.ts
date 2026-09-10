@@ -170,7 +170,7 @@ export const BACK_OFFICE_MENU: NavAction[] = [
   {
     // ระบบอุปกรณ์และแจ้งซ่อม เป็นของ B6715588 เจ้าหน้าที่ทุกตำแหน่งดูได้
     icon: 'equipment',
-    label: 'อุปกรณ์',
+    label: 'อุปกรณ์ครุภัณฑ์',
     positions: CAN_ACCESS_BACKOFFICE,
     children: [
       { icon: 'equipment', label: 'รายการอุปกรณ์', to: '/staff/equipment' },
