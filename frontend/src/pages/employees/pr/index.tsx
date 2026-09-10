@@ -29,7 +29,7 @@ type FilterTab = 'ทั้งหมด' | PRStatus
 const FILTER_TABS: FilterTab[] = ['ทั้งหมด', 'เผยแพร่', 'ตั้งเวลา', 'ร่าง', 'หมดอายุ']
 
 function AnnouncementsPanel() {
-  const { items: allItems, create, update, remove, togglePause, copyItem, incrementView, toast, clearToast } = usePR()
+  const { items: allItems, create, update, remove, togglePause, copyItem, toast, clearToast } = usePR()
   const [filter, setFilter] = useState<FilterTab>('ทั้งหมด')
   const [query, setQuery] = useState('')
 
@@ -64,9 +64,10 @@ function AnnouncementsPanel() {
     setEditorOpen(false)
   }
 
+  // ปุ่ม "ดู" ของแอดมินไว้แค่พรีวิวข่าวตัวเอง ไม่นับเป็นยอดเข้าชม — ยอดเข้าชมจริงนับ
+  // จากฝั่งผู้อ่านสาธารณะที่กดเปิดผ่านกระดิ่งแจ้งเตือน (NotificationBell) เท่านั้น
   const handlePreview = (id: number) => {
     setPreviewId(id)
-    incrementView(id)
   }
 
   const handlePrint = (id: number) => {
