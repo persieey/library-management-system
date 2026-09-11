@@ -66,6 +66,10 @@ export type EquipmentLoan = {
 
 export const getResources = (signal?: AbortSignal, date?: string, days = 1) => apiFetch<CatalogResource[]>(`/api/v1/books/catalog${date ? `?reserved_for=${date}&days=${days}` : ''}`, { signal })
 export const getEquipment = (signal?: AbortSignal, date?: string, days = 1) => apiFetch<CatalogEquipment[]>(`/api/v1/equipment/catalog${date ? `?reserved_for=${date}&days=${days}` : ''}`, { signal })
+
+export type CatalogRoom = { room_id: number; room_name: string; room_type: string; building?: string; floor?: string; capacity?: number }
+// รายชื่อห้องเปิดสาธารณะ ใช้กับช่องค้นหารวมหน้าแรก
+export const getRooms = (signal?: AbortSignal) => apiFetch<{ rooms: CatalogRoom[] }>('/api/v1/rooms', { signal }).then((r) => r.rooms)
 export const getMyLoans = (token: string, signal?: AbortSignal) => apiFetch<BookLoan[]>('/api/v1/books/reservations', { token, signal })
 export const getMyEquipmentLoans = (token: string, signal?: AbortSignal) => apiFetch<EquipmentLoan[]>('/api/v1/equipment/reservations', { token, signal })
 export const requestBook = (token: string, resourceId: number, reservedFor: string, days: number) => apiFetch<BookLoan>('/api/v1/books/reservations', { method: 'POST', token, body: { resource_id: resourceId, reserved_for: reservedFor, days } })

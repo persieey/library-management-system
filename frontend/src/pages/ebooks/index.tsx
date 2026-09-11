@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
@@ -13,11 +14,12 @@ import { logEbookSearch } from '../../services/https/ebooks'
 import { useAuth } from '../../auth/useAuth'
 import type { Ebook } from '../../interface/IEbookInterface'
 
-// รายการ E-Book ทั้งหมด — ปลายทางของปุ่ม eBooks บนหน้าแรก
+// รายการ E-Book ทั้งหมด — ปลายทางของปุ่ม eBooks บนหน้าแรก และของช่องค้นหารวม (/search)
 // หน้าตาและวิธีใช้เหมือนหน้าหนังสือทุกอย่าง ต่างแค่การ์ดมีปุ่มเปิดไฟล์
 function EbooksPage() {
   const { ebooks, isLoading, error } = usePublicEbooks()
   const { token } = useAuth()
+  const [searchParams] = useSearchParams()
 
   const filter = useCatalogFilter<Ebook>(ebooks, {
     searchText: (e) => [e.title, e.author, e.publisher, e.isbn, e.category],
@@ -26,6 +28,13 @@ function EbooksPage() {
     author: (e) => e.author,
     createdAt: (e) => e.created_at,
   })
+
+  // ตั้งคำค้นหาเริ่มต้นจาก query string (เช่นกดมาจากช่องค้นหารวมหน้าแรก /search)
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) filter.setQuery(q)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // เก็บ log คำค้นหาจริงให้หน้ารายงานสถิติ "สถิติการค้นหา e-book" มีข้อมูลจริง
   //

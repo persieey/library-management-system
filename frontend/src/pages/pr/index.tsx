@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+import InputBase from '@mui/material/InputBase'
 import IconButton from '@mui/material/IconButton'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
@@ -42,19 +43,35 @@ const quickLinks = [
   { icon: iconBookFill, label: 'borrow', to: '/borrow', left: 856 },
 ]
 
-const categories = [
-  { icon: iconFiction, name: 'Fiction', titles: '2,400 titles', to: '/category/fiction' },
-  { icon: iconNonFiction, name: 'Non-Fiction', titles: '1,850 titles', to: '/category/non-fiction' },
-  { icon: iconScience, name: 'Science', titles: '980 titles', to: '/category/science' },
-  { icon: iconHistory, name: 'History', titles: '1,120 titles', to: '/category/history' },
-  { icon: iconChildren, name: 'Children', titles: '1,560 titles', to: '/category/children' },
-  { icon: iconRomance, name: 'Romance', titles: '2,010 titles', to: '/category/romance' },
-  { icon: iconMystery, name: 'Mystery', titles: '1,340 titles', to: '/category/mystery' },
-  { icon: iconBiography, name: 'Biography', titles: '760 titles', to: '/category/biography' },
-]
+// จับคู่ชื่อหมวดหมู่จริงในระบบ (ภาษาไทย มาจาก books.category) กับไอคอนที่มีอยู่แล้ว
+// หมวดที่ไม่ตรงกับชื่อในตารางนี้จะได้ไอคอน DEFAULT_CATEGORY_ICON แทน กันพังตอนมีหมวดใหม่
+const CATEGORY_ICONS: Record<string, string> = {
+  นวนิยาย: iconFiction,
+  วิชาการ: iconNonFiction,
+  วิทยาศาสตร์: iconScience,
+  จิตวิทยา: iconScience,
+  ประวัติศาสตร์: iconHistory,
+  การ์ตูน: iconChildren,
+  เด็ก: iconChildren,
+  โรแมนซ์: iconRomance,
+  สืบสวน: iconMystery,
+  ชีวประวัติ: iconBiography,
+}
+const DEFAULT_CATEGORY_ICON = iconNonFiction
 
 function HeroSection() {
   const { requireLogin } = useLoginPrompt()
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+
+  // เดิมช่องนี้เป็นแค่กล่องตกแต่ง (Typography เขียนคำว่า "Search" ไม่มี input จริง)
+  // กดพิมพ์อะไรไม่ได้เลย ทั้งที่เป็นองค์ประกอบเด่นสุดของหน้าแรก เปลี่ยนเป็น input จริง
+  // ที่พาไปหน้า /search ซึ่งค้นหารวมหนังสือ/E-Book/อุปกรณ์/ห้องพร้อมกันในที่เดียว
+  // (แนวทางเดียวกับช่องค้นหา "Find all" ของเว็บห้องสมุด มธ.)
+  const submitSearch = () => {
+    const q = query.trim()
+    navigate(q ? `/search?q=${encodeURIComponent(q)}` : '/search')
+  }
 
   const [ready, setReady] = useState(false)
   useEffect(() => {
@@ -96,6 +113,11 @@ function HeroSection() {
         </Typography>
 
         <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            submitSearch()
+          }}
           sx={{
             position: 'absolute',
             left: '50%',
@@ -113,10 +135,22 @@ function HeroSection() {
             ...fadeSx(150),
           }}
         >
-          <Typography sx={{ fontFamily: fonts.inter, fontSize: 14, color: colors.placeholder }}>
-            Search
-          </Typography>
-          <Box component="img" src={iconSearch} alt="" sx={{ height: 17, width: 17 }} />
+          <InputBase
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search"
+            inputProps={{ 'aria-label': 'ค้นหาหนังสือ' }}
+            sx={{
+              flex: 1,
+              fontFamily: fonts.inter,
+              fontSize: 14,
+              color: colors.ink,
+              '& input::placeholder': { color: colors.placeholder, opacity: 1 },
+            }}
+          />
+          <IconButton type="submit" size="small" aria-label="ค้นหา" sx={{ p: 0 }}>
+            <Box component="img" src={iconSearch} alt="" sx={{ height: 17, width: 17 }} />
+          </IconButton>
         </Box>
 
         <Box
@@ -172,6 +206,30 @@ function HeroSection() {
 }
 
 function CategorySection() {
+  // นับหมวดหมู่จริงจากหนังสือในระบบ (books.category) แทนเลขที่ hardcode ไว้เดิม
+  // เรียงหมวดที่มีเล่มเยอะสุดขึ้นก่อน ให้หมวดที่ใช้งานจริงเด่นกว่าหมวดที่แทบไม่มีเล่ม
+  const { books } = usePublicBooks()
+
+  const categories = (() => {
+    const counts = new Map<string, number>()
+    for (const b of books) {
+      const name = b.category?.trim()
+      if (!name) continue
+      counts.set(name, (counts.get(name) ?? 0) + 1)
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({
+        icon: CATEGORY_ICONS[name] ?? DEFAULT_CATEGORY_ICON,
+        name,
+        titles: `${count.toLocaleString('th-TH')} เล่ม`,
+        to: `/books?category=${encodeURIComponent(name)}`,
+      }))
+  })()
+
+  // ยังไม่มีหนังสือ/หมวดหมู่ในระบบก็ไม่ต้องโชว์หัวข้อว่างๆ เหมือน RecommendedBooks ด้านล่าง
+  if (categories.length === 0) return null
+
   return (
     <Box component="section" sx={{ width: '100%', bgcolor: colors.cream50 }}>
       <Box
@@ -197,25 +255,19 @@ function CategorySection() {
           </Box>
         </Reveal>
 
-        <Box sx={{ display: 'flex', width: '100%', flexDirection: 'column', gap: '20px' }}>
-          <Box sx={{ display: 'flex', gap: '20px' }}>
-            {categories.slice(0, 4).map((category, i) => (
-              <Box key={category.name} sx={{ flex: 1 }}>
-                <Reveal delay={i * 70}>
-                  <CategoryCard {...category} />
-                </Reveal>
-              </Box>
-            ))}
-          </Box>
-          <Box sx={{ display: 'flex', gap: '20px' }}>
-            {categories.slice(4).map((category, i) => (
-              <Box key={category.name} sx={{ flex: 1 }}>
-                <Reveal delay={i * 70}>
-                  <CategoryCard {...category} />
-                </Reveal>
-              </Box>
-            ))}
-          </Box>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '20px',
+            width: '100%',
+          }}
+        >
+          {categories.map((category, i) => (
+            <Reveal key={category.name} delay={i * 70}>
+              <CategoryCard {...category} />
+            </Reveal>
+          ))}
         </Box>
       </Box>
     </Box>
@@ -306,11 +358,15 @@ function EventSection() {
 }
 
 function RecommendedBooks() {
-  // เอาหนังสือจริงจากระบบจัดการหนังสือมาโชว์ 5 เล่มล่าสุด (backend เรียงใหม่สุดมาก่อนอยู่แล้ว)
+  // โชว์เฉพาะเล่มที่เจ้าหน้าที่ติดดาวแนะนำไว้จากหน้าประชาสัมพันธ์ (book.recommended)
+  //
+  // เดิม fallback ไปโชว์ 5 เล่มใหม่สุดตอนยังไม่มีใครติดดาวเลย แต่ทำให้ถอนดาวออกแล้ว
+  // เล่มนั้นยังโผล่อยู่ดี (เพราะบังเอิญติดอยู่ใน 5 เล่มใหม่สุดพอดี) ดูเหมือนถอนดาวไม่ทำงาน
+  // ตัดออกให้ตรงไปตรงมา: มีคนติดดาวจริงถึงโชว์ ไม่มีก็ซ่อนทั้ง section ไปเลย
   const { books } = usePublicBooks()
-  const featured = books.slice(0, 5)
+  const featured = books.filter((b) => b.recommended).slice(0, 5)
 
-  // ยังไม่มีหนังสือในระบบก็ไม่ต้องโชว์หัวข้อว่างๆ
+  // ยังไม่มีเล่มไหนถูกติดดาวแนะนำเลยก็ไม่ต้องโชว์หัวข้อว่างๆ
   if (featured.length === 0) return null
 
   return (
@@ -328,7 +384,7 @@ function RecommendedBooks() {
             </Box>
             <Typography
               component={Link}
-              to="/books"
+              to="/books?recommended=true"
               sx={{ fontFamily: fonts.inter, fontSize: 14, fontWeight: 600, color: colors.terracotta600 }}
             >
               View All
