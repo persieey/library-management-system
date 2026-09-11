@@ -46,6 +46,23 @@ func (EbookSearchLog) TableName() string {
 	return "ebook_search_logs"
 }
 
+// EbookOpenLog ประวัติการเปิดอ่านไฟล์ E-Book จริง — คนละอันกับ EbookSearchLog
+// (search = พิมพ์ค้นหา, open = กดเปิดไฟล์อ่านจริง) บันทึกทุกครั้งที่มีการเรียก
+// GetFile สำเร็จ ใช้คำนวณ "จำนวนการเข้าอ่าน" ในหน้ารายงานสถิติ
+type EbookOpenLog struct {
+	OpenLogID string    `gorm:"primaryKey;column:open_log_id;size:50" json:"open_log_id"`
+	EbookID   uint      `gorm:"column:ebook_id;not null" json:"ebook_id"`
+	MemberID  *uint     `gorm:"column:member_id" json:"member_id"`
+	OpenedAt  time.Time `gorm:"column:opened_at;default:CURRENT_TIMESTAMP" json:"opened_at"`
+
+	Ebook  *Ebook  `gorm:"foreignKey:EbookID;references:EbookID" json:"ebook,omitempty"`
+	Member *Member `gorm:"foreignKey:MemberID;references:MemberID" json:"member,omitempty"`
+}
+
+func (EbookOpenLog) TableName() string {
+	return "ebook_open_logs"
+}
+
 // RecordCenter บันทึกการเข้าใช้งานห้องสมุด
 type RecordCenter struct {
 	RecordCenterID string    `gorm:"primaryKey;column:record_center_id;size:50" json:"record_center_id"`

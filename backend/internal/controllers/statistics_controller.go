@@ -333,6 +333,15 @@ func (sc *StatisticsController) GetEbookStats(c *gin.Context) {
 	var totalSearches int64
 	ebQuery.Count(&totalSearches)
 
+	// จำนวนการเข้าอ่านจริง — เดิมใช้ totalSearches ซ้ำ (ไม่มีอะไรนับตอนเปิดไฟล์จริงเลย)
+	// ตอนนี้นับจาก ebook_open_logs ที่ GetFile บันทึกทุกครั้งที่มีคนเปิดไฟล์อ่านจริง
+	opQuery := sc.DB.Model(&models.EbookOpenLog{})
+	if hasFilter {
+		opQuery = opQuery.Where("opened_at >= ? AND opened_at <= ?", from, to)
+	}
+	var totalOpens int64
+	opQuery.Count(&totalOpens)
+
 	type DBKeyword struct {
 		SearchKeyword string
 		Count         int64
@@ -371,7 +380,7 @@ func (sc *StatisticsController) GetEbookStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.EbookStatsResponse{
 		TotalSearches:  totalSearches,
-		TotalDownloads: totalSearches,
+		TotalDownloads: totalOpens,
 		NoResultRate:   0.0,
 		Keywords:       keywords,
 	})

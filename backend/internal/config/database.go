@@ -157,6 +157,7 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 		&models.StatRoom{},
 		&models.StatRoomBooking{},
 		&models.EbookSearchLog{},
+		&models.EbookOpenLog{},
 		&models.RecordCenter{},
 		&models.StatEquipment{},
 		&models.EquipmentRental{},
