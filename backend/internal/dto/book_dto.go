@@ -19,6 +19,7 @@ type UpdateBookRequest struct {
 	Category    *string `json:"category"`
 	CallNumber  *string `json:"call_number"`
 	Description *string `json:"description"`
+	Recommended *bool   `json:"recommended"`
 }
 
 type CreateBookCopyRequest struct {

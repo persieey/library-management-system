@@ -13,6 +13,8 @@ export interface Book {
   call_number: string
   description: string
   cover_path: string
+  /** ติดดาวแนะนำให้ขึ้น "Recommended for You" บนหน้าแรก */
+  recommended: boolean
   created_at: string
   updated_at: string
 }

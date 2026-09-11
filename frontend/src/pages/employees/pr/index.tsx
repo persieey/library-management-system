@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import InputBase from '@mui/material/InputBase'
 import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+import StarIcon from '@mui/icons-material/Star'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
 import PRCard from './PRCard'
 import PREditorDialog, { type PRDraft } from './PREditorDialog'
 import PRPreviewDialog from './PRPreviewDialog'
@@ -16,14 +19,17 @@ import EventEditorDialog from './EventEditorDialog'
 import { formatEventDate } from './eventDateFormat'
 import type { PRStatus } from '../../../interface/IPRInterface'
 import type { EventDraft } from '../../../interface/IEventInterface'
+import type { Book } from '../../../interface/IBookInterface'
 import { usePR } from '../../../context/PRContext'
 import { useEvents } from '../../../context/EventContext'
+import { useAuth } from '../../../auth/useAuth'
+import { listBooks, setBookRecommended } from '../../../services/https/books'
 import searchIcon from '../../../assets/icons/pr-search.svg'
 import plusIcon from '../../../assets/icons/pr-plus.svg'
 import BackOfficeLayout from '../../../components/BackOfficeLayout'
 import { colors, fonts } from '../../../theme'
 
-type SidebarTab = 'overview' | 'events' | 'announcements'
+type SidebarTab = 'overview' | 'events' | 'announcements' | 'books'
 
 type FilterTab = 'ทั้งหมด' | PRStatus
 const FILTER_TABS: FilterTab[] = ['ทั้งหมด', 'เผยแพร่', 'ตั้งเวลา', 'ร่าง', 'หมดอายุ']
@@ -196,6 +202,140 @@ function AnnouncementsPanel() {
 
       <Snackbar open={Boolean(toast)} autoHideDuration={2500} onClose={clearToast}>
         <Alert severity="success" onClose={clearToast} sx={{ fontFamily: fonts.thai }}>
+          {toast}
+        </Alert>
+      </Snackbar>
+    </Box>
+  )
+}
+
+// ติดดาวแนะนำหนังสือ — รายชื่อหนังสือทั้งหมด กดดาวแล้วขึ้น "Recommended for You"
+// บนหน้าแรกทันที (RecommendedBooks อ่านจาก book.recommended ตรง ๆ ไม่ต้อง publish ซ้ำ)
+function RecommendBooksPanel() {
+  const { token } = useAuth()
+  const [books, setBooks] = useState<Book[]>([])
+  const [loading, setLoading] = useState(true)
+  const [query, setQuery] = useState('')
+  const [error, setError] = useState('')
+  const [toast, setToast] = useState('')
+  const [pendingId, setPendingId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    listBooks(token)
+      .then((data) => {
+        if (!cancelled) setBooks(data)
+      })
+      .catch(() => {
+        if (!cancelled) setError('โหลดรายการหนังสือไม่สำเร็จ')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return books
+    return books.filter((b) => [b.title, b.author, b.category].some((v) => v?.toLowerCase().includes(q)))
+  }, [books, query])
+
+  const recommendedCount = books.filter((b) => b.recommended).length
+
+  async function toggleStar(book: Book) {
+    if (!token) return
+    const next = !book.recommended
+    setPendingId(book.book_id)
+    setBooks((prev) => prev.map((b) => (b.book_id === book.book_id ? { ...b, recommended: next } : b)))
+    try {
+      await setBookRecommended(token, book.book_id, next)
+      setToast(next ? `แนะนำ "${book.title}" แล้ว` : `เอา "${book.title}" ออกจากรายการแนะนำแล้ว`)
+    } catch {
+      // ยิงพลาด ย้อนค่ากลับตามจริง
+      setBooks((prev) => prev.map((b) => (b.book_id === book.book_id ? { ...b, recommended: !next } : b)))
+      setError('บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setPendingId(null)
+    }
+  }
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <Typography sx={{ fontFamily: fonts.thai, fontSize: 14, color: colors.inkMuted }}>
+          ติดดาวหนังสือที่อยากแนะนำ ให้ขึ้นแสดงในส่วน "Recommended for You" บนหน้าแรก — แนะนำอยู่ตอนนี้ {recommendedCount} เล่ม
+        </Typography>
+        <InputBase
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="ค้นหาชื่อเรื่อง ผู้แต่ง หรือหมวดหมู่..."
+          sx={{
+            fontFamily: fonts.thai,
+            fontSize: 14,
+            border: `1px solid ${colors.border}`,
+            borderRadius: '10px',
+            px: '14px',
+            py: '8px',
+            minWidth: 260,
+            bgcolor: 'white',
+          }}
+        />
+      </Box>
+
+      {error && <Alert severity="error">{error}</Alert>}
+
+      {loading ? (
+        <Typography sx={{ fontFamily: fonts.thai, color: colors.inkMuted }}>กำลังโหลด...</Typography>
+      ) : filtered.length === 0 ? (
+        <Typography sx={{ fontFamily: fonts.thai, color: colors.inkMuted, py: '24px' }}>ไม่พบหนังสือที่ตรงกับคำค้นหา</Typography>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {filtered.map((book) => (
+            <Box
+              key={book.book_id}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '14px',
+                border: `1px solid ${colors.border}`,
+                borderRadius: '10px',
+                px: '16px',
+                py: '10px',
+                bgcolor: book.recommended ? colors.accentGreenLight : 'white',
+              }}
+            >
+              <IconButton
+                aria-label={book.recommended ? 'เอาออกจากรายการแนะนำ' : 'แนะนำหนังสือเล่มนี้'}
+                onClick={() => void toggleStar(book)}
+                disabled={pendingId === book.book_id}
+                sx={{ color: book.recommended ? '#d4a017' : colors.inkMuted }}
+              >
+                {book.recommended ? <StarIcon /> : <StarBorderIcon />}
+              </IconButton>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontFamily: fonts.thai, fontWeight: 600 }} noWrap>
+                  {book.title}
+                </Typography>
+                <Typography sx={{ fontFamily: fonts.thai, fontSize: 13, color: colors.inkMuted }} noWrap>
+                  {book.author} · {book.category || 'ไม่ระบุหมวดหมู่'}
+                </Typography>
+              </Box>
+              {book.recommended && (
+                <Typography sx={{ fontFamily: fonts.thai, fontSize: 12, fontWeight: 600, color: colors.brandGreen }}>
+                  แนะนำอยู่
+                </Typography>
+              )}
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      <Snackbar open={Boolean(toast)} autoHideDuration={2500} onClose={() => setToast('')}>
+        <Alert severity="success" onClose={() => setToast('')} sx={{ fontFamily: fonts.thai }}>
           {toast}
         </Alert>
       </Snackbar>
@@ -419,6 +559,7 @@ const TAB_TITLES: Record<SidebarTab, string> = {
   overview: 'ประชาสัมพันธ์ — ภาพรวม',
   events: 'ประชาสัมพันธ์ — กิจกรรม',
   announcements: 'ประชาสัมพันธ์ — ประกาศ',
+  books: 'ประชาสัมพันธ์ — หนังสือแนะนำ',
 }
 
 function ManagePR() {
@@ -427,7 +568,7 @@ function ManagePR() {
 
   // ไม่มี :tab ใน URL แปลว่าเข้ามาที่ /employees/pr ตรงๆ ให้แสดงภาพรวม
   const tab: SidebarTab =
-    tabParam === 'events' || tabParam === 'announcements' ? tabParam : 'overview'
+    tabParam === 'events' || tabParam === 'announcements' || tabParam === 'books' ? tabParam : 'overview'
 
   const goToTab = (next: SidebarTab) =>
     navigate(next === 'overview' ? '/employees/pr' : `/employees/pr/${next}`)
@@ -437,6 +578,7 @@ function ManagePR() {
       {tab === 'overview' && <OverviewPanel onNavigate={goToTab} />}
       {tab === 'events' && <EventsPanel />}
       {tab === 'announcements' && <AnnouncementsPanel />}
+      {tab === 'books' && <RecommendBooksPanel />}
     </BackOfficeLayout>
   )
 }

@@ -72,69 +72,20 @@ export const MANAGER_MENU: NavAction[] = [
 
 // เมนูของหน้าหลังบ้าน — ตอนนี้เหลือเฉพาะระบบที่ทำเสร็จจริง
 // ระบบของเพื่อนในทีมค่อยเติมกลับเข้ามาที่นี่ทีละอันตอนที่โค้ดพร้อม
+// ลำดับเมนูจัดตามความถี่ในการใช้งานจริงของเจ้าหน้าที่ (งานหน้าเคาน์เตอร์/รายวันขึ้นก่อน
+// งานบริหาร/เป็นรอบ ๆ ไว้ท้าย) แทนลำดับเดิมที่เรียงตามลำดับที่ต่อระบบของแต่ละคนเข้ามา:
+// 1-5 งานปฏิบัติการรายวัน (ยืม-คืน/หนังสือ/อีบุ๊ก/ห้อง/อุปกรณ์)
+// 6-7 งานที่ทำเป็นประจำแต่ไม่ใช่ทุกนาที (ร้องเรียน/สถิติ)
+// 8-10 งานส่วนตัว/ไม่บ่อย (เวร/ลา/ประชาสัมพันธ์)
+// 11-13 งานบริหาร/เป็นรอบ (จัดซื้อ/ตรวจนับ/งานหัวหน้า)
 export const BACK_OFFICE_MENU: NavAction[] = [
   {
-    // ระบบเดียวที่มีหัวข้อย่อยจริง จึงกางเป็นกลุ่มได้ ระบบอื่นยังเป็นเมนูเดี่ยว
-    // กลุ่มไม่ต้องมี to เพราะเมนูย่อยตัวแรกเป็นหน้าหลักของระบบอยู่แล้ว
-    icon: 'activities',
-    label: 'ประชาสัมพันธ์',
-    positions: CAN_MANAGE_PR,
-    children: [
-      { icon: 'overview', label: 'ภาพรวม', to: '/employees/pr' },
-      { icon: 'activities', label: 'กิจกรรม', to: '/employees/pr/events' },
-      { icon: 'leave', label: 'ประกาศ', to: '/employees/pr/announcements' },
-    ],
-  },
-  {
-    // งานหัวหน้าหอสมุด — เห็นเฉพาะ manager
-    icon: 'personnel',
-    label: 'งานหัวหน้าหอสมุด',
-    positions: CAN_MANAGE_PERSONNEL,
-    children: MANAGER_MENU,
-  },
-  {
-    // ตารางเวรทุกตำแหน่งต้องดูได้ เพราะต้องรู้ว่าตัวเองเข้าเวรวันไหน
-    // หน้าเดียวกันนี้หัวหน้าจะเห็นปุ่มจัดเวรเพิ่มขึ้นมา
-    icon: 'schedules',
-    label: 'ตารางเวร',
-    to: '/employees/schedules',
+    // ยืม-คืนหนังสือและอุปกรณ์ เป็นของ B6731915 (สุชาดา) เจ้าหน้าที่ทุกตำแหน่งดูได้
+    // งานหน้าเคาน์เตอร์ที่ทำบ่อยที่สุด ขึ้นเป็นอันดับแรก
+    icon: 'books',
+    label: 'ยืม-คืนหนังสือ/อุปกรณ์',
+    to: '/employees/borrow-service',
     positions: CAN_ACCESS_BACKOFFICE,
-  },
-  {
-    // การลาเป็นงานของพนักงานทุกคน ไม่ใช่เฉพาะหัวหน้า
-    // หน้านี้คือฝั่งยื่นคำขอและดูของตัวเอง ส่วนฝั่งอนุมัติอยู่ในกลุ่มงานหัวหน้าหอสมุด
-    icon: 'leave',
-    label: 'การลาของฉัน',
-    to: '/employees/leave',
-    positions: CAN_ACCESS_BACKOFFICE,
-  },
-  {
-    // ระบบร้องเรียน เป็นของ B6707590 (ธนกร) เจ้าหน้าที่ทุกตำแหน่งดูได้
-    // เมนูย่อยเดิมอยู่เป็นแผงแยกในตัวหน้า (EmployeeSidebar) ย้ายมาไว้เป็นกลุ่มย่อยในแถบเมนูรวมแทน
-    // ใช้ /:tab จริงแบบเดียวกับ books/pr เพื่อให้กดจากที่ไหนก็เข้าแท็บที่ต้องการได้ตรง ๆ
-    icon: 'complaints',
-    label: 'เรื่องร้องเรียน',
-    positions: CAN_ACCESS_BACKOFFICE,
-    children: [
-      { icon: 'complaints', label: 'กล่องงาน', to: '/employees/complaints/box', positions: ['staff', 'librarian'] },
-      { icon: 'complaints', label: 'รออนุมัติ (หัวหน้า)', to: '/employees/complaints/pending', positions: CAN_MANAGE_PERSONNEL },
-      { icon: 'complaints', label: 'ตรวจรับงาน', to: '/employees/complaints/verify', positions: CAN_ACCESS_BACKOFFICE },
-    ],
-  },
-  {
-    // ระบบรายงานสถิติ ของ B6707590 เช่นกัน — ย้ายเมนูย่อยจาก StatsSidebar มาไว้ที่นี่เหมือนกัน
-    icon: 'reports',
-    label: 'รายงานสถิติ',
-    positions: CAN_ACCESS_BACKOFFICE,
-    children: [
-      { icon: 'reports', label: 'ภาพรวม', to: '/employees/statistics/overview', positions: CAN_ACCESS_BACKOFFICE },
-      { icon: 'reports', label: 'หนังสือยอดนิยม 10 อันดับ', to: '/employees/statistics/top-books', positions: CAN_ACCESS_BACKOFFICE },
-      { icon: 'reports', label: 'สถิติการคืนหนังสือ', to: '/employees/statistics/returns', positions: CAN_ACCESS_BACKOFFICE },
-      { icon: 'reports', label: 'การใช้ห้องค้นคว้า', to: '/employees/statistics/rooms', positions: CAN_ACCESS_BACKOFFICE },
-      { icon: 'reports', label: 'สถิติการค้นหา e-book', to: '/employees/statistics/ebook-search', positions: CAN_ACCESS_BACKOFFICE },
-      { icon: 'reports', label: 'สถิติการยืมอุปกรณ์', to: '/employees/statistics/equipment', positions: CAN_ACCESS_BACKOFFICE },
-      { icon: 'reports', label: 'สถิติเรื่องร้องเรียน', to: '/employees/statistics/complaint-stats', positions: CAN_ACCESS_BACKOFFICE },
-    ],
   },
   {
     // ระบบจัดการหนังสือ เป็นของ B6729615 (กร) บรรณารักษ์ขึ้นไปเท่านั้น
@@ -154,17 +105,10 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     positions: CAN_MANAGE_BOOKS,
   },
   {
-    // ระบบจองห้อง เป็นของ B6715588 (บรรพต) เจ้าหน้าที่ทุกตำแหน่งดูได้
+    // ระบบจองห้อง เป็นของ B6715588 (บรรพต) เจ้าหน้าที่ทุกตำแหน่งดูได้ เช็ค/รับ-คืนห้องทุกวัน
     icon: 'roomBooking',
     label: 'จัดการการจองห้อง',
     to: '/staff/recording-room',
-    positions: CAN_ACCESS_BACKOFFICE,
-  },
-  {
-    // ยืม-คืนหนังสือและอุปกรณ์ เป็นของ B6731915 (สุชาดา) เจ้าหน้าที่ทุกตำแหน่งดูได้
-    icon: 'books',
-    label: 'ยืม-คืนหนังสือ/อุปกรณ์',
-    to: '/employees/borrow-service',
     positions: CAN_ACCESS_BACKOFFICE,
   },
   {
@@ -179,8 +123,67 @@ export const BACK_OFFICE_MENU: NavAction[] = [
     ],
   },
   {
+    // ระบบร้องเรียน เป็นของ B6707590 (ธนกร) เจ้าหน้าที่ทุกตำแหน่งดูได้
+    // เมนูย่อยเดิมอยู่เป็นแผงแยกในตัวหน้า (EmployeeSidebar) ย้ายมาไว้เป็นกลุ่มย่อยในแถบเมนูรวมแทน
+    // ใช้ /:tab จริงแบบเดียวกับ books/pr เพื่อให้กดจากที่ไหนก็เข้าแท็บที่ต้องการได้ตรง ๆ
+    icon: 'complaints',
+    label: 'เรื่องร้องเรียน',
+    positions: CAN_ACCESS_BACKOFFICE,
+    children: [
+      { icon: 'complaints', label: 'กล่องงาน', to: '/employees/complaints/box', positions: ['staff', 'librarian'] },
+      { icon: 'complaints', label: 'รออนุมัติ (หัวหน้า)', to: '/employees/complaints/pending', positions: CAN_MANAGE_PERSONNEL },
+      { icon: 'complaints', label: 'ตรวจรับงาน', to: '/employees/complaints/verify', positions: CAN_ACCESS_BACKOFFICE },
+    ],
+  },
+  {
+    // ระบบรายงานสถิติ ของ B6707590 เช่นกัน — ย้ายเมนูย่อยจาก StatsSidebar มาไว้ที่นี่เหมือนกัน
+    // ดูเป็นรอบ (รายสัปดาห์/เดือน) ไม่ใช่งานที่ทำระหว่างวัน จึงอยู่ถัดจากงานปฏิบัติการ
+    icon: 'reports',
+    label: 'รายงานสถิติ',
+    positions: CAN_ACCESS_BACKOFFICE,
+    children: [
+      { icon: 'reports', label: 'ภาพรวม', to: '/employees/statistics/overview', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'หนังสือยอดนิยม 10 อันดับ', to: '/employees/statistics/top-books', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'สถิติการคืนหนังสือ', to: '/employees/statistics/returns', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'การใช้ห้องค้นคว้า', to: '/employees/statistics/rooms', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'สถิติการค้นหา e-book', to: '/employees/statistics/ebook-search', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'สถิติการยืมอุปกรณ์', to: '/employees/statistics/equipment', positions: CAN_ACCESS_BACKOFFICE },
+      { icon: 'reports', label: 'สถิติเรื่องร้องเรียน', to: '/employees/statistics/complaint-stats', positions: CAN_ACCESS_BACKOFFICE },
+    ],
+  },
+  {
+    // ตารางเวรทุกตำแหน่งต้องดูได้ เพราะต้องรู้ว่าตัวเองเข้าเวรวันไหน — เปิดดูเป็นครั้งคราว
+    // หน้าเดียวกันนี้หัวหน้าจะเห็นปุ่มจัดเวรเพิ่มขึ้นมา
+    icon: 'schedules',
+    label: 'ตารางเวร',
+    to: '/employees/schedules',
+    positions: CAN_ACCESS_BACKOFFICE,
+  },
+  {
+    // การลาเป็นงานของพนักงานทุกคน ไม่ใช่เฉพาะหัวหน้า ใช้นาน ๆ ครั้ง
+    // หน้านี้คือฝั่งยื่นคำขอและดูของตัวเอง ส่วนฝั่งอนุมัติอยู่ในกลุ่มงานหัวหน้าหอสมุด
+    icon: 'leave',
+    label: 'การลาของฉัน',
+    to: '/employees/leave',
+    positions: CAN_ACCESS_BACKOFFICE,
+  },
+  {
+    // ระบบเดียวที่มีหัวข้อย่อยจริง จึงกางเป็นกลุ่มได้ ระบบอื่นยังเป็นเมนูเดี่ยว
+    // กลุ่มไม่ต้องมี to เพราะเมนูย่อยตัวแรกเป็นหน้าหลักของระบบอยู่แล้ว
+    // เฉพาะบรรณารักษ์/หัวหน้า และเป็นงานอัปเดตเนื้อหาเป็นครั้งคราว ไม่ใช่รายวัน
+    icon: 'activities',
+    label: 'ประชาสัมพันธ์',
+    positions: CAN_MANAGE_PR,
+    children: [
+      { icon: 'overview', label: 'ภาพรวม', to: '/employees/pr' },
+      { icon: 'activities', label: 'กิจกรรม', to: '/employees/pr/events' },
+      { icon: 'leave', label: 'ประกาศ', to: '/employees/pr/announcements' },
+      { icon: 'book', label: 'หนังสือแนะนำ', to: '/employees/pr/books' },
+    ],
+  },
+  {
     // ระบบจัดซื้อทรัพย์สิน เป็นของ B6710248 (สุรทิน)
-    // เมนูอนุมัติกับภาพรวมเห็นเฉพาะหัวหน้า ตรงกับ PERMISSION_POSITIONS
+    // เมนูอนุมัติกับภาพรวมเห็นเฉพาะหัวหน้า ตรงกับ PERMISSION_POSITIONS — งานบริหาร ไม่ใช่รายวัน
     icon: 'procurement',
     label: 'จัดซื้อทรัพย์สิน',
     positions: CAN_ACCESS_BACKOFFICE,
@@ -188,14 +191,14 @@ export const BACK_OFFICE_MENU: NavAction[] = [
       { icon: 'overview', label: 'ภาพรวมระบบ', to: '/procurement' },
       { icon: 'procurement', label: 'สร้างคำขอซื้อ', to: '/procurement/create' },
       { icon: 'reports', label: 'รายการขอซื้อ', to: '/procurement/requests' },
-      { icon: 'complaints', label: 'ตรวจสอบรายละเอียด', to: '/procurement/details' },
+      { icon: 'complaints', label: 'ตรวจสอบรายละเอียด', to: '/procurement/requests' },
       { icon: 'audit', label: 'ลงทะเบียนทรัพย์สิน', to: '/procurement/register-asset' },
       { icon: 'leave', label: 'อนุมัติใบขอซื้อ', to: '/procurement/approve', positions: CAN_MANAGE_PERSONNEL },
       { icon: 'overview', label: 'ภาพรวมการจัดซื้อ', to: '/procurement/overview', positions: CAN_MANAGE_PERSONNEL },
     ],
   },
   {
-    // ระบบตรวจนับทรัพย์สิน เป็นของ B6710248 เช่นกัน
+    // ระบบตรวจนับทรัพย์สิน เป็นของ B6710248 เช่นกัน — ทำเป็นรอบ (เช่นรายเทอม) ไม่ใช่รายวัน
     icon: 'audit',
     label: 'ตรวจนับทรัพย์สิน',
     positions: CAN_ACCESS_BACKOFFICE,
@@ -207,6 +210,13 @@ export const BACK_OFFICE_MENU: NavAction[] = [
       { icon: 'leave', label: 'ส่งรายงานให้หัวหน้า', to: '/asset-audit/submit' },
       { icon: 'reports', label: 'อนุมัติรายงาน', to: '/asset-audit/review', positions: CAN_MANAGE_PERSONNEL },
     ],
+  },
+  {
+    // งานหัวหน้าหอสมุด — เห็นเฉพาะ manager เป็นงานอนุมัติ/บริหารเป็นครั้งคราว ไว้ท้ายสุด
+    icon: 'personnel',
+    label: 'งานหัวหน้าหอสมุด',
+    positions: CAN_MANAGE_PERSONNEL,
+    children: MANAGER_MENU,
   },
 ]
 

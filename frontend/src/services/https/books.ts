@@ -27,7 +27,7 @@ export async function createBook(token: string, draft: BookDraft): Promise<Book>
 export async function updateBook(
   token: string,
   id: number,
-  patch: Partial<BookDraft & { cover_path: string }>,
+  patch: Partial<BookDraft & { cover_path: string; recommended: boolean }>,
 ): Promise<Book> {
   const res = await apiFetch<{ book: Book }>(`/api/v1/books/${id}`, {
     method: 'PUT',
@@ -35,6 +35,11 @@ export async function updateBook(
     body: patch,
   })
   return res.book
+}
+
+/** ติด/ถอนดาวแนะนำหนังสือเล่มนี้ ให้ขึ้น/หลุดจาก "Recommended for You" บนหน้าแรก */
+export function setBookRecommended(token: string, id: number, recommended: boolean): Promise<Book> {
+  return updateBook(token, id, { recommended })
 }
 
 export function deleteBook(token: string, id: number) {
