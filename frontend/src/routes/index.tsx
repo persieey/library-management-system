@@ -14,7 +14,7 @@ import PersonnelPage from '../pages/employees/personnel'
 import ComingSoon from '../pages/employees/ComingSoon'
 import NotFound from '../pages/not-found'
 import RequirePosition, { RequireLogin } from '../components/RequirePosition'
-import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_BOOKS, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../config/roles'
+import { CAN_ACCESS_BACKOFFICE, CAN_MANAGE_BOOKS, CAN_MANAGE_EQUIPMENT_CATALOG, CAN_MANAGE_PERSONNEL, CAN_MANAGE_PR } from '../config/roles'
 import ManagerDashboard from '../pages/manager'
 import ManagerLeave from '../pages/manager/leave'
 import ProfilePage from '../pages/employees/profile'
@@ -22,6 +22,7 @@ import MyLeavePage from '../pages/employees/leave'
 import SchedulesPage from '../pages/employees/schedules'
 import ManageBooks from '../pages/employees/books'
 import ManageEbooks from '../pages/employees/ebooks'
+import EquipmentCatalogPage from '../pages/employees/equipment-catalog'
 // ระบบอุปกรณ์ / จองห้อง / แจ้งซ่อม ยกมาจากสาขา B6715588
 import EquipmentPage from '../pages/Equipment/Equipment'
 import RecordingRoomPage from '../pages/RecordingRoom/RecordingRoom'
@@ -190,6 +191,16 @@ function AppRoutes() {
         element={
           <RequirePosition positions={CAN_MANAGE_BOOKS}>
             <ManageBooks />
+          </RequirePosition>
+        }
+      />
+
+      {/* คลังอุปกรณ์ที่เปิดให้สมาชิกยืม (equipment_items) — เดิมไม่มีหน้าจัดการเลย */}
+      <Route
+        path="/employees/equipment-catalog"
+        element={
+          <RequirePosition positions={CAN_MANAGE_EQUIPMENT_CATALOG}>
+            <EquipmentCatalogPage />
           </RequirePosition>
         }
       />

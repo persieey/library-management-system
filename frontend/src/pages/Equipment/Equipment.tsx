@@ -113,7 +113,7 @@ export default function Equipment() {
               <input
                 type="text"
                 className="staff-search eq-search"
-                placeholder="ค้นหาจาก ID ชื่อ หมวดหมู่ หรือตำแหน่ง..."
+                placeholder="ค้นหาจาก ID ชื่อ ประเภท หรือตำแหน่ง..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -130,7 +130,7 @@ export default function Equipment() {
                   <tr>
                     <th>ID</th>
                     <th>ชื่อ</th>
-                    <th>หมวดหมู่</th>
+                    <th>ประเภท</th>
                     <th>ตำแหน่ง</th>
                     <th>สถานะ</th>
                   </tr>
@@ -184,6 +184,7 @@ export default function Equipment() {
       {showAdd && (
         <AddEquipmentModal
           authFetch={authFetch}
+          existing={equipment}
           onClose={() => setShowAdd(false)}
           onCreated={handleCreated}
         />
@@ -194,18 +195,36 @@ export default function Equipment() {
 
 function AddEquipmentModal({
   authFetch,
+  existing,
   onClose,
   onCreated,
 }: {
   authFetch: (path: string, options?: RequestInit) => Promise<Response>;
+  existing: EquipmentItem[];
   onClose: () => void;
   onCreated: (item: EquipmentItem) => void;
 }) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
+  const [categoryCustom, setCategoryCustom] = useState(false);
+  const [locationCustom, setLocationCustom] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  const CUSTOM = "__custom__";
+
+  // ตัวเลือกในดรอปดาวน์เอามาจากประเภท/ตำแหน่งที่มีอยู่จริงในระบบ ไม่ใช่ list ตายตัว
+  // ใช้ <select> ธรรมดาให้หน้าตาเหมือนดรอปดาวน์ปกติ (ไม่ใช่ <datalist> ที่หน้าตาแปลก
+  // ไปตามแต่ละเบราว์เซอร์) มีตัวเลือก "ระบุเอง" ท้ายสุดเผื่อเป็นประเภท/ตำแหน่งใหม่จริง ๆ
+  const categoryOptions = useMemo(
+    () => Array.from(new Set(existing.map((e) => e.category).filter(Boolean))).sort((a, b) => a.localeCompare(b, "th")),
+    [existing]
+  );
+  const locationOptions = useMemo(
+    () => Array.from(new Set(existing.map((e) => e.location).filter(Boolean))).sort((a, b) => a.localeCompare(b, "th")),
+    [existing]
+  );
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -256,22 +275,64 @@ function AddEquipmentModal({
             />
           </label>
           <label className="eq-form-field">
-            <span>หมวดหมู่</span>
-            <input
-              type="text"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="เช่น อุปกรณ์ IT"
-            />
+            <span>ประเภท</span>
+            <select
+              value={categoryCustom ? CUSTOM : category}
+              onChange={(e) => {
+                if (e.target.value === CUSTOM) {
+                  setCategoryCustom(true);
+                  setCategory("");
+                } else {
+                  setCategoryCustom(false);
+                  setCategory(e.target.value);
+                }
+              }}
+            >
+              <option value="">-- เลือกประเภท --</option>
+              {categoryOptions.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+              <option value={CUSTOM}>+ ประเภทอื่น (ระบุเอง)</option>
+            </select>
+            {categoryCustom && (
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="พิมพ์ประเภทใหม่"
+                autoFocus
+              />
+            )}
           </label>
           <label className="eq-form-field">
             <span>ตำแหน่งที่เก็บ</span>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="เช่น ชั้น 2 ห้องควบคุม"
-            />
+            <select
+              value={locationCustom ? CUSTOM : location}
+              onChange={(e) => {
+                if (e.target.value === CUSTOM) {
+                  setLocationCustom(true);
+                  setLocation("");
+                } else {
+                  setLocationCustom(false);
+                  setLocation(e.target.value);
+                }
+              }}
+            >
+              <option value="">-- เลือกตำแหน่งที่เก็บ --</option>
+              {locationOptions.map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+              <option value={CUSTOM}>+ ตำแหน่งอื่น (ระบุเอง)</option>
+            </select>
+            {locationCustom && (
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="พิมพ์ตำแหน่งใหม่"
+                autoFocus
+              />
+            )}
           </label>
 
           {formError && <p className="eq-error eq-form-error">{formError}</p>}

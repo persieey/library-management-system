@@ -38,6 +38,16 @@ type EbookSearchLog struct {
 	MemberID        *uint     `gorm:"column:member_id" json:"member_id"`
 	SearchKeyword   string    `gorm:"column:search_keyword;size:255;not null" json:"search_keyword"`
 	SearchTimestamp time.Time `gorm:"column:search_timestamp;default:CURRENT_TIMESTAMP" json:"search_timestamp"`
+	// มีผลลัพธ์ตรงกับคำค้นหานี้ไหม (หน้าเว็บกรองฝั่ง client แล้วส่งผลมาบอกตอน log)
+	// ใช้คำนวณ "ค้นแล้วไม่เจอผลลัพธ์" ในหน้ารายงานสถิติ — เดิมค่านี้ hardcode เป็น 0.0 เสมอ
+	//
+	// ห้ามใส่ gorm:"default:..." ที่ฟิลด์นี้ — โค้ดตั้งค่านี้เองตรงๆ ทุกครั้งก่อน Create()
+	// อยู่แล้ว แต่ GORM มีพฤติกรรมที่ว่าฟิลด์ที่มี default tag แล้วค่าที่จะ insert ดัน
+	// เป็น zero-value ของชนิดนั้น (false สำหรับ bool) จะถูก "ข้าม" ออกจากคำสั่ง INSERT
+	// ไปเอง แล้วปล่อยให้ DB ใส่ default ให้แทน ผลคือ HasResults: false ที่ตั้งใจส่งไป
+	// กลายเป็น true ในฐานข้อมูลเงียบๆ ทุกครั้ง (เจอบั๊กนี้จริงตอนทดสอบ ค้นหาไม่เจอผลลัพธ์
+	// แต่ถูกบันทึกว่าเจอ) เอา default ออกก็หายเพราะ GORM จะ insert ค่าที่ตั้งไว้ตรงๆ เสมอ
+	HasResults bool `gorm:"column:has_results" json:"has_results"`
 
 	Member *Member `gorm:"foreignKey:MemberID;references:MemberID" json:"member,omitempty"`
 }

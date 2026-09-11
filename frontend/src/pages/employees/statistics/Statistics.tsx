@@ -609,7 +609,7 @@ export default function Statistics(): React.JSX.Element {
                             <th>อันดับ</th>
                             <th>คำค้นหา</th>
                             <th>หมวดหมู่</th>
-                            <th>ดาวน์โหลด</th>
+                            <th>จำนวนการค้นหา</th>
                           </tr>
                         </thead>
                         <tbody>

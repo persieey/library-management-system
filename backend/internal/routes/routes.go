@@ -29,6 +29,7 @@ func SetupRouter(authControllers *controllers.AuthController,
 	auditController *controllers.AuditController,
 	libraryController *controllers.LibraryController,
 	problemController *controllers.ProblemController,
+	equipmentCatalogController *controllers.EquipmentCatalogController,
 	jwtProvider *utils.JWTProvider) *gin.Engine {
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
@@ -250,6 +251,14 @@ func SetupRouter(authControllers *controllers.AuthController,
 		c.Params = append(c.Params, gin.Param{Key: "kind", Value: "equipment-loans"})
 		libraryController.NoShow(c)
 	})
+
+	// ── คลังอุปกรณ์ที่เปิดให้ยืม (equipment_items) ── เดิมไม่มีหน้าเพิ่มอุปกรณ์เข้าคลัง
+	// เลย ตาราง equipment_items ว่างเปล่า สมาชิกเข้าหน้า "จองอุปกรณ์" แล้วไม่เจออะไรเลย
+	equipmentItems := api.Group("/equipment-items")
+	equipmentItems.Use(middleware.JWTAuthMiddleware(jwtProvider), booksLibrarian)
+	equipmentItems.GET("", equipmentCatalogController.List)
+	equipmentItems.POST("", equipmentCatalogController.Create)
+	equipmentItems.DELETE("/:id", equipmentCatalogController.Delete)
 
 	// ── ต่อคิวรอ (ใช้ร่วมกันทั้งหนังสือและอุปกรณ์) ──
 	myQueue := api.Group("/my-queue")

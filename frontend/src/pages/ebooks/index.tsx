@@ -45,6 +45,10 @@ function EbooksPage() {
   // ไม่ log ซ้ำ (3) พอออกจากช่องค้นหา (blur) ถือว่าเป็นคำค้นหาสุดท้ายจริง ยิง log ทันทีไม่ต้องรอดีเลย์
   const lastLoggedRef = useRef('')
   const pendingTimerRef = useRef<number | null>(null)
+  // จำจำนวนผลลัพธ์ล่าสุดไว้ด้วย ref เพราะ commitSearchLog ถูกเรียกจาก setTimeout/blur
+  // (closure เก่า) ใช้ ref จะได้อ่านค่าล่าสุดตอนยิง log จริง ไม่ใช่ค่าตอนตั้งเวลา
+  const resultsCountRef = useRef(0)
+  resultsCountRef.current = filter.results.length
 
   const commitSearchLog = (raw: string) => {
     const q = raw.trim()
@@ -52,7 +56,9 @@ function EbooksPage() {
     // ลบตัวอักษรถอยกลับมาเป็นคำสั้นกว่าที่เพิ่ง log ไปแล้ว (ยังเป็นคำเดิมแค่สั้นลง) ไม่ต้อง log ซ้ำ
     if (lastLoggedRef.current.startsWith(q)) return
     lastLoggedRef.current = q
-    logEbookSearch(q, token).catch(() => {})
+    // บอก backend ด้วยว่าคำค้นหานี้เจอผลลัพธ์ไหม ให้หน้าสถิติคำนวณ "ค้นแล้วไม่เจอผลลัพธ์" ได้จริง
+    // (เดิมค่านี้ hardcode เป็น 0% เสมอเพราะไม่มีใครส่งข้อมูลนี้มาเลย)
+    logEbookSearch(q, resultsCountRef.current > 0, token).catch(() => {})
   }
 
   useEffect(() => {

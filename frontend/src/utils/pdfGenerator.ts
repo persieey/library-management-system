@@ -311,7 +311,7 @@ export function generateComplaintPDF(item: DisplayComplaint): void {
             <div class="field-col"><span class="label-bold">Subject:</span> Request for Maintenance and Repair Operations (${item.topic})</div>
           </div>
           <div class="field-row">
-            <div class="field-col"><span class="label-bold">To:</span> Head / Coordinator of <strong>${item.externalUnit || 'External Department'}</strong></div>
+            <div class="field-col"><span class="label-bold">To:</span> Head / Coordinator of <strong>${item.externalUnit && item.externalUnit !== '-' ? item.externalUnit : 'External Department'}</strong></div>
           </div>
         </div>
 

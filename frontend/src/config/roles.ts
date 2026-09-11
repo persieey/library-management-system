@@ -44,6 +44,9 @@ export const PERMISSION_POSITIONS: Record<Permission, Position[]> = {
 /** จัดการหนังสือและ E-Book — ตรงกับ RequirePosition("librarian", "manager") ฝั่ง backend */
 export const CAN_MANAGE_BOOKS: Position[] = ['librarian', 'manager']
 
+/** จัดการคลังอุปกรณ์ที่เปิดให้ยืม (equipment_items) — เฉพาะบรรณารักษ์และหัวหน้า */
+export const CAN_MANAGE_EQUIPMENT_CATALOG: Position[] = ['librarian', 'manager']
+
 // ชื่อที่โชว์บนปุ่ม dropdown ของ header — ใช้ตำแหน่งของผู้ใช้แทนคำว่า Employees
 // เช่น librarian -> "Librarian" อยากได้ภาษาไทยให้เปลี่ยนไปคืน POSITION_LABELS[position] แทน
 export function positionDisplayName(position: Position): string {
@@ -120,6 +123,8 @@ export const BACK_OFFICE_MENU: NavAction[] = [
       { icon: 'equipment', label: 'รายการอุปกรณ์', to: '/staff/equipment' },
       { icon: 'repair', label: 'แจ้งซ่อม', to: '/staff/repair-request' },
       { icon: 'repairTrack', label: 'ติดตามการซ่อม', to: '/staff/track-repair' },
+      // คลังอุปกรณ์ที่เปิดให้สมาชิกยืม (คนละตารางกับครุภัณฑ์ด้านบน) เฉพาะบรรณารักษ์/หัวหน้า
+      { icon: 'equipment', label: 'คลังอุปกรณ์ให้ยืม', to: '/employees/equipment-catalog', positions: CAN_MANAGE_EQUIPMENT_CATALOG },
     ],
   },
   {

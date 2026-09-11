@@ -85,6 +85,8 @@ func main() {
 	// ระบบยืม-คืนหนังสือและอุปกรณ์ พร้อมค่าปรับของ B6731915
 	libraryController := controllers.NewLibraryController(db)
 	problemController := controllers.NewProblemController(db)
+	// จัดการคลังอุปกรณ์ที่เปิดให้ยืม (equipment_items) — เดิมไม่มีหน้าเพิ่มอุปกรณ์เข้าคลังเลย
+	equipmentCatalogController := controllers.NewEquipmentCatalogController(db)
 
 	// ปิดการจองที่เลยเวลาแล้วโดยอัตโนมัติ ทำงานเบื้องหลังตลอดอายุเซิร์ฟเวอร์
 	jobs.StartExpiryWorker(db)
@@ -98,7 +100,7 @@ func main() {
 		ebookController, bookController, bookCopyController, inspectionController,
 		equipmentController, repairController, roomBookingController,
 		requestController, assetController, auditController,
-		libraryController, problemController, jwtProvider)
+		libraryController, problemController, equipmentCatalogController, jwtProvider)
 
 	// port:= os.Getenv("SERVER_PORT")
 

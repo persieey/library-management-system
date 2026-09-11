@@ -29,11 +29,11 @@ export async function listPublicEbooks(signal?: AbortSignal): Promise<Ebook[]> {
  * การค้นหาเองกรองฝั่งเบราว์เซอร์ล้วน ๆ (useCatalogFilter) ไม่ได้ยิง API ต่อการพิมพ์แต่ละตัวอักษร
  * endpoint นี้แยกไว้ต่างหากสำหรับเก็บสถิติอย่างเดียว ไม่ล็อกอินก็เรียกได้ (หน้า /ebooks เปิดสาธารณะ)
  */
-export function logEbookSearch(keyword: string, token?: string | null) {
+export function logEbookSearch(keyword: string, hasResults: boolean, token?: string | null) {
   return apiFetch<{ message: string }>('/api/v1/ebooks/search-log', {
     method: 'POST',
     token: token ?? undefined,
-    body: { keyword },
+    body: { keyword, has_results: hasResults },
   })
 }
 

@@ -342,6 +342,19 @@ func (sc *StatisticsController) GetEbookStats(c *gin.Context) {
 	var totalOpens int64
 	opQuery.Count(&totalOpens)
 
+	// ค้นแล้วไม่เจอผลลัพธ์ — เดิม hardcode เป็น 0.0 เสมอ ไม่ได้คำนวณจริง ตอนนี้นับจาก
+	// has_results ที่หน้าเว็บส่งมาบอกตอน log (กรองฝั่ง client แล้วรู้ผลลัพธ์อยู่แล้ว)
+	var noResultCount int64
+	noResultQuery := sc.DB.Model(&models.EbookSearchLog{}).Where("has_results = ?", false)
+	if hasFilter {
+		noResultQuery = noResultQuery.Where("search_timestamp >= ? AND search_timestamp <= ?", from, to)
+	}
+	noResultQuery.Count(&noResultCount)
+	var noResultRate float64
+	if totalSearches > 0 {
+		noResultRate = float64(noResultCount) / float64(totalSearches) * 100
+	}
+
 	type DBKeyword struct {
 		SearchKeyword string
 		Count         int64
@@ -355,21 +368,19 @@ func (sc *StatisticsController) GetEbookStats(c *gin.Context) {
 	}
 	kwQuery.Group("search_keyword").Order("count DESC").Scan(&dbKeywords)
 
-	categoryMap := map[string]string{
-		"Machine Learning":      "วิทยาการคอมพิวเตอร์",
-		"แคลคูลัส 2":            "คณิตศาสตร์",
-		"Financial Accounting":  "บริหารธุรกิจ",
-		"Python for beginners": "วิทยาการคอมพิวเตอร์",
-		"กายวิภาคศาสตร์":        "แพทยศาสตร์",
-		"Digital Marketing":     "การตลาดดิจิทัล",
-		"Data Structures":       "วิทยาการคอมพิวเตอร์",
-	}
-
+	// หมวดหมู่ต่อคำค้นหา — เดิมเทียบกับ map คำแปลตายตัวที่ไม่ตรงกับหนังสือในระบบจริงเลย
+	// (เช่น "Machine Learning" แต่ในตาราง ebooks ไม่มีเล่มนี้) เปลี่ยนมาค้นชื่อ/ผู้แต่ง/
+	// หมวดหมู่จริงในตาราง ebooks แทน ใช้หมวดหมู่ของเล่มแรกที่แมตช์คำค้นหานั้น
 	keywords := make([]dto.KeywordRow, 0)
 	for _, kw := range dbKeywords {
+		var ebook models.Ebook
 		cat := "ทั่วไป"
-		if val, exists := categoryMap[kw.SearchKeyword]; exists {
-			cat = val
+		like := "%" + kw.SearchKeyword + "%"
+		err := sc.DB.Model(&models.Ebook{}).
+			Where("title ILIKE ? OR author ILIKE ? OR category ILIKE ?", like, like, like).
+			Order("ebook_id").First(&ebook).Error
+		if err == nil && ebook.Category != "" {
+			cat = ebook.Category
 		}
 		keywords = append(keywords, dto.KeywordRow{
 			SearchKeyword: kw.SearchKeyword,
@@ -381,7 +392,7 @@ func (sc *StatisticsController) GetEbookStats(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.EbookStatsResponse{
 		TotalSearches:  totalSearches,
 		TotalDownloads: totalOpens,
-		NoResultRate:   0.0,
+		NoResultRate:   noResultRate,
 		Keywords:       keywords,
 	})
 }

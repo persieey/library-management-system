@@ -54,11 +54,17 @@ func (ec *EbookController) LogSearch(c *gin.Context) {
 		}
 	}
 
+	hasResults := true
+	if req.HasResults != nil {
+		hasResults = *req.HasResults
+	}
+
 	log := models.EbookSearchLog{
 		SearchLogID:     uuid.NewString(),
 		MemberID:        memberID,
 		SearchKeyword:   strings.TrimSpace(req.Keyword),
 		SearchTimestamp: time.Now(),
+		HasResults:      hasResults,
 	}
 	if err := ec.db.Create(&log).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "บันทึกคำค้นหาไม่สำเร็จ"})

@@ -15,6 +15,9 @@ type CreateEbookRequest struct {
 
 type LogEbookSearchRequest struct {
 	Keyword string `json:"keyword" binding:"required"`
+	// หน้าเว็บกรองฝั่ง client แล้วบอกมาว่าคำค้นหานี้เจอผลลัพธ์ไหม ไม่ส่งมา = ถือว่าเจอ
+	// (กันของเก่า/ไคลเอนต์อื่นที่ยังไม่ส่ง field นี้มาไม่ให้โดนนับเป็น "ไม่เจอผลลัพธ์" ผิด ๆ)
+	HasResults *bool `json:"has_results"`
 }
 
 type UpdateEbookRequest struct {
