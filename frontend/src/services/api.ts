@@ -53,8 +53,8 @@ export const api = {
     getAll: () => request<unknown>('/requests').then(unwrap<any[]>),
     getById: (id: string | number) => request<unknown>(`/requests/${id}`).then(unwrap<any>),
     create: (body: unknown) => request<unknown>('/requests', { method: 'POST', body: JSON.stringify(body) }).then(unwrap<any>),
-    updateStatus: (id: string | number, status: string) =>
-      request<unknown>(`/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }).then(unwrap<any>),
+    updateStatus: (id: string | number, status: string, reason?: string) =>
+      request<unknown>(`/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }).then(unwrap<any>),
   },
   assets: {
     getAll: () => request<unknown>('/assets').then(unwrap<any[]>),

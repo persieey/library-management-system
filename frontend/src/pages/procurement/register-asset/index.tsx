@@ -81,20 +81,26 @@ export default function RegisterAsset() {
   const [selectedPR, setSelectedPR] = useState<string>('')
   const [barcodeAsset, setBarcodeAsset] = useState<AssetBarcodeTarget | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [submitError, setSubmitError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const bulkRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchData = async () => {
-      const [assets, requests] = await Promise.all([
-        api.assets.getAll(),
-        api.requests.getAll(),
-      ])
-      const assetList = assets ?? []
-      setList(assetList)
-      const registeredPrRefs = new Set(assetList.map((a: any) => a.pr_ref).filter(Boolean))
-      setApprovedRequests(
-        (requests ?? []).filter((r: any) => r.status === 'approved' && !registeredPrRefs.has(String(r.id)))
-      )
+      try {
+        const [assets, requests] = await Promise.all([
+          api.assets.getAll(),
+          api.requests.getAll(),
+        ])
+        const assetList = assets ?? []
+        setList(assetList)
+        const registeredPrRefs = new Set(assetList.map((a: any) => a.pr_ref).filter(Boolean))
+        setApprovedRequests(
+          (requests ?? []).filter((r: any) => r.status === 'approved' && !registeredPrRefs.has(String(r.id)))
+        )
+      } catch {
+        setSubmitError('โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+      }
     }
     fetchData()
   }, [])
@@ -133,33 +139,42 @@ export default function RegisterAsset() {
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
-    const result = await api.assets.create({
-      name: form.name,
-      type: form.type,
-      location: form.location,
-      condition: form.condition,
-      pr_ref: form.prRef,
-      serial_no: form.serialNo,
-      notes: form.notes,
-      quantity: parseInt(form.quantity) || 1,
-    })
+    // เดิมไม่มี try/catch — api.assets.create โยน exception เวลาพลาด (ไม่ได้ return
+    // null) เงื่อนไข `if (!result)` ด้านล่างจึงเป็น dead code ผู้ใช้กด "ลงทะเบียน" แล้ว
+    // เงียบสนิทถ้า backend ล่ม ทั้งที่ PR ที่เลือกไว้ยังค้างอยู่ในดรอปดาวน์เหมือนสำเร็จ
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      const result = await api.assets.create({
+        name: form.name,
+        type: form.type,
+        location: form.location,
+        condition: form.condition,
+        pr_ref: form.prRef,
+        serial_no: form.serialNo,
+        notes: form.notes,
+        quantity: parseInt(form.quantity) || 1,
+      })
 
-    if (!result) { alert('บันทึกไม่สำเร็จ'); return }
-
-    setList((prev) => {
-      const next = [result, ...prev]
-      const registeredPrRefs = new Set(next.map((a: any) => a.pr_ref).filter(Boolean))
-      setApprovedRequests((reqs) => reqs.filter((r) => !registeredPrRefs.has(String(r.id))))
-      return next
-    })
-    setSaved(true)
-    setForm(EMPTY)
-    setSelectedPR('')
-    setBarcodeAsset({
-      code: (result as any).barcode || (result as any).id || '',
-      name: (result as any).name ?? form.name,
-      location: (result as any).location ?? form.location,
-    })
+      setList((prev) => {
+        const next = [result, ...prev]
+        const registeredPrRefs = new Set(next.map((a: any) => a.pr_ref).filter(Boolean))
+        setApprovedRequests((reqs) => reqs.filter((r) => !registeredPrRefs.has(String(r.id))))
+        return next
+      })
+      setSaved(true)
+      setForm(EMPTY)
+      setSelectedPR('')
+      setBarcodeAsset({
+        code: (result as any).barcode || (result as any).id || '',
+        name: (result as any).name ?? form.name,
+        location: (result as any).location ?? form.location,
+      })
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'ลงทะเบียนสินทรัพย์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const allSelected = list.length > 0 && list.every((a) => selectedIds.has(a.id))
@@ -333,14 +348,20 @@ export default function RegisterAsset() {
               <TextField fullWidth multiline rows={2} placeholder="ข้อมูลเพิ่มเติม..." value={form.notes} onChange={set('notes')} sx={inputSx} />
             </Box>
 
+            {submitError && (
+              <Alert severity="error" onClose={() => setSubmitError('')} sx={{ fontFamily: fonts.kanit }}>
+                {submitError}
+              </Alert>
+            )}
+
             <Box sx={{ display: 'flex', gap: '12px', pt: '8px' }}>
               <Button
                 onClick={handleSave}
                 variant="contained"
-                disabled={!selectedPR}
+                disabled={!selectedPR || submitting}
                 sx={{ bgcolor: colors.brandGreen, fontFamily: fonts.kanit, fontSize: 15, px: '28px', py: '10px', borderRadius: '8px', '&:hover': { bgcolor: '#0d2720' }, '&.Mui-disabled': { bgcolor: '#c0d4ca', color: 'white' } }}
               >
-                ลงทะเบียนสินทรัพย์
+                {submitting ? 'กำลังบันทึก...' : 'ลงทะเบียนสินทรัพย์'}
               </Button>
               <Button
                 onClick={() => { setForm(EMPTY); setSelectedPR('') }}

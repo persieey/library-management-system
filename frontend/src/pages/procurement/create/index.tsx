@@ -54,6 +54,8 @@ export default function CreatePurchaseRequest() {
   const [form, setForm] = useState<FormState>(EMPTY)
   const [saved, setSaved] = useState(false)
   const [errors, setErrors] = useState<Partial<FormState>>({})
+  const [submitError, setSubmitError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const total = (parseFloat(form.quantity || '0') * parseFloat(form.unitPrice || '0')).toFixed(2)
 
@@ -79,25 +81,30 @@ export default function CreatePurchaseRequest() {
       return
     }
 
-    const result = await api.requests.create({
-      title: form.title,
-      category: form.category,
-      quantity: Number(form.quantity),
-      unit_price: Number(form.unitPrice),
-      total_price: Number(total),
-      priority: form.priority,
-      vendor: form.vendor,
-      purpose: form.purpose,
-      notes: form.notes,
-    })
-
-    if (!result) {
-      console.error('create failed')
-      return
+    // เดิมไม่มี try/catch เลย — api.requests.create โยน exception เวลาพลาด (ไม่ได้
+    // return null) เงื่อนไข `if (!result)` ด้านล่างจึงเป็น dead code ที่ไม่มีวันทำงาน
+    // ผู้ใช้กดส่งแล้วเงียบสนิทถ้า backend ล่ม/ปฏิเสธข้อมูล
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      await api.requests.create({
+        title: form.title,
+        category: form.category,
+        quantity: Number(form.quantity),
+        unit_price: Number(form.unitPrice),
+        total_price: Number(total),
+        priority: form.priority,
+        vendor: form.vendor,
+        purpose: form.purpose,
+        notes: form.notes,
+      })
+      setSaved(true)
+      setTimeout(() => navigate('/procurement/requests'), 1800)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'สร้างคำขอซื้อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setSubmitting(false)
     }
-
-    setSaved(true)
-    setTimeout(() => navigate('/procurement/requests'), 1800)
   }
   const inputSx = {
     '& .MuiOutlinedInput-root': {
@@ -256,10 +263,17 @@ export default function CreatePurchaseRequest() {
             />
           </Box>
 
+          {submitError && (
+            <Alert severity="error" onClose={() => setSubmitError('')} sx={{ fontFamily: fonts.kanit }}>
+              {submitError}
+            </Alert>
+          )}
+
           {/* Actions */}
           <Box sx={{ display: 'flex', gap: '12px', pt: '8px' }}>
             <Button
               onClick={handleSubmit}
+              disabled={submitting}
               variant="contained"
               sx={{
                 bgcolor: colors.brandGreen,
@@ -271,7 +285,7 @@ export default function CreatePurchaseRequest() {
                 '&:hover': { bgcolor: '#0d2720' },
               }}
             >
-              ส่งคำขอจัดซื้อ
+              {submitting ? 'กำลังส่ง...' : 'ส่งคำขอจัดซื้อ'}
             </Button>
             <Button
               onClick={() => setForm(EMPTY)}

@@ -14,6 +14,22 @@ import BackOfficeLayout from '../../../components/BackOfficeLayout';
 const COMPLAINT_TABS = ['box', 'pending', 'verify'] as const;
 type ComplaintTab = (typeof COMPLAINT_TABS)[number];
 
+// เดิมตัวเลือก "เดือน" ในตัวกรองเป็นค่าตายตัว 3 เดือน (ส.ค./ก.ค./มิ.ย.) ผูกกับวันที่
+// สร้างระบบตอนแรก พอเวลาผ่านไปจริง (เช่นตอนนี้เป็น ก.ย.) กรองเดือนปัจจุบันไม่ได้เลย
+// เปลี่ยนให้คำนวณเดือนปัจจุบันย้อนหลัง 3 เดือนจากเวลาจริงแทน (new Date())
+const THAI_MONTH_SHORT = ['ม.ค', 'ก.พ', 'มี.ค', 'เม.ย', 'พ.ค', 'มิ.ย', 'ก.ค', 'ส.ค', 'ก.ย', 'ต.ค', 'พ.ย', 'ธ.ค'];
+const THAI_MONTH_FULL = [
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+];
+function recentMonthOptions(count = 3): { value: string; label: string }[] {
+  const now = new Date();
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    return { value: THAI_MONTH_SHORT[d.getMonth()], label: THAI_MONTH_FULL[d.getMonth()] };
+  });
+}
+
 export default function Employee(): React.JSX.Element {
   const { user, isManager, isEmployee, switchToRole } = useAuth();
   const { tab: tabParam } = useParams<{ tab?: string }>();
@@ -284,9 +300,9 @@ export default function Employee(): React.JSX.Element {
                 <span>เดือน: </span>
                 <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}>
                   <option value="All">ทั้งหมด</option>
-                  <option value="ส.ค">สิงหาคม</option>
-                  <option value="ก.ค">กรกฎาคม</option>
-                  <option value="มิ.ย">มิถุนายน</option>
+                  {recentMonthOptions().map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
                 </select>
               </div>
             </div>

@@ -100,7 +100,13 @@ func (rc *RequestController) UpdateStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": err.Error()})
 		return
 	}
-	if err := rc.db.Model(&models.Request{}).Where(`"RequestID" = ?`, id).Update("Status", body.Status).Error; err != nil {
+	updates := map[string]interface{}{"Status": body.Status}
+	// เดิมเหตุผลปฏิเสธที่พิมพ์มาไม่เคยถูกบันทึกเลย (DTO ไม่มีฟิลด์นี้) หัวหน้าปฏิเสธ
+	// คำขอไปแล้วผู้ยื่นไม่มีทางรู้เหตุผล — เก็บลงคอลัมน์ Notes ที่มีอยู่แล้ว
+	if body.Status == "rejected" && body.Reason != "" {
+		updates["Notes"] = body.Reason
+	}
+	if err := rc.db.Model(&models.Request{}).Where(`"RequestID" = ?`, id).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "อัปเดตไม่สำเร็จ"})
 		return
 	}

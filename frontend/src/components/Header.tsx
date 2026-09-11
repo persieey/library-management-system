@@ -112,7 +112,6 @@ function ResourcesMenu() {
   const resourceLinks: DropdownItem[] = [
     { label: 'Books', to: '/books' },
     { label: 'eBooks', to: '/ebooks' },
-    { label: 'BU Research', to: '/bu-research' },
     { label: 'Room Booking', onSelect: () => requireLogin('/booking') },
     { label: 'Borrow', onSelect: () => requireLogin('/borrow') },
   ]

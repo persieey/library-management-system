@@ -67,15 +67,44 @@ export default function CheckDetails() {
   const id = params.get('id') ?? ''
   const [req, setReq] = useState<RequestDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deciding, setDeciding] = useState(false)
+  const [decideError, setDecideError] = useState('')
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      const data = await api.requests.getById(id)
-      setReq(data)
+    // เดิมไม่มี else ของ if(id) เลย — เข้าหน้านี้โดยไม่มี ?id= (เช่นกดจากเมนู sidebar
+    // ตรงๆ) แล้ว setLoading(false) ไม่เคยถูกเรียก หน้าค้างที่ "กำลังโหลด..." ตลอดไป
+    // เพิ่ม else ให้เข้า "ไม่พบข้อมูล" ทันที และห่อ fetch ด้วย try/catch กันเคส API
+    // ล้มเหลว/ไม่พบรายการก็ค้างจอโหลดตลอดกาลเหมือนกัน
+    if (!id) {
       setLoading(false)
+      return
     }
-    if (id) fetchDetail()
+    const fetchDetail = async () => {
+      try {
+        const data = await api.requests.getById(id)
+        setReq(data)
+      } catch {
+        setReq(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDetail()
   }, [id])
+
+  const decide = async (status: 'approved' | 'rejected') => {
+    if (!req) return
+    setDeciding(true)
+    setDecideError('')
+    try {
+      await api.requests.updateStatus(req.id, status)
+      setReq({ ...req, status })
+    } catch {
+      setDecideError('อัปเดตสถานะไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setDeciding(false)
+    }
+  }
 
   if (loading) return <ProcurementLayout title="Check Details"><Typography sx={{ fontFamily: fonts.kanit }}>กำลังโหลด...</Typography></ProcurementLayout>
 if (!req) return <ProcurementLayout title="Check Details"><Typography sx={{ fontFamily: fonts.kanit }}>ไม่พบข้อมูล</Typography></ProcurementLayout>
@@ -148,6 +177,8 @@ if (!req) return <ProcurementLayout title="Check Details"><Typography sx={{ font
               <Box sx={{ display: 'flex', gap: '12px' }}>
                 <Button
                   variant="contained"
+                  disabled={deciding}
+                  onClick={() => decide('approved')}
                   sx={{
                     bgcolor: '#166534', fontFamily: fonts.kanit, fontSize: 14, px: '24px',
                     '&:hover': { bgcolor: '#14532d' },
@@ -157,6 +188,8 @@ if (!req) return <ProcurementLayout title="Check Details"><Typography sx={{ font
                 </Button>
                 <Button
                   variant="outlined"
+                  disabled={deciding}
+                  onClick={() => decide('rejected')}
                   sx={{
                     borderColor: '#b91c1c', color: '#b91c1c', fontFamily: fonts.kanit, fontSize: 14, px: '24px',
                     '&:hover': { borderColor: '#991b1b', bgcolor: '#fee2e2' },
@@ -165,6 +198,11 @@ if (!req) return <ProcurementLayout title="Check Details"><Typography sx={{ font
                   ✕ ปฏิเสธคำขอ
                 </Button>
               </Box>
+              {decideError && (
+                <Typography sx={{ fontFamily: fonts.kanit, fontSize: 13, color: '#b91c1c', mt: '10px' }}>
+                  {decideError}
+                </Typography>
+              )}
             </Paper>
           )}
 

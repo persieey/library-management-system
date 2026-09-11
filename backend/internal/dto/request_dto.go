@@ -14,4 +14,6 @@ type CreateRequestDTO struct {
 
 type UpdateStatusDTO struct {
 	Status string `json:"status" binding:"required"`
+	// เหตุผลตอนปฏิเสธคำขอ (ไม่บังคับ) — ผู้ยื่นจะได้รู้ว่าทำไมถึงถูกปฏิเสธ
+	Reason string `json:"reason"`
 }

@@ -4,7 +4,6 @@ import Box from '@mui/material/Box'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
-import Link from '@mui/material/Link'
 import { useAuth } from '../auth/useAuth'
 import { ApiError } from '../services/https'
 import { fonts } from '../theme'
@@ -105,16 +104,6 @@ function LoginModal({ open, onClose }: LoginModalProps) {
           size="small"
           sx={{ mt: '9px', '& .MuiOutlinedInput-root': { height: 35, borderRadius: '5px' } }}
         />
-
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: '11px' }}>
-          <Link
-            href="/forgot-password"
-            underline="always"
-            sx={{ fontFamily: fonts.kanit, fontWeight: 700, fontSize: 12, color: 'black' }}
-          >
-            Forgot password
-          </Link>
-        </Box>
 
         {error && (
           <Typography sx={{ fontFamily: fonts.kanit, fontSize: 12, color: 'error.main', mt: '10px' }}>

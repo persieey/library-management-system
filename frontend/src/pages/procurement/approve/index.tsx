@@ -52,8 +52,12 @@ export default function ApproveRequests() {
 
   useEffect(() => {
     const fetchRequests = async () => {
-      const data = await api.requests.getAll()
-      setRequests(data ?? [])
+      try {
+        const data = await api.requests.getAll()
+        setRequests(data ?? [])
+      } catch {
+        setToast({ msg: 'โหลดรายการคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', sev: 'error' })
+      }
     }
     fetchRequests()
   }, [])
@@ -61,19 +65,30 @@ export default function ApproveRequests() {
   const pending = requests.filter((r) => r.status === 'pending')
   const done = requests.filter((r) => r.status !== 'pending')
 
+  // เดิมไม่มี try/catch เลย — ถ้า API ล้มเหลว exception จะหลุดออกไปแบบไม่มีใครเห็น
+  // แถวสถานะยังเป็น pending อยู่จริงแต่ผู้ใช้ไม่รู้ว่าล้มเหลว (ไม่มี error, ไม่มี success)
   const approve = async (id: string) => {
-    await api.requests.updateStatus(id, 'approved')
-    setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'approved' } : r))
-    setToast({ msg: `อนุมัติคำขอ #${id} เรียบร้อยแล้ว`, sev: 'success' })
+    try {
+      await api.requests.updateStatus(id, 'approved')
+      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'approved' } : r))
+      setToast({ msg: `อนุมัติคำขอ #${id} เรียบร้อยแล้ว`, sev: 'success' })
+    } catch {
+      setToast({ msg: `อนุมัติคำขอ #${id} ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง`, sev: 'error' })
+    }
   }
   const openReject = (id: string) => { setRejectDialog({ id }); setRejectReason('') }
 
   const confirmReject = async () => {
     if (!rejectDialog) return
-    await api.requests.updateStatus(rejectDialog.id, 'rejected')
-    setRequests((prev) => prev.map((r) => r.id === rejectDialog.id ? { ...r, status: 'rejected' } : r))
-    setToast({ msg: `ปฏิเสธคำขอ #${rejectDialog.id} เรียบร้อยแล้ว`, sev: 'error' })
-    setRejectDialog(null)
+    try {
+      // เดิม rejectReason ที่พิมพ์ในกล่องไม่เคยถูกส่งไปเลย ผู้ยื่นไม่มีทางรู้เหตุผลที่ถูกปฏิเสธ
+      await api.requests.updateStatus(rejectDialog.id, 'rejected', rejectReason)
+      setRequests((prev) => prev.map((r) => r.id === rejectDialog.id ? { ...r, status: 'rejected' } : r))
+      setToast({ msg: `ปฏิเสธคำขอ #${rejectDialog.id} เรียบร้อยแล้ว`, sev: 'error' })
+      setRejectDialog(null)
+    } catch {
+      setToast({ msg: `ปฏิเสธคำขอ #${rejectDialog.id} ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง`, sev: 'error' })
+    }
   }
 
   const stats = [
