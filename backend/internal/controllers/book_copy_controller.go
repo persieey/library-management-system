@@ -66,7 +66,10 @@ func (bcc *BookCopyController) Create(c *gin.Context) {
 }
 
 func (bcc *BookCopyController) Update(c *gin.Context) {
-	id := c.Param("id") // ← frontend (อ่านจาก URL)
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var req dto.UpdateBookCopyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -112,7 +115,22 @@ func (bcc *BookCopyController) Update(c *gin.Context) {
 }
 
 func (bcc *BookCopyController) Delete(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
+
+	// กันลบเล่มที่มีคนกำลังจอง/ยืมอยู่ ไม่งั้นประวัติการยืมของคนนั้นจะหาเล่มไม่เจอ
+	// (join ผ่าน copy_id ที่ถูกลบไปแล้ว) เหมือนบั๊กที่เคยเจอกับ BookController.Delete
+	var activeCount int64
+	bcc.db.Model(&models.Reservation{}).
+		Where("copy_id = ? AND status IN ?", id, []string{"reserved", "borrowed"}).
+		Count(&activeCount)
+	if activeCount > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "ลบไม่ได้ เพราะเล่มนี้มีการจอง/ยืมค้างอยู่"})
+		return
+	}
+
 	result := bcc.db.Delete(&models.BookCopy{}, id)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบหนังสือไม่สำเร็จ"})

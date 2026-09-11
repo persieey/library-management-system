@@ -62,7 +62,10 @@ func (ec *BookController) Create(c *gin.Context) {
 }
 
 func (ec *BookController) Update(c *gin.Context) {
-	id := c.Param("id") // ← frontend (อ่านจาก URL)
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var req dto.UpdateBookRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -102,6 +105,9 @@ func (ec *BookController) Update(c *gin.Context) {
 	if req.Description != nil {
 		updates["description"] = *req.Description
 	}
+	if req.Recommended != nil {
+		updates["recommended"] = *req.Recommended
+	}
 
 	if len(updates) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลที่ต้องการแก้ไข"})
@@ -120,7 +126,10 @@ func (ec *BookController) Update(c *gin.Context) {
 }
 
 func (ec *BookController) Delete(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 	var count int64
 	ec.db.Model(&models.BookCopy{}).Where("book_id = ?", id).Count(&count)
 	if count > 0 {
@@ -181,7 +190,10 @@ func (bc *BookController) UploadCover(c *gin.Context) {
 }
 
 func (bc *BookController) GetCover(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var book models.Book
 	if err := bc.db.First(&book, id).Error; err != nil {

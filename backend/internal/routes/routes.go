@@ -59,6 +59,7 @@ func SetupRouter(authControllers *controllers.AuthController,
 	users.PUT("/profile", userController.UpdateProfile)
 	users.PUT("/password", userController.ChangePassword)
 	users.POST("/members", middleware.RequirePosition("manager", "librarian"), userController.CreateMember)
+	users.GET("/members/search", middleware.RequirePosition("manager", "librarian"), userController.SearchMembers)
 	//เพิ่มนักศึกษา จาก mamage และ librarian
 	users.POST("/employees", middleware.RequirePosition("manager"), userController.CreateEmployee)
 	//เพิ่มพนักงานห้องสมุด จาก mamager ได้อย่างเดี๋ยว
@@ -218,6 +219,7 @@ func SetupRouter(authControllers *controllers.AuthController,
 
 	booksLibrarian := middleware.RequirePosition("librarian", "manager")
 	books.GET("/librarian/reservations", booksLibrarian, libraryController.Loans)
+	books.POST("/librarian/reservations", booksLibrarian, libraryController.BorrowForMember)
 	books.POST("/librarian/reservations/:id/checkout", booksLibrarian, libraryController.Checkout)
 	books.POST("/librarian/reservations/:id/return", booksLibrarian, libraryController.Return)
 	books.POST("/librarian/reservations/:id/pay-fine", booksLibrarian, libraryController.PayLoanFine)
@@ -239,6 +241,7 @@ func SetupRouter(authControllers *controllers.AuthController,
 	equipmentReservations.POST("/reservations", libraryController.BorrowEquipmentSelf)
 	equipmentReservations.POST("/reservations/:id/cancel", libraryController.CancelEquipmentLoanSelf)
 	equipmentReservations.GET("/librarian/reservations", booksLibrarian, libraryController.EquipmentLoans)
+	equipmentReservations.POST("/librarian/reservations", booksLibrarian, libraryController.BorrowEquipmentForMember)
 	equipmentReservations.POST("/librarian/reservations/:id/checkout", booksLibrarian, libraryController.CheckoutEquipment)
 	equipmentReservations.POST("/librarian/reservations/:id/return", booksLibrarian, libraryController.ReturnEquipment)
 	equipmentReservations.POST("/librarian/reservations/:id/pay-fine", booksLibrarian, libraryController.PayEquipmentFine)
@@ -280,8 +283,10 @@ func SetupRouter(authControllers *controllers.AuthController,
 
 	// ---------- ห้อง / การจองห้อง ----------
 	roomsGroup := api.Group("/rooms")
-	roomsGroup.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	// รายชื่อห้องเปิดสาธารณะ เหมือน /books, /ebooks, /equipment/catalog — มีแค่ชื่อ/
+	// ประเภท/ความจุห้อง ไม่มีอะไรอ่อนไหว ใช้กับช่องค้นหารวมหน้าแรกที่คนยังไม่ล็อกอินก็ค้นได้
 	roomsGroup.GET("", roomBookingController.ListRooms)
+	roomsGroup.Use(middleware.JWTAuthMiddleware(jwtProvider))
 	roomsGroup.POST("", middleware.RequireEmployee(), roomBookingController.CreateRoom)
 
 	// เปลี่ยนจาก /bookings เป็น /room-bookings ให้ชัดว่าเป็นการจอง "ห้อง"
@@ -303,7 +308,9 @@ func SetupRouter(authControllers *controllers.AuthController,
 
 	// ---------- ใบขอซื้อ ----------
 	requests := api.Group("/requests")
-	requests.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	// เดิมมีแค่ JWT ไม่เช็คว่าเป็นพนักงาน ทำให้สมาชิกทั่วไป (นักศึกษา) เรียก POST /requests
+	// สร้างใบขอซื้อได้เอง ทั้งที่ระบบนี้เป็นของเจ้าหน้าที่เท่านั้น
+	requests.Use(middleware.JWTAuthMiddleware(jwtProvider), middleware.RequireEmployee())
 	requests.GET("", requestController.GetAll)
 	requests.GET("/:id", requestController.GetByID)
 	requests.POST("", requestController.Create)
@@ -314,13 +321,15 @@ func SetupRouter(authControllers *controllers.AuthController,
 
 	// ---------- ทรัพย์สิน ----------
 	assets := api.Group("/assets")
-	assets.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	// เดิมมีแค่ JWT เหมือนกัน สมาชิกทั่วไปสร้าง/ดูรายการทรัพย์สินได้
+	assets.Use(middleware.JWTAuthMiddleware(jwtProvider), middleware.RequireEmployee())
 	assets.GET("", assetController.GetAll)
 	assets.POST("", assetController.Create)
 
 	// ---------- ตรวจนับทรัพย์สิน ----------
 	audit := api.Group("/audit")
-	audit.Use(middleware.JWTAuthMiddleware(jwtProvider))
+	// เดิมมีแค่ JWT เหมือนกัน สมาชิกทั่วไปเห็นสถิติ/สร้าง-แก้ไขรอบตรวจนับได้
+	audit.Use(middleware.JWTAuthMiddleware(jwtProvider), middleware.RequireEmployee())
 	audit.GET("/stats", auditController.GetStats)
 	audit.GET("/sessions", auditController.ListSessions)
 	audit.POST("/sessions", auditController.CreateSession)

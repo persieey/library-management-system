@@ -197,7 +197,10 @@ func (rb *RoomBookingController) Create(c *gin.Context) {
 
 // PATCH /api/v1/room-bookings/:id/status — staff เท่านั้น
 func (rb *RoomBookingController) UpdateStatus(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var req dto.UpdateRoomBookingStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -284,7 +287,10 @@ func (rb *RoomBookingController) MyBookings(c *gin.Context) {
 // PATCH /api/v1/room-bookings/:id/cancel — ยกเลิกได้เฉพาะเจ้าของการจอง (หรือ staff)
 // และยกเลิกได้เฉพาะตอนที่ยังไม่ได้ไปรับห้อง (status = pending) เท่านั้น
 func (rb *RoomBookingController) Cancel(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 	userID, _ := c.Get("user_id")
 	role, _ := c.Get("role")
 

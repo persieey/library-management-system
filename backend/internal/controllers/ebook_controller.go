@@ -111,7 +111,10 @@ func (ec *EbookController) Create(c *gin.Context) {
 }
 
 func (ec *EbookController) Delete(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	result := ec.db.Delete(&models.Ebook{}, id)
 	if result.Error != nil {
@@ -127,7 +130,10 @@ func (ec *EbookController) Delete(c *gin.Context) {
 }
 
 func (ec *EbookController) Update(c *gin.Context) {
-	id := c.Param("id") // ← frontend (อ่านจาก URL)
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var req dto.UpdateEbookRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -272,7 +278,10 @@ func (ec *EbookController) UploadCover(c *gin.Context) {
 }
 
 func (ec *EbookController) GetFile(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var ebook models.Ebook
 	if err := ec.db.First(&ebook, id).Error; err != nil {
@@ -284,11 +293,33 @@ func (ec *EbookController) GetFile(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่มีไฟล์ E-Book"})
 		return
 	}
+
+	// บันทึกว่ามีการเปิดอ่านไฟล์จริง ให้หน้ารายงานสถิติ "จำนวนการเข้าอ่าน" มีข้อมูลจริง
+	// (เดิมไม่มีการเก็บอะไรเลยตอนเปิดไฟล์ ตัวเลขที่หน้าสถิติโชว์เลยเป็นแค่ยอดค้นหาซ้ำ)
+	// route นี้บังคับ login อยู่แล้ว (ebooks.Use(JWTAuthMiddleware) ก่อนถึง route นี้)
+	// จึงมี user_id เสมอ ไม่ต้องเช็คแบบ OptionalAuth เหมือน LogSearch
+	if uid, exists := c.Get("user_id"); exists {
+		var member models.Member
+		var memberID *uint
+		if err := ec.db.Where("user_id = ?", uid).First(&member).Error; err == nil {
+			memberID = &member.MemberID
+		}
+		ec.db.Create(&models.EbookOpenLog{
+			OpenLogID: uuid.NewString(),
+			EbookID:   ebook.EbookID,
+			MemberID:  memberID,
+			OpenedAt:  time.Now(),
+		})
+	}
+
 	c.File(ebook.FilePath)
 }
 
 func (ec *EbookController) GetCover(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var ebook models.Ebook
 	if err := ec.db.First(&ebook, id).Error; err != nil {

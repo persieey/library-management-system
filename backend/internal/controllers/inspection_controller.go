@@ -99,7 +99,10 @@ func (ic *InspectionController) Create(c *gin.Context) {
 }
 
 func (ic *InspectionController) Update(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var req dto.UpdateInspectionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -139,7 +142,10 @@ func (ic *InspectionController) Update(c *gin.Context) {
 }
 
 func (ic *InspectionController) Delete(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	result := ic.db.Delete(&models.BookInspection{}, id)
 	if result.Error != nil {

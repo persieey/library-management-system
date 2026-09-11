@@ -181,7 +181,10 @@ func (rc *RepairController) MyRepairs(c *gin.Context) {
 
 // PATCH /api/v1/repairs/:id/status — staff เท่านั้น เปลี่ยนสถานะ + บันทึก log
 func (rc *RepairController) UpdateStatus(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var req dto.UpdateRepairStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

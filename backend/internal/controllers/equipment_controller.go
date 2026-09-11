@@ -49,7 +49,10 @@ func (ec *EquipmentController) Create(c *gin.Context) {
 }
 
 func (ec *EquipmentController) UpdateStatus(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := idParam(c)
+	if !ok {
+		return
+	}
 
 	var req dto.UpdateEquipmentStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
