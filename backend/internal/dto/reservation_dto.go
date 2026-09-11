@@ -11,6 +11,14 @@ type CreateReservationRequest struct {
 	Days        int             `json:"days" binding:"required,min=1,max=30"`
 }
 
+// LibrarianCreateReservationRequest คือ CreateReservationRequest เดิม + รหัสนักศึกษาของ
+// สมาชิกที่บรรณารักษ์สร้างรายการยืมแทนให้ (walk-in) ต้องหา user_id จริงจาก UniversityID
+// เสมอ ห้ามรับ user_id ตรง ๆ จาก client เพราะแก้ไขคำขอเปลี่ยนไปสวมรอยเป็นสมาชิกคนอื่นได้
+type LibrarianCreateReservationRequest struct {
+	CreateReservationRequest
+	UniversityID string `json:"university_id" binding:"required"`
+}
+
 type ReturnReservationRequest struct {
 	Condition   string `json:"condition" binding:"omitempty,oneof=good damaged lost"`
 	Description string `json:"description" binding:"max=500"`

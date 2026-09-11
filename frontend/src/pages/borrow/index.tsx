@@ -123,6 +123,11 @@ function BorrowPage() {
     void load()
   }, [load])
 
+  // สลับไปแท็บอุปกรณ์แล้วค่าเดิมเกิน 7 วัน (ที่ตั้งไว้ตอนอยู่แท็บหนังสือ) ต้องหุบให้เข้าลิมิตทันที
+  useEffect(() => {
+    if (tab === 'equipment') setBookingDays((d) => Math.min(7, d))
+  }, [tab])
+
   const activeItems = tab === 'equipment' ? equipment : resources
   const categories = useMemo(
     () => ['all', ...Array.from(new Set(activeItems.map((i) => i.category).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'th'))],
@@ -319,8 +324,12 @@ function BorrowPage() {
                 type="number"
                 label="ระยะเวลายืม (วัน)"
                 value={bookingDays}
-                onChange={(e) => setBookingDays(Math.min(30, Math.max(1, Math.trunc(Number(e.target.value)) || 1)))}
-                slotProps={{ htmlInput: { min: 1, max: 30 } }}
+                onChange={(e) => {
+                  const cap = tab === 'equipment' ? 7 : 30
+                  setBookingDays(Math.min(cap, Math.max(1, Math.trunc(Number(e.target.value)) || 1)))
+                }}
+                slotProps={{ htmlInput: { min: 1, max: tab === 'equipment' ? 7 : 30 } }}
+                helperText={tab === 'equipment' ? 'อุปกรณ์ยืมได้ไม่เกิน 7 วัน' : undefined}
                 sx={{ minWidth: 150 }}
               />
             </Box>
@@ -380,18 +389,60 @@ function BorrowPage() {
 
       <Footer />
 
-      {/* กล่องยืนยันการจอง — ถ้าของถูกจองอยู่แล้วเปลี่ยนเป็นปุ่มต่อคิวแทน ตามตรรกะเดิมของสุชาดา */}
+      {/* กล่องรายละเอียด + ยืนยันการจอง — โชว์ข้อมูลเต็มของหนังสือ/อุปกรณ์ที่เลือกก่อนจองจริง
+          ถ้าของถูกจองอยู่แล้วเปลี่ยนเป็นปุ่มต่อคิวแทน ตามตรรกะเดิมของสุชาดา */}
       <Dialog open={Boolean(selected)} onClose={() => setSelected(null)} fullWidth maxWidth="xs">
         {selected && (
           <>
             <DialogTitle sx={{ fontFamily: fonts.kanit }}>
-              {selected.kind === 'book' ? 'จองหนังสือ' : 'จองอุปกรณ์'}
+              รายละเอียด{selected.kind === 'book' ? 'หนังสือ' : 'อุปกรณ์'}
             </DialogTitle>
             <DialogContent>
-              <Typography sx={{ fontFamily: fonts.thai, fontWeight: 600, mb: 1 }}>
-                {selected.kind === 'book' ? selected.item.title : selected.item.name}
-              </Typography>
-              <Typography sx={{ fontFamily: fonts.thai, fontSize: 14, color: colors.inkMuted }}>
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <Box sx={{ width: 90, flexShrink: 0 }}>
+                  <CoverImage src={selected.item.image_url} title={selected.kind === 'book' ? selected.item.title : selected.item.name} height={120} />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontFamily: fonts.thai, fontWeight: 700, fontSize: 16 }}>
+                    {selected.kind === 'book' ? selected.item.title : selected.item.name}
+                  </Typography>
+                  {selected.kind === 'book' && selected.item.author && (
+                    <Typography sx={{ fontFamily: fonts.thai, fontSize: 13, color: colors.inkMuted, mt: '2px' }}>
+                      โดย {selected.item.author}
+                    </Typography>
+                  )}
+                  <Chip
+                    size="small"
+                    label={selected.item.status === 'available' ? 'ว่าง' : 'ถูกจองแล้ว'}
+                    sx={{
+                      mt: 1,
+                      bgcolor: selected.item.status === 'available' ? colors.accentGreenLight : colors.surfaceMuted,
+                      color: selected.item.status === 'available' ? colors.accentGreen : colors.ink,
+                      fontFamily: fonts.thai,
+                      fontWeight: 600,
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: `1px solid ${colors.borderSubtle}`, pt: 1.5 }}>
+                <DetailRow label="หมวดหมู่" value={selected.item.category} />
+                {selected.kind === 'book' ? (
+                  <>
+                    <DetailRow label="เลขเรียกหนังสือ" value={selected.item.call_number} />
+                    <DetailRow label="รหัส/บาร์โค้ด" value={selected.item.barcode} />
+                    <DetailRow label="ตำแหน่งจัดเก็บ" value={selected.item.location} />
+                  </>
+                ) : (
+                  <>
+                    <DetailRow label="รหัสครุภัณฑ์" value={selected.item.asset_code} />
+                    <DetailRow label="ตำแหน่งจัดเก็บ" value={selected.item.location} />
+                    <DetailRow label="สภาพ" value={selected.item.condition} />
+                  </>
+                )}
+              </Box>
+
+              <Typography sx={{ fontFamily: fonts.thai, fontSize: 14, color: colors.inkMuted, mt: 2 }}>
                 วันที่รับ: {fmtDate(bookingDate)} · ระยะเวลา {bookingDays} วัน
               </Typography>
               {!token && (
@@ -444,6 +495,16 @@ function BorrowPage() {
       </Dialog>
 
       <Snackbar open={Boolean(notice)} autoHideDuration={4000} onClose={() => setNotice('')} message={notice} />
+    </Box>
+  )
+}
+
+function DetailRow({ label, value }: { label: string; value?: string }) {
+  if (!value) return null
+  return (
+    <Box sx={{ display: 'flex', gap: '10px' }}>
+      <Typography sx={{ fontFamily: fonts.thai, fontSize: 13, color: colors.inkMuted, minWidth: 110 }}>{label}</Typography>
+      <Typography sx={{ fontFamily: fonts.thai, fontSize: 13, color: colors.ink }}>{value}</Typography>
     </Box>
   )
 }

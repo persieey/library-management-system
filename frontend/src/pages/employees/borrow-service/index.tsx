@@ -6,15 +6,20 @@ import Chip from '@mui/material/Chip'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
 import Alert from '@mui/material/Alert'
+import Snackbar from '@mui/material/Snackbar'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import CircularProgress from '@mui/material/CircularProgress'
+import List from '@mui/material/List'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemText from '@mui/material/ListItemText'
 import BackOfficeLayout from '../../../components/BackOfficeLayout'
 import { useAuth } from '../../../auth/useAuth'
 import { ApiError } from '../../../services/https'
 import * as api from '../../../services/https/library'
+import * as portal from '../../../services/https/borrowerPortal'
 import { colors, fonts } from '../../../theme'
 
 type Kind = 'books' | 'equipment'
@@ -59,6 +64,7 @@ function BorrowServicePage() {
   const [rows, setRows] = useState<api.Item[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [search, setSearch] = useState('')
 
   const [returningRow, setReturningRow] = useState<api.Item | null>(null)
@@ -68,6 +74,97 @@ function BorrowServicePage() {
   const [payingRow, setPayingRow] = useState<api.Item | null>(null)
   const [fineAmount, setFineAmount] = useState('0')
   const [fineDescription, setFineDescription] = useState('')
+
+  // สร้างรายการยืมแทนสมาชิก (walk-in) — บรรณารักษ์ค้นหาสมาชิกจริงในระบบก่อนเสมอ
+  const [createOpen, setCreateOpen] = useState(false)
+  const [memberQuery, setMemberQuery] = useState('')
+  const [memberResults, setMemberResults] = useState<api.MemberMatch[]>([])
+  const [memberSearching, setMemberSearching] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<api.MemberMatch | null>(null)
+  const [createResources, setCreateResources] = useState<(portal.CatalogResource | portal.CatalogEquipment)[]>([])
+  const [resourceQuery, setResourceQuery] = useState('')
+  const [selectedResource, setSelectedResource] = useState<portal.CatalogResource | portal.CatalogEquipment | null>(null)
+  const [createDate, setCreateDate] = useState('')
+  const [createDays, setCreateDays] = useState(3)
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
+
+  function todayISO() {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+  function maxBookingISO() {
+    const d = new Date()
+    d.setDate(d.getDate() + 3)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
+  function openCreate() {
+    setCreateOpen(true)
+    setMemberQuery('')
+    setMemberResults([])
+    setSelectedMember(null)
+    setResourceQuery('')
+    setSelectedResource(null)
+    setCreateDate(todayISO())
+    setCreateDays(kind === 'equipment' ? 3 : 14)
+    setCreateError('')
+    void (kind === 'books' ? portal.getResources() : portal.getEquipment()).then(setCreateResources)
+  }
+
+  // debounce ค้นหาสมาชิก กันยิง API ทุกตัวอักษรที่พิมพ์
+  useEffect(() => {
+    if (!createOpen) return
+    const q = memberQuery.trim()
+    if (q.length < 2) {
+      setMemberResults([])
+      return
+    }
+    setMemberSearching(true)
+    const timer = window.setTimeout(() => {
+      if (!token) return
+      api
+        .searchMembers(token, q)
+        .then(setMemberResults)
+        .catch(() => setMemberResults([]))
+        .finally(() => setMemberSearching(false))
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [memberQuery, createOpen, token])
+
+  const filteredCreateResources = useMemo(() => {
+    const q = resourceQuery.trim().toLowerCase()
+    return createResources
+      .filter((r) => {
+        const name = kind === 'books' ? (r as portal.CatalogResource).title : (r as portal.CatalogEquipment).name
+        return !q || name.toLowerCase().includes(q)
+      })
+      .slice(0, 30)
+  }, [createResources, resourceQuery, kind])
+
+  async function submitCreate() {
+    if (!token || !selectedMember || !selectedResource) return
+    setCreating(true)
+    setCreateError('')
+    try {
+      const path = kind === 'books' ? 'books/librarian/reservations' : 'equipment/librarian/reservations'
+      await api.createForMember(token, path, {
+        university_id: selectedMember.university_id,
+        ...(kind === 'books'
+          ? { resource_id: (selectedResource as portal.CatalogResource).ID }
+          : { equipment_id: (selectedResource as portal.CatalogEquipment).ID }),
+        reserved_for: createDate,
+        days: createDays,
+      })
+      setCreateOpen(false)
+      setNotice('สร้างรายการยืมสำเร็จ')
+      await load()
+    } catch (cause) {
+      setCreateError(cause instanceof ApiError ? cause.message : 'สร้างรายการยืมไม่สำเร็จ')
+    } finally {
+      setCreating(false)
+    }
+  }
 
   const load = useCallback(async () => {
     if (!token) return
@@ -114,9 +211,11 @@ function BorrowServicePage() {
 
   async function runAction(id: string | number, action: 'checkout' | 'no-show') {
     if (!token) return
+    setError('')
     try {
       const path = kind === 'books' ? 'books/librarian/reservations' : 'equipment/librarian/reservations'
       await api.action(token, `${path}/${id}/${action}`)
+      setNotice(action === 'checkout' ? 'บันทึกรับแล้วสำเร็จ' : 'บันทึกไม่มารับสำเร็จ')
       await load()
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'บันทึกไม่สำเร็จ')
@@ -125,10 +224,12 @@ function BorrowServicePage() {
 
   async function confirmReturn() {
     if (!token || !returningRow) return
+    setError('')
     try {
       const path = kind === 'books' ? 'books/librarian/reservations' : 'equipment/librarian/reservations'
       const result = await api.action(token, `${path}/${returningRow.ID}/return`, { condition: returnCondition, description: returnDescription })
       setReturningRow(null)
+      setNotice('บันทึกการคืนสำเร็จ')
       await load()
       if (result.requires_fine) setStage('fine')
     } catch (cause) {
@@ -143,10 +244,12 @@ function BorrowServicePage() {
       setError('จำนวนค่าปรับต้องเป็นศูนย์หรือมากกว่า')
       return
     }
+    setError('')
     try {
       const path = kind === 'books' ? 'books/librarian/reservations' : 'equipment/librarian/reservations'
       await api.action(token, `${path}/${payingRow.ID}/pay-fine`, { amount, description: fineDescription, paid })
       if (paid) setPayingRow(null)
+      setNotice(paid ? 'บันทึกการชำระค่าปรับสำเร็จ' : 'บันทึกยอดค่าปรับสำเร็จ')
       await load()
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'บันทึกค่าปรับไม่สำเร็จ')
@@ -156,27 +259,36 @@ function BorrowServicePage() {
   return (
     <BackOfficeLayout title="จัดการยืม-คืน" trail={[{ label: 'ยืม-คืนหนังสือ/อุปกรณ์', to: '/employees/borrow-service' }]}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <Box sx={{ display: 'flex', gap: '10px' }}>
-          {(['books', 'equipment'] as Kind[]).map((k) => (
-            <Button
-              key={k}
-              variant={kind === k ? 'contained' : 'outlined'}
-              onClick={() => {
-                setKind(k)
-                setSearch('')
-              }}
-              sx={{
-                fontFamily: fonts.thai,
-                textTransform: 'none',
-                bgcolor: kind === k ? colors.brandGreen : 'transparent',
-                borderColor: colors.brandGreen,
-                color: kind === k ? 'white' : colors.brandGreen,
-                '&:hover': { bgcolor: kind === k ? colors.accentGreen : colors.accentGreenLight },
-              }}
-            >
-              {k === 'books' ? 'การจองหนังสือ' : 'การจองอุปกรณ์'}
-            </Button>
-          ))}
+        <Box sx={{ display: 'flex', gap: '10px', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: '10px' }}>
+            {(['books', 'equipment'] as Kind[]).map((k) => (
+              <Button
+                key={k}
+                variant={kind === k ? 'contained' : 'outlined'}
+                onClick={() => {
+                  setKind(k)
+                  setSearch('')
+                }}
+                sx={{
+                  fontFamily: fonts.thai,
+                  textTransform: 'none',
+                  bgcolor: kind === k ? colors.brandGreen : 'transparent',
+                  borderColor: colors.brandGreen,
+                  color: kind === k ? 'white' : colors.brandGreen,
+                  '&:hover': { bgcolor: kind === k ? colors.accentGreen : colors.accentGreenLight },
+                }}
+              >
+                {k === 'books' ? 'การจองหนังสือ' : 'การจองอุปกรณ์'}
+              </Button>
+            ))}
+          </Box>
+          <Button
+            variant="contained"
+            onClick={openCreate}
+            sx={{ fontFamily: fonts.thai, textTransform: 'none', bgcolor: colors.brandGreen, '&:hover': { bgcolor: colors.accentGreen } }}
+          >
+            + สร้างรายการยืม
+          </Button>
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px', borderBottom: `1px solid ${colors.border}`, pb: '4px' }}>
@@ -350,6 +462,119 @@ function BorrowServicePage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* สร้างรายการยืมแทนสมาชิก (walk-in) — ต้องค้นแล้วเลือกสมาชิกจริงในระบบก่อนเสมอ
+          เพื่อให้รายการนี้ผูกกับ user_id จริง ไม่ใช่พิมพ์ชื่อลอย ๆ */}
+      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontFamily: fonts.kanit }}>สร้างรายการยืม{kind === 'books' ? 'หนังสือ' : 'อุปกรณ์'}</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {createError && <Alert severity="error">{createError}</Alert>}
+
+          <Box>
+            <TextField
+              fullWidth
+              size="small"
+              label="ค้นหาสมาชิก (ชื่อ / อีเมล / รหัสนักศึกษา)"
+              value={selectedMember ? `${selectedMember.name ?? ''} · ${selectedMember.university_id}` : memberQuery}
+              onChange={(e) => {
+                setSelectedMember(null)
+                setMemberQuery(e.target.value)
+              }}
+            />
+            {!selectedMember && memberQuery.trim().length >= 2 && (
+              <List dense sx={{ border: `1px solid ${colors.border}`, borderRadius: '8px', mt: '6px', maxHeight: 180, overflow: 'auto' }}>
+                {memberSearching ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+                    <CircularProgress size={18} />
+                  </Box>
+                ) : memberResults.length === 0 ? (
+                  <Typography sx={{ fontFamily: fonts.thai, color: colors.inkMuted, fontSize: 13, px: 2, py: 1 }}>ไม่พบสมาชิกที่ตรงกับคำค้นหา</Typography>
+                ) : (
+                  memberResults.map((m) => (
+                    <ListItemButton key={m.user_id} onClick={() => setSelectedMember(m)}>
+                      <ListItemText
+                        primary={m.name ?? '—'}
+                        secondary={`รหัส ${m.university_id} · ${m.email ?? ''}`}
+                        slotProps={{ primary: { sx: { fontFamily: fonts.thai } }, secondary: { sx: { fontFamily: fonts.thai } } }}
+                      />
+                    </ListItemButton>
+                  ))
+                )}
+              </List>
+            )}
+          </Box>
+
+          <Box>
+            <TextField
+              fullWidth
+              size="small"
+              label={kind === 'books' ? 'ค้นหาหนังสือ' : 'ค้นหาอุปกรณ์'}
+              value={selectedResource ? (kind === 'books' ? (selectedResource as portal.CatalogResource).title : (selectedResource as portal.CatalogEquipment).name) : resourceQuery}
+              onChange={(e) => {
+                setSelectedResource(null)
+                setResourceQuery(e.target.value)
+              }}
+            />
+            {!selectedResource && resourceQuery.trim().length >= 1 && (
+              <List dense sx={{ border: `1px solid ${colors.border}`, borderRadius: '8px', mt: '6px', maxHeight: 180, overflow: 'auto' }}>
+                {filteredCreateResources.length === 0 ? (
+                  <Typography sx={{ fontFamily: fonts.thai, color: colors.inkMuted, fontSize: 13, px: 2, py: 1 }}>ไม่พบรายการที่ตรงกับคำค้นหา</Typography>
+                ) : (
+                  filteredCreateResources.map((r) => {
+                    const name = kind === 'books' ? (r as portal.CatalogResource).title : (r as portal.CatalogEquipment).name
+                    const sub = kind === 'books' ? (r as portal.CatalogResource).barcode : (r as portal.CatalogEquipment).asset_code
+                    return (
+                      <ListItemButton key={r.ID} onClick={() => setSelectedResource(r)}>
+                        <ListItemText
+                          primary={name}
+                          secondary={`${sub} · ${r.status === 'available' ? 'ว่าง' : 'ไม่ว่าง'}`}
+                          slotProps={{ primary: { sx: { fontFamily: fonts.thai } }, secondary: { sx: { fontFamily: fonts.thai } } }}
+                        />
+                      </ListItemButton>
+                    )
+                  })
+                )}
+              </List>
+            )}
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              size="small"
+              type="date"
+              label="วันที่รับ"
+              value={createDate}
+              onChange={(e) => setCreateDate(e.target.value)}
+              slotProps={{ htmlInput: { min: todayISO(), max: maxBookingISO() } }}
+              sx={{ flex: 1 }}
+            />
+            <TextField
+              size="small"
+              type="number"
+              label="ระยะเวลายืม (วัน)"
+              value={createDays}
+              onChange={(e) => {
+                const cap = kind === 'equipment' ? 7 : 30
+                setCreateDays(Math.min(cap, Math.max(1, Math.trunc(Number(e.target.value)) || 1)))
+              }}
+              slotProps={{ htmlInput: { min: 1, max: kind === 'equipment' ? 7 : 30 } }}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setCreateOpen(false)}>ยกเลิก</Button>
+          <Button
+            variant="contained"
+            disabled={creating || !selectedMember || !selectedResource || !createDate}
+            onClick={() => void submitCreate()}
+          >
+            สร้างรายการยืม
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={Boolean(notice)} autoHideDuration={4000} onClose={() => setNotice('')} message={notice} />
     </BackOfficeLayout>
   )
 }

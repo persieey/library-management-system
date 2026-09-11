@@ -185,12 +185,39 @@ func (h *LibraryController) reserve(c *gin.Context, equipment bool) {
 		utils.JSONError(c, 400, "ข้อมูลการจองไม่ถูกต้อง", "")
 		return
 	}
+	h.doReserve(c, equipment, c.GetUint("user_id"), p)
+}
+
+// BorrowForMember / BorrowEquipmentForMember ให้บรรณารักษ์สร้างรายการยืมแทนสมาชิกได้ตรง ๆ
+// (walk-in ไม่ต้องรอสมาชิกจองเองผ่านหน้าเว็บ) หา user_id จริงจากรหัสนักศึกษาที่กรอกมา
+// เสมอ เพื่อให้รายการนี้ผูกกับประวัติของสมาชิกคนนั้นจริง ไม่ใช่แค่เชื่อ client เฉย ๆ
+func (h *LibraryController) BorrowForMember(c *gin.Context)          { h.reserveByLibrarian(c, false) }
+func (h *LibraryController) BorrowEquipmentForMember(c *gin.Context) { h.reserveByLibrarian(c, true) }
+func (h *LibraryController) reserveByLibrarian(c *gin.Context, equipment bool) {
+	var req dto.LibrarianCreateReservationRequest
+	if c.ShouldBindJSON(&req) != nil {
+		utils.JSONError(c, 400, "ข้อมูลการจองไม่ถูกต้อง", "")
+		return
+	}
+	var member models.Member
+	if err := h.db.Where("university_id = ?", req.UniversityID).First(&member).Error; err != nil {
+		utils.JSONError(c, 404, "ไม่พบสมาชิกรหัสนี้ในระบบ กรุณาตรวจสอบรหัสนักศึกษาอีกครั้ง", "")
+		return
+	}
+	h.doReserve(c, equipment, member.UserID, req.CreateReservationRequest)
+}
+
+func (h *LibraryController) doReserve(c *gin.Context, equipment bool, userID uint, p dto.CreateReservationRequest) {
+	if equipment && p.Days > 7 {
+		fail(c, errors.New("อุปกรณ์ยืมได้ไม่เกิน 7 วัน"))
+		return
+	}
 	start, end, err := bookingDates(p.ReservedFor, p.Days)
 	if err != nil {
 		fail(c, err)
 		return
 	}
-	r := models.Reservation{ReservationId: uuid.NewString(), UserId: c.GetUint("user_id"), ReserveDate: time.Now(), PickupDate: start, ExpireDate: end, Status: "reserved"}
+	r := models.Reservation{ReservationId: uuid.NewString(), UserId: userID, ReserveDate: time.Now(), PickupDate: start, ExpireDate: end, Status: "reserved"}
 	err = h.db.Transaction(func(tx *gorm.DB) error {
 		// Lock the member and catalog row before counting capacity; also serializes SQLite writers.
 		if err := tx.Model(&models.User{}).Where("user_id = ?", r.UserId).UpdateColumn("status", gorm.Expr("status")).Error; err != nil {

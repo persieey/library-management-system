@@ -9,3 +9,12 @@ export type Item = {
 }
 export const list=(token:string,path:string,signal?:AbortSignal)=>apiFetch<Item[]>(`/api/v1/${path}`,{token,signal})
 export const action=(token:string,path:string,body?:unknown)=>apiFetch<Item>(`/api/v1/${path}`,{token,method:'POST',body})
+
+export type MemberMatch = { user_id: number; university_id: string; name?: string; email?: string; borrow_limit: number }
+export const searchMembers = (token: string, q: string, signal?: AbortSignal) =>
+  apiFetch<{ members: MemberMatch[] }>(`/api/v1/users/members/search?q=${encodeURIComponent(q)}`, { token, signal }).then((r) => r.members)
+
+// สร้างรายการยืมแทนสมาชิก (walk-in) — path เดียวกับที่ใช้ list() แต่ POST แทน GET
+// ผูกกับบัญชีจริงด้วย university_id เสมอ (backend หา user_id เองจากรหัสนี้)
+export const createForMember = (token: string, path: string, body: { university_id: string; resource_id?: number; equipment_id?: string; reserved_for: string; days: number }) =>
+  apiFetch<Item>(`/api/v1/${path}`, { token, method: 'POST', body })

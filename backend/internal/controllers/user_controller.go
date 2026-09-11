@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -46,6 +47,37 @@ func (uc *UserController) GetProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"user": user, "role": role, "position": position, "employee_id": employeeID})
+}
+
+// SearchMembers ค้นหาสมาชิกจริงในระบบด้วยชื่อ/อีเมล/รหัสนักศึกษา ให้บรรณารักษ์เลือกตอน
+// สร้างรายการยืมแทนสมาชิก (walk-in) จะได้ผูกกับบัญชีจริงในฐานข้อมูลเสมอ ไม่ใช่พิมพ์ชื่อเอง
+func (uc *UserController) SearchMembers(c *gin.Context) {
+	q := strings.TrimSpace(c.Query("q"))
+	if q == "" {
+		c.JSON(http.StatusOK, gin.H{"members": []gin.H{}})
+		return
+	}
+
+	var members []models.Member
+	like := "%" + q + "%"
+	if err := uc.db.Preload("User").
+		Joins("JOIN users ON users.user_id = members.user_id").
+		Where("members.university_id ILIKE ? OR users.name ILIKE ? OR users.email ILIKE ?", like, like, like).
+		Order("users.name").Limit(10).Find(&members).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ค้นหาสมาชิกไม่สำเร็จ"})
+		return
+	}
+
+	out := make([]gin.H, 0, len(members))
+	for _, m := range members {
+		row := gin.H{"user_id": m.UserID, "university_id": m.UniversityID, "borrow_limit": m.Borrowlimit}
+		if m.User != nil {
+			row["name"] = m.User.Name
+			row["email"] = m.User.Email
+		}
+		out = append(out, row)
+	}
+	c.JSON(http.StatusOK, gin.H{"members": out})
 }
 
 func (uc *UserController) CreateMember(c *gin.Context) {
